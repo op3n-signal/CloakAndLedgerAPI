@@ -1,0 +1,24 @@
+<VSTemplate Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>EncompassAPITests</Name>
+    <Description>An xUnit test project for EncompassAPI with predefined structure.</Description>
+    <ProjectType>CSharp</ProjectType>
+    <SortOrder>20</SortOrder>
+    <DefaultName>EncompassAPITests</DefaultName>
+    <CreateNewFolder>true</CreateNewFolder>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="$safeprojectname$.csproj">
+      <Folder Name="ControllerTests">
+        <ProjectItem ReplaceParameters="true">ControllerTests.cs</ProjectItem>
+      </Folder>
+      <Folder Name="ServiceTests">
+        <ProjectItem ReplaceParameters="true">AWSServiceTests.cs</ProjectItem>
+        <ProjectItem ReplaceParameters="true">ConfigTests.cs</ProjectItem>
+      </Folder>
+      <Folder Name="TestHelperBase">
+        <ProjectItem ReplaceParameters="true">TestHelperBase.cs</ProjectItem>
+      </Folder>
+    </Project>
+  </TemplateContent>
+</VSTemplate>
