@@ -33,4 +33,26 @@ namespace EncompassAPI.Models
             JsonRespone = responseContent;
         }
     }
+
+    public class ProcessResult
+    {
+        public bool Success { get; set; }
+
+        public string Message { get; set; }
+
+        public ProcessResult()
+        {
+        }
+
+        public ProcessResult(bool success)
+        {
+            Success = success;
+        }
+
+        public ProcessResult(bool success, string message)
+        {
+            Success = success;
+            Message = message;
+        }
+    }
 }

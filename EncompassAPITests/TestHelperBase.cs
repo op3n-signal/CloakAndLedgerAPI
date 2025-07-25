@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using EncompassAPI.Models;
+using EncompassAPI.Models.Configs;
 
 namespace EncompassAPITests
 {
@@ -49,12 +49,30 @@ namespace EncompassAPITests
             return new TestOptionsSnapshot<CloudWatchLoggingConfig>(cloudWatchLoggingConfig);
         }
 
-        public TestOptionsSnapshot<LogSettingsConfig> GetCoreAppSettingsConfig()
+        public TestOptionsSnapshot<LoggingConfig> GetLoggingOptions()
         {
-            var coreAppSettingsConfig = new LogSettingsConfig();
+            // Bind the AWSConfig object to the configuration section
+            var loggingConfig = new LoggingConfig();
+            _configuration.GetSection("LoggingConfig").Bind(loggingConfig);
+
+            return new TestOptionsSnapshot<LoggingConfig>(loggingConfig);
+        }
+
+        public TestOptionsSnapshot<FileConfig> GetFileOptions()
+        {
+            // Bind the AWSConfig object to the configuration section
+            var fileConfig = new FileConfig();
+            _configuration.GetSection("FileConfig").Bind(fileConfig);
+
+            return new TestOptionsSnapshot<FileConfig>(fileConfig);
+        }
+
+        public TestOptionsSnapshot<LoggingConfig> GetCoreAppSettingsConfig()
+        {
+            var coreAppSettingsConfig = new LoggingConfig();
             _configuration.GetSection("LogSettingsConfig").Bind(coreAppSettingsConfig);
 
-            return new TestOptionsSnapshot<LogSettingsConfig>(coreAppSettingsConfig);
+            return new TestOptionsSnapshot<LoggingConfig>(coreAppSettingsConfig);
         }
 
         //This is just here so we can ensure all logging happens in the test

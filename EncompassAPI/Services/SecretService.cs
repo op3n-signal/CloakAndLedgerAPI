@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace EncompassAPI.Services
 {
-    public class AWSService
+    public class SecretService
     {
         /*
          *	If you need more information about configurations or implementing the sample code, visit the AWS docs:
