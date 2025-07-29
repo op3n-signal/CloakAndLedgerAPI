@@ -1,6 +1,7 @@
 ﻿using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using Microsoft.Extensions.Options;
+using Shared.Models;
 using System.IO;
 using System.Text.RegularExpressions;
 

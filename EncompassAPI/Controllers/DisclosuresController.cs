@@ -2,12 +2,14 @@
 using TokenGenerator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using EncompassAPI.Utility.Filters;
 
 namespace EncompassAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Policy = Security.Policy)]
+    [AuthRequired]
     public class DisclosuresController : ControllerBase
     {
         private readonly IDisclosuresService _disclosuresService;

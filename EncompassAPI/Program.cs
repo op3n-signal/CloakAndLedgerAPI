@@ -1,11 +1,14 @@
 using EncompassAPI.AppLayer;
 using EncompassAPI.Models.Configs;
+using EncompassAPI.Repos;
 using EncompassAPI.Services;
-using TokenGenerator;
+using EncompassAPI.Utility.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Reflection;
+using TokenGenerator;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.OperationFilter<AuthHeaderFilter>();
+});
 
 builder.Services.Configure<AWSConfig>(options => builder.Configuration.GetSection(nameof(AWSConfig)).Bind(options));
 builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSection(nameof(LoggingConfig)).Bind(options));
@@ -22,11 +29,12 @@ builder.Services.Configure<FileConfig>(options => builder.Configuration.GetSecti
 builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));
 builder.Services.Configure<EncompassConfig>(options => builder.Configuration.GetSection(nameof(EncompassConfig)).Bind(options));
 
+builder.Services.AddSingleton<IHttpService, HttpService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IDisclosuresService, DisclosuresService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
+builder.Services.AddScoped<ITokenRepo, TokenRepo>();
 builder.Services.AddScoped(typeof(LoggerService<>));
-builder.Services.AddScoped(typeof(SecretService));
 builder.Services.AddScoped(typeof(S3Service));
 
 builder.Services.AddLogging(logging =>
@@ -36,9 +44,12 @@ builder.Services.AddLogging(logging =>
     logging.SetMinimumLevel(LogLevel.Trace);
 });
 
-//todo Get Security keys from secrets manager
+// Get Security keys from secrets manager
+var awsConfig = builder.Configuration.GetSection("AWSConfig").Get<AWSConfig>();
+var tokenProvider = new TokenProvider();
+await tokenProvider.InitializeAsync(awsConfig);
 
-/*IAuthCreds authCreds = SecurityKeysBuilder.Build();
+IAuthCreds authCreds = SecurityKeysBuilder.Build(tokenProvider.SecurityKeys.salt, tokenProvider.SecurityKeys.signing, tokenProvider.SecurityKeys.encryption);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -62,7 +73,7 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.FromSeconds(2),
             TokenDecryptionKey = authCreds.EncryptionKey,
         };
-    });*/
+    });
 
 
 builder.Services.AddAuthorization(options =>
@@ -72,22 +83,16 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-// Handle logging shutdown
-app.Lifetime.ApplicationStopping.Register(() =>
-{
-    if (app.Services.GetService<ILoggerFactory>() is IDisposable loggerFactory)
-    {
-        loggerFactory.Dispose();
-    }
-});
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
 
-app.UseSwagger();
+app.UseSwagger(u =>
+{
+    u.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EncompassAPI API V1");

@@ -4,6 +4,7 @@ using Amazon.S3.Transfer;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using Microsoft.Extensions.Options;
+using Shared.Models;
 
 namespace EncompassAPI.Services
 {

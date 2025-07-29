@@ -1,12 +1,19 @@
 ﻿using Amazon;
 using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
+using Shared.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace EncompassAPI.Services
+namespace Shared
 {
     public class SecretService
     {
+        public const string Region = "us-east-1";
         /*
          *	If you need more information about configurations or implementing the sample code, visit the AWS docs:
          *	https://aws.amazon.com/developer/language/net/getting-started
@@ -16,9 +23,8 @@ namespace EncompassAPI.Services
         {
             //This should be the path to the secret or multiple secrets
             string secretName = secretDirectory;
-            string region = "us-west-2";
 
-            IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(region));
+            IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(Region));
 
             GetSecretValueRequest request = new GetSecretValueRequest
             {
@@ -35,10 +41,25 @@ namespace EncompassAPI.Services
 
             return JsonSerializer.Deserialize<T>(response.SecretString);
         }
-    }
 
-    public class SecretsManagerRPVToken
-    {
-        public string RPV_Token { get; set; }
+        public static async Task<string> CreateSecret(string secretName, string secretString)
+        {
+            IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(Region));
+
+            CreateSecretRequest request = new CreateSecretRequest
+            {
+                Name = secretName,
+                SecretString = secretString
+            };
+
+            CreateSecretResponse response = await client.CreateSecretAsync(request);
+
+            if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw new Exception($"Error while fetching secret. Status Code: {response.HttpStatusCode}");
+            }
+
+            return response.ARN;
+        }
     }
 }
