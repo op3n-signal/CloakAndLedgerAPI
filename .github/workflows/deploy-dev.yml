@@ -1,0 +1,113 @@
+name: DEV Build and Push Encompass Middleware Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master   
+  workflow_dispatch:  # Enable manual triggering via GitHub UI
+
+env:
+  REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
+  TAG_NAME: development
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  build-docker-image:
+    name: Build & Push Docker image
+    runs-on: middleware-candid-runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract and sanitize branch name
+        id: vars
+        run: |
+          RAW_BRANCH="${GITHUB_REF#refs/heads/}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | tr '/' '-')
+          echo "branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}     
+          password: ${{ secrets.GHCR_PAT }} 
+
+      - name: Get lowercase repo name
+        id: repo
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Use REGISTRY_IMAGE
+        run: echo "Image name is $REGISTRY_IMAGE"
+
+      - name: Build and push Docker image (latest tag)  # only tag latest on main branch
+        uses: docker/build-push-action@v5
+        with:
+          context: .  # Change if your Dockerfile is in a subfolder
+          file: EncompassAPI/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY_IMAGE }}:${{ env.TAG_NAME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  pull-dev-docker-images:
+    name: Deploy to DEV Docker Images
+    needs:
+        - build-docker-image
+    runs-on: [self-hosted, middleware-candid-runner]
+    timeout-minutes: 15
+    env:
+      REGISTRY_IMAGE: ghcr.io/${{ github.repository }}   #Gets loaded with the lowercase repo name later in the steps
+      SERVER: 172.31.17.153
+      SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+      PORT: 8186
+      INSIDE_PORT: 8080
+      CONTAINER_NAME: encompass-middleware-dev
+      ASPNETCORE_ENVIRONMENT: Development
+      
+    steps:
+      # SSH into your private server & restart the container
+      - name: Get lowercase repo name
+        id: repo
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Pull Image on server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host:     ${{ env.SERVER }}
+          username: ubuntu
+          key:      ${{ env.DEV_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "👉 Logging in to GHCR"
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u candid-middleware-organization --password-stdin
+
+            echo "👉 Pulling image from GHCR"
+            docker pull ${{ env.REGISTRY_IMAGE }}:${{env.TAG_NAME}}
+
+            # Remove any existing container with the same name
+            echo "👉 Stopping old version of Container and Image"
+            docker rm -f ${{ env.CONTAINER_NAME }} || true
+
+            echo "👉 Running New Version" 
+            docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --memory="256m" \
+              --cpus="0.25" \
+              --restart always \
+              -e ASPNETCORE_ENVIRONMENT=${{ env.ASPNETCORE_ENVIRONMENT }} \
+              -p ${{ env.PORT }}:${{ env.INSIDE_PORT }} \
+              ${{ env.REGISTRY_IMAGE }}:${{env.TAG_NAME}}
+
+            echo "✔ Deployment complete"
