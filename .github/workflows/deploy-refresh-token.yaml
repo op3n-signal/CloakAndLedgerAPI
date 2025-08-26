@@ -137,10 +137,10 @@ jobs:
             set -e
 
             echo "👉 Logging in to GHCR"
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u candid-front-end-organization --password-stdin
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u candid-middleware-organization --password-stdin
 
             echo "👉 Pulling image - Generator"
-            docker pull ${{ env.REGISTRY_IMAGE }}:${{env.TAG_NAME}}
+            docker pull ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator
 
             echo "👉 Pulling image - Rotator"
             docker pull ${{ env.ROTATOR_IMAGE }}:${{ env.TAG_NAME }}
