@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # Build the docker command
     cmd = [
         "docker", "run", 
-        "ghcr.io/candid-middleware-organization/plaid-lambda-function:latest", #todo huh
+        "ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator:latest",
         salt, signing, encryption, user, valid_days
     ]
 
@@ -92,11 +92,15 @@ if __name__ == "__main__":
 
     # Join multi-line token if needed
     token = "".join(token_lines)
+    
+    # Get existing secret value
+    encompass_secret = get_secret("encompassMiddleware")
+    retrieveDisclosuresEndpoint = encompass_secret.get("retrieveDisclosuresEndpoint")
 
     log_with_time("New Token Generated")
     log_with_time("Token valid for days:" +valid_days )
     # Wrap token in a dict so Secrets Manager stores it as JSON
-    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": ""} #todo put endpoint
+    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint}
 
     put_secret("encompassMiddleware", secret_payload)
     log_with_time("AWS Secret Updated")
