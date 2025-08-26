@@ -1,5 +1,6 @@
 ﻿using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
+using EncompassAPI.Models.Encompass;
 using Microsoft.Extensions.Options;
 using Shared.Models;
 using System.IO;
@@ -20,7 +21,47 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> DownloadFile(string urlPdfPath, string authorization)
+        public async Task<ProcessResult> DownloadMutipleFiles(AttachmentUrls attachmentUrls)
+        {
+            try
+            {
+                foreach (var item in attachmentUrls.attachments)
+                {
+                    Dictionary<string, string> headers = new Dictionary<string, string>() { { "Authorization", item.authorizationHeader } };
+
+                    // Get file content from skydrive
+                    HttpResponseMessage response = await _http.GetAsync(item.url, headers);
+
+                    if (response == null)
+                    {
+                        _logger.Base.LogError($"Error getting file: {item.url}");
+                        return new ProcessResult(false, CommonStrings.ServerError);
+                    }
+
+                    // Get file bytes
+                    byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
+
+                    // Get file name
+                    string filename = GetFileNameFromResponse(response);
+                    string fullPath = Path.Combine(_fileConfig.LocalDownloadPath, filename + ".pdf");
+
+                    // Save file to local folder
+                    await File.WriteAllBytesAsync(fullPath, fileBytes);
+                }
+
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"{CommonStrings.FailedToDownloadAllFiles}{Environment.NewLine}Exception: {ex}");
+
+                // Failed, we do not want to continue
+                return new ProcessResult(false, CommonStrings.FailedToDownloadAllFiles);
+            }
+        }
+
+        public async Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization)
         {
             try
             {
@@ -32,7 +73,7 @@ namespace EncompassAPI.Services
                 if (response == null)
                 {
                     _logger.Base.LogError($"Error getting file: {urlPdfPath}");
-                    return new ProcessResult(false, CommonStrings.ServerError);
+                    return new ProcessResult<FileMetadata>(false, CommonStrings.ServerError);
                 }
 
                 // Get file bytes
@@ -45,14 +86,21 @@ namespace EncompassAPI.Services
                 // Save file to local folder
                 await File.WriteAllBytesAsync(fullPath, fileBytes);
 
-                return new ProcessResult(true);
+                return new ProcessResult<FileMetadata>(true)
+                {
+                    Result = new FileMetadata()
+                    {
+                        Path = fullPath,
+                        Name = filename
+                    }
+                };
             }
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Failed to download file from {urlPdfPath}{Environment.NewLine}Exception: {ex}");
 
                 // Failed, we do not want to continue
-                return new ProcessResult(false, CommonStrings.FailedToDownloadFile);
+                return new ProcessResult<FileMetadata>(false, CommonStrings.FailedToDownloadFile);
             }
         }
 
@@ -92,6 +140,7 @@ namespace EncompassAPI.Services
 
     public interface IFileService
     {
-        Task<ProcessResult> DownloadFile(string urlPdfPath, string authorization);
+        Task<ProcessResult> DownloadMutipleFiles(AttachmentUrls attachmentUrls);
+        Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
     }
 }

@@ -19,12 +19,12 @@ namespace Shared
          *	https://aws.amazon.com/developer/language/net/getting-started
          */
 
-        public static async Task<T> GetSecret<T>(string secretDirectory)
+        public static async Task<T> GetSecret<T>(string secretDirectory, string region = null)
         {
             //This should be the path to the secret or multiple secrets
             string secretName = secretDirectory;
 
-            IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(Region));
+            IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(region ?? Region));
 
             GetSecretValueRequest request = new GetSecretValueRequest
             {

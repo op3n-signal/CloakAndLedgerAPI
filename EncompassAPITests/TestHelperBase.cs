@@ -1,9 +1,13 @@
+using Amazon.S3;
 using AWS.Logger;
+using EncompassAPI.AppLayer;
+using EncompassAPI.Models.Configs;
+using EncompassAPI.Repos;
+using EncompassAPI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using EncompassAPI.Models.Configs;
 
 namespace EncompassAPITests
 {
@@ -11,10 +15,12 @@ namespace EncompassAPITests
     {
         protected IConfiguration _configuration { get; private set; }
         protected ILoggerFactory LoggerFactory { get; private set; }
+        protected ServiceProvider ServiceProvider { get; private set; }
 
         public TestHelperBase()
         {
             _configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                 .Build();
 
@@ -22,22 +28,44 @@ namespace EncompassAPITests
             var cloudWatchConfig = GetCloudWatchLoggingConfig().Value;
 
             // Configure LoggerFactory with AWS CloudWatch
-            var serviceProvider = new ServiceCollection()
+            ServiceProvider = new ServiceCollection()
                 .AddLogging(builder =>
                 {
-                    builder.AddAWSProvider(new AWSLoggerConfig
-                    {
-                        LogGroup = cloudWatchConfig.LogGroup,
-                        LogStreamName = $"{cloudWatchConfig.LogStream}-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}",
-                        Region = cloudWatchConfig.Region,
-                        BatchSizeInBytes = 1024,
-                        BatchPushInterval = TimeSpan.FromMilliseconds(1)
-                    });
-                    builder.SetMinimumLevel(LogLevel.Information);
+                    var config = _configuration.GetAWSLoggingConfigSection();
+                    builder.AddAWSProvider(config);
+                    builder.SetMinimumLevel(LogLevel.Trace);
                 })
+                .AddScoped<IDisclosuresService, DisclosuresService>()
+                .AddSingleton<IHttpService, HttpService>()
+                .AddScoped<IEncompassAuthService, EncompassAuthService>()
+                .AddScoped<IFileService, FileService>()
+                .AddScoped<IeFolderService, eFolderService>()
+                .AddScoped<ITokenRepo, TokenRepo>()
+                .AddScoped(typeof(LoggerService<>), typeof(LoggerService<>))
+                .AddScoped(typeof(S3Service))
+                .AddScoped(typeof(AWSSecretService))
+                .AddScoped<ICandidDataService, CandidDataService>()
+                .AddScoped<ICandidDataRepo, CandidDataRepo>()
+                .AddScoped<IUploadService, UploadService>()
+                .AddAWSService<IAmazonS3>()
+                .AddScoped<ISalesforceService, SalesforceService>()
+                .Configure<AWSConfig>(options => _configuration.GetSection(nameof(AWSConfig)).Bind(options))
+                .Configure<LoggingConfig>(options => _configuration.GetSection(nameof(LoggingConfig)).Bind(options))
+                .Configure<FileConfig>(options => _configuration.GetSection(nameof(FileConfig)).Bind(options))
+                .Configure<S3Config>(options => _configuration.GetSection(nameof(S3Config)).Bind(options))
+                .Configure<EncompassConfig>(options => _configuration.GetSection(nameof(EncompassConfig)).Bind(options))
+                .AddScoped<IDataService, DataService>(serviceProvider =>
+                {
+                    var awsOptions = serviceProvider.GetRequiredService<IOptionsSnapshot<AWSConfig>>();
+                    var dataService = new DataService(awsOptions);
+                    Task.Run(async () => await dataService.Init()).GetAwaiter().GetResult();
+                    return dataService;
+                })
+                .AddScoped(f => f.GetRequiredService<IDataService>().GetConnection())
                 .BuildServiceProvider();
 
-            LoggerFactory = serviceProvider.GetService<ILoggerFactory>();
+
+            LoggerFactory = ServiceProvider.GetService<ILoggerFactory>();
         }
 
         public TestOptionsSnapshot<CloudWatchLoggingConfig> GetCloudWatchLoggingConfig()
@@ -73,6 +101,22 @@ namespace EncompassAPITests
             _configuration.GetSection("LogSettingsConfig").Bind(coreAppSettingsConfig);
 
             return new TestOptionsSnapshot<LoggingConfig>(coreAppSettingsConfig);
+        }
+
+        public TestOptionsSnapshot<AWSConfig> GetAWSOptions()
+        {
+            var awsConfig = new AWSConfig();
+            _configuration.GetSection("AWSConfig").Bind(awsConfig);
+
+            return new TestOptionsSnapshot<AWSConfig>(awsConfig);
+        }
+
+        public TestOptionsSnapshot<EncompassConfig> GetEncompassOptions()
+        {
+            var encompassConfig = new EncompassConfig();
+            _configuration.GetSection("EncompassConfig").Bind(encompassConfig);
+
+            return new TestOptionsSnapshot<EncompassConfig>(encompassConfig);
         }
 
         //This is just here so we can ensure all logging happens in the test

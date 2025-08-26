@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EncompassAPI\EncompassAPI.csproj" />
+    <ProjectReference Include="..\TokenGenerator\TokenGenerator.csproj" />
   </ItemGroup>
 
 </Project>

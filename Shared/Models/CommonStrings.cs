@@ -9,6 +9,7 @@
 
         // File
         public const string FailedToDownloadFile = "Failed to download file.";
+        public const string FailedToDownloadAllFiles = "Failed to download all files.";
         public const string FileDoesNotExist = "File does not exist";
         public const string FailedToUploadFile = "Failed to upload file.";
 

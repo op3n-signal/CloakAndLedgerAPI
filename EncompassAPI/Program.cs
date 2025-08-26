@@ -1,10 +1,13 @@
+using Amazon.S3;
 using EncompassAPI.AppLayer;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Repos;
 using EncompassAPI.Services;
 using EncompassAPI.Utility.Filters;
+using EncompassAPI.Utility.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -28,14 +31,32 @@ builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSe
 builder.Services.Configure<FileConfig>(options => builder.Configuration.GetSection(nameof(FileConfig)).Bind(options));
 builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));
 builder.Services.Configure<EncompassConfig>(options => builder.Configuration.GetSection(nameof(EncompassConfig)).Bind(options));
+builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.GetSection(nameof(SalesforceConfig)).Bind(options));
 
-builder.Services.AddSingleton<IHttpService, HttpService>();
-builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IDisclosuresService, DisclosuresService>();
+builder.Services.AddSingleton<IHttpService, HttpService>();
+builder.Services.AddScoped<IEncompassAuthService, EncompassAuthService>();
+builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
 builder.Services.AddScoped<ITokenRepo, TokenRepo>();
-builder.Services.AddScoped(typeof(LoggerService<>));
+builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
 builder.Services.AddScoped(typeof(S3Service));
+builder.Services.AddScoped(typeof(AWSSecretService));
+builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddScoped<StorageService>();
+builder.Services.AddScoped<ISalesforceService, SalesforceService>();
+builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
+builder.Services.AddScoped<IUploadService, UploadService>();
+builder.Services.AddScoped<ICandidDataService, CandidDataService>();
+
+builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
+{
+    var awsOptions = serviceProvider.GetRequiredService<IOptionsSnapshot<AWSConfig>>();
+    var dataService = new DataService(awsOptions);
+    Task.Run(async () => await dataService.Init()).GetAwaiter().GetResult();
+    return dataService;
+});
+builder.Services.AddScoped(f => f.GetRequiredService<IDataService>().GetConnection());
 
 builder.Services.AddLogging(logging =>
 {
@@ -98,6 +119,8 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EncompassAPI API V1");
     c.RoutePrefix = "";
 });
+
+app.UseMiddleware<EncompassMiddleware>();
 
 app.UseHttpsRedirection();
 

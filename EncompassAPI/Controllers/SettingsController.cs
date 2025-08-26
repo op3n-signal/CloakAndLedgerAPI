@@ -30,14 +30,14 @@ namespace EncompassAPI.Controllers
             _logger = logger;
         }
 
-        [HttpPost("Add/{orgId}")]
+        [HttpPost("Add/{instanceId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
-        public async Task<IActionResult> AddSecret(string orgId, EncompassCredentials credentials)
+        public async Task<IActionResult> AddSecret(string instanceId, EncompassCredentials credentials)
         {
             try
             {
                 // Insert secret into AWS Secrets Manager by environment and candid org id
-                string arn = await SecretService.CreateSecret($"{_awsConfig.SecretPath}/encompass/credentials/{orgId}", JsonSerializer.Serialize(credentials));
+                string arn = await SecretService.CreateSecret($"{_awsConfig.SecretPath}/encompass/credentials/{instanceId}", JsonSerializer.Serialize(credentials));
 
                 if(string.IsNullOrEmpty(arn))
                 {
@@ -53,14 +53,14 @@ namespace EncompassAPI.Controllers
             }
         }
 
-        [HttpGet("Get/{orgId}")]
+        [HttpGet("Get/{instanceId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EncompassCredentials))]
-        public async Task<IActionResult> GetSecret(string orgId)
+        public async Task<IActionResult> GetSecret(string instanceId)
         {
             try
             {
                 // Insert secret into AWS Secrets Manager by environment and candid org id
-                EncompassCredentials encompassCredentials = await SecretService.GetSecret<EncompassCredentials>($"{_awsConfig.SecretPath}/encompass/credentials/{orgId}");
+                EncompassCredentials encompassCredentials = await SecretService.GetSecret<EncompassCredentials>($"{_awsConfig.SecretPath}/encompass/credentials/{instanceId}");
 
                 if (encompassCredentials == null)
                 {

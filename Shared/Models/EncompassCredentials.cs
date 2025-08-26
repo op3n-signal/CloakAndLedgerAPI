@@ -6,6 +6,6 @@
 
         public string client_secret { get; set; }
 
-        public string instance_id { get; set; }
+        public string org_id { get; set; }
     }
 }

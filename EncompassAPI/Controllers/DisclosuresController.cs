@@ -1,8 +1,12 @@
 ﻿using EncompassAPI.AppLayer;
-using TokenGenerator;
+using EncompassAPI.Models;
+using EncompassAPI.Models.Encompass;
+using EncompassAPI.Utility.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using EncompassAPI.Utility.Filters;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
+using TokenGenerator;
 
 namespace EncompassAPI.Controllers
 {
@@ -12,19 +16,32 @@ namespace EncompassAPI.Controllers
     [AuthRequired]
     public class DisclosuresController : ControllerBase
     {
-        private readonly IDisclosuresService _disclosuresService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public DisclosuresController(IDisclosuresService disclosuresService)
+        public DisclosuresController(IServiceScopeFactory serviceScopeFactory)
         {
-            _disclosuresService = disclosuresService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [HttpGet("Test")]
-        public async Task<ActionResult> Test()
+        [HttpGet("Retrieve")]
+        public async Task<IActionResult> RetrieveDisclosures(CandidIncomingRequest request)
         {
-            await _disclosuresService.Run();
+            // Start background process
+            var task = Task.Run(() =>
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    // Get a scoped service in THIS scope
+                    var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresService>();
 
-            return Ok();
+                    // Run the background process
+                    disclosuresService.RunEventHandler(request).GetAwaiter().GetResult();
+                }
+            });
+
+            await task;
+            // Return 202 Accepted
+            return Accepted();
         }
     }
 }

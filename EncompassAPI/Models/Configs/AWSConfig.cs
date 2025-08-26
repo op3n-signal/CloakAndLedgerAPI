@@ -5,5 +5,7 @@
         public string SecretPath { get; set; }
 
         public string SecurityKeysPath { get; set; }
+
+        public string CandidDbPath { get; set; }
     }
 }

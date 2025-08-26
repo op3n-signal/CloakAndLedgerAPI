@@ -1,4 +1,4 @@
-﻿namespace EncompassAPI.Models
+﻿namespace EncompassAPI.Models.Encompass
 {
     public class EncompassAccessToken
     {

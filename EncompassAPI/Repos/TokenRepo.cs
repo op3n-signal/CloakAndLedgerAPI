@@ -1,4 +1,4 @@
-﻿using EncompassAPI.Models;
+﻿using EncompassAPI.Models.Encompass;
 using LiteDB;
 using System.Security.Cryptography;
 
