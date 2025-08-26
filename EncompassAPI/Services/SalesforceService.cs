@@ -1,0 +1,158 @@
+﻿using EncompassAPI.Models;
+using EncompassAPI.Models.Configs;
+using EncompassAPI.Models.Salesforce;
+using EncompassAPI.Repos;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
+
+namespace EncompassAPI.Services
+{
+    public class SalesforceService : ISalesforceService
+    {
+        private readonly IHttpService _http;
+        private readonly LoggerService<SalesforceService> _logger;
+        private readonly SalesforceConfig _salesforceConfig;
+
+        public SalesforceService(IHttpService http, LoggerService<SalesforceService> logger, IOptionsSnapshot<SalesforceConfig> salesforceOptions)
+        {
+            _http = http;
+            _logger = logger;
+            _salesforceConfig = salesforceOptions.Value;
+        }
+
+        public async Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo)
+        {
+            _logger.LogVerbose($"Starting {nameof(AuthenticateToSalesforce)} for org: {orgInfo.OrgId}");
+
+            try
+            {
+                FormUrlEncodedContent tokenRequestBody = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    { "grant_type", "password" },
+                    { "client_id", orgInfo.Client_Id },
+                    { "client_secret", orgInfo.Client_Secret },
+                    { "username", orgInfo.Username_Client },
+                    { "password", orgInfo.Password + orgInfo.Password_Token }
+                });
+
+                OrgRequestInfo requestInfo = await _http.PostAsync<OrgRequestInfo>(orgInfo.Token_Url, tokenRequestBody);
+
+                if (requestInfo == null || string.IsNullOrEmpty(requestInfo.Access_Token) || string.IsNullOrEmpty(requestInfo.Instance_Url))
+                    throw new Exception("Could not retrieve request info");
+
+                _logger.LogVerbose("Request info found");
+                _logger.LogVerbose(JsonSerializer.Serialize(requestInfo));
+
+                return new ProcessResult<OrgRequestInfo>(true)
+                {
+                    Result = requestInfo
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Error while authenitcating to salesforce for org: {orgInfo.OrgId}{Environment.NewLine}Exception: {ex}");
+
+                return new ProcessResult<OrgRequestInfo>(false, "Something went wrong. Please check logs. Error while authenitcating to salesforce");
+            }
+        }
+
+        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string documentId, OrgRequestInfo requestInfo)
+        {
+            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {orgId}");
+
+            try
+            {
+                // Set endpoint to push upload URL to Candid
+                string endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidPushEndpoint;
+                _logger.LogVerbose(endpoint);
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
+
+                _logger.LogVerbose("requestInfo.Access_Token");
+                _logger.LogVerbose(requestInfo.Access_Token);
+
+                Document document = new Document
+                {
+                    documentId = documentId,
+                    googleDriveFileDownloadableURL = uploadUrl 
+                };
+
+
+                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(document));
+        
+                if (responseData == null)
+                {
+                    throw new Exception($"No response while pushing document for org: {orgId}");
+                }
+
+                _logger.LogVerbose(JsonSerializer.Serialize(responseData));
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Error while pushing upload url to salesforce org: {orgId}{Environment.NewLine}Exception: {ex}");
+
+                return new ProcessResult(false, $"Error while pushing upload url to salesforce org: {orgId}");
+            }
+        }
+
+        public async Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo)
+        {
+            _logger.LogVerbose($"Starting {nameof(GetOrgAWSSettings)} for org: {orgId}");
+
+            try
+            {
+                string endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidSettingsEndpoint + " WHERE+SetupOwnerId='" + loId + "'";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
+
+                // Get aws settings for lo
+                GoogleDriveClone googleDriveSettings = await _http.GetAsync<GoogleDriveClone>(endpoint, headers);
+
+                // Check if lo has aws settings
+                if (googleDriveSettings == null || 
+                    string.IsNullOrEmpty(googleDriveSettings.AWS_Access_Key_Id__c) || 
+                    string.IsNullOrEmpty(googleDriveSettings.AWS_Secret_Access_Key__c) || 
+                    string.IsNullOrEmpty(googleDriveSettings.Root_Folder_Name__c))
+                {
+                    endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidSettingsEndpoint;
+
+                    googleDriveSettings = await _http.GetAsync<GoogleDriveClone>(endpoint, headers);
+
+                    // Get org default aws settings
+                    if (googleDriveSettings == null ||
+                        string.IsNullOrEmpty(googleDriveSettings.AWS_Access_Key_Id__c) ||
+                        string.IsNullOrEmpty(googleDriveSettings.AWS_Secret_Access_Key__c) ||
+                        string.IsNullOrEmpty(googleDriveSettings.Root_Folder_Name__c))
+                    {
+                        throw new Exception($"no aws settings found for lo: {loId} or org: {orgId}");
+                    }
+                }
+
+                _logger.LogVerbose("aws settings found");
+                _logger.LogVerbose(JsonSerializer.Serialize(googleDriveSettings));
+
+                return new ProcessResult<GoogleDriveClone>(true)
+                {
+                    Result = googleDriveSettings
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Error while retrieving settings from salesforce for org: {orgId}{Environment.NewLine}Exception: {ex}");
+
+                return new ProcessResult<GoogleDriveClone>(false, "Something went wrong. Please check logs.");
+            }
+        }
+    }
+
+    public interface ISalesforceService
+    {
+        Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
+        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string documentId, OrgRequestInfo requestInfo);
+        Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
+    }
+}

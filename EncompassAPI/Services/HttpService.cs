@@ -1,16 +1,30 @@
-﻿using System.Text.Json;
+﻿using System.Reflection.PortableExecutable;
+using System.Text.Json;
 
 namespace EncompassAPI.Services
 {
     public class HttpService : IHttpService
     {
-        //TODO move to using addhttpclient in startup???
-
-
         private const double Timeout = 300000; //5 minutes
         private readonly ILogger<HttpService> _logger;
         private HttpClient _httpClient;
         private readonly object _lock = new object();
+
+        public HttpClient HttpClient
+        {
+            get
+            {
+                return GetHttpClient();
+            }
+
+            set             
+            {
+                lock (_lock)
+                {
+                    _httpClient = value;
+                }
+            }
+        }
 
         public HttpService(ILogger<HttpService> logger)
         {
@@ -19,6 +33,59 @@ namespace EncompassAPI.Services
                 Timeout = TimeSpan.FromSeconds(Timeout)
             };
             _logger = logger;
+        }
+
+        public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000)
+        {
+            int retryCount = 0;
+
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                    if (headers != null)
+                    {
+                        foreach (var kvp in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return response;
+
+                        
+                    }
+                    else
+                    {
+                        throw new HttpRequestException($"Server returned error code: {response.StatusCode}. Request URL: {url}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //This catches the exception thrown above so we can retry 
+
+                    _logger.LogError(ex.ToString());
+
+                    //todo if (ex.Message.ToLower().Contains("unauthorized"))
+                    //terminate = true;
+
+                    //This is to avoid this section on the last retry
+                    if (retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        RecreateHttpClient();
+                        await Task.Delay(delayMilliseconds * retryCount);
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -130,6 +197,49 @@ namespace EncompassAPI.Services
                 {
                     //This catches the exception thrown above so we can retry 
 
+                    _logger.LogError(ex.ToString());
+
+                    //This is to avoid this section on the last retry
+                    if (retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        RecreateHttpClient();
+                        await Task.Delay(delayMilliseconds * retryCount);
+                    }
+                }
+            }
+
+            return default(T);
+        }
+
+        public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 3, int delayMilliseconds = 2000)
+        {
+            int retryCount = 0;
+
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+
+                    if (formContent != null) request.Content = formContent;
+
+                    HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string json = await response.Content.ReadAsStringAsync();
+
+                        return JsonSerializer.Deserialize<T>(json);
+                    }
+                    else
+                    {
+                        throw new HttpRequestException($"Server returned error code: {response.StatusCode}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //This catches the exception thrown above so we can retry 
                     _logger.LogError(ex.ToString());
 
                     //This is to avoid this section on the last retry
@@ -298,6 +408,9 @@ namespace EncompassAPI.Services
 
     public interface IHttpService
     {
+        HttpClient HttpClient { get; set; }
+
+        Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
         /// <summary>
         /// Only for JSON responses
         /// </summary>
@@ -307,7 +420,7 @@ namespace EncompassAPI.Services
         /// <param name="maxRetries"></param>
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
-        Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
+        Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
 
         /// <summary>
         /// Only for JSON responses
@@ -320,6 +433,8 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<T> PostAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 3, int delayMilliseconds = 2000);
+
+        Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 3, int delayMilliseconds = 2000);
 
         Task<T> PostAsync<T>(string url, string body, int maxRetries = 3, int delayMilliseconds = 2000);
 
