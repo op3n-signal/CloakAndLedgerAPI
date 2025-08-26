@@ -57,7 +57,7 @@ jobs:
           context: .  # Change if your Dockerfile is in a subfolder
           file: TokenGenerator/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY_IMAGE }}:${{ env.TAG_NAME }}
+          tags: ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
