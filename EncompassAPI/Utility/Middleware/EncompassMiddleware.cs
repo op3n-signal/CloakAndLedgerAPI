@@ -19,22 +19,26 @@ namespace EncompassAPI.Utility.Middleware
 
         public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions, ITokenRepo tokenRepo, IEncompassAuthService encompassAuthService)
         {
-            if (context.Request.Path.Value.ToLower().Contains(encompassOptions.Value.BaseUrl))
+            string xEToken;
+
+            if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve"))
             {
-                string instanceId = context.Items["instanceid"].ToString();
-
-                // Get the encompass access token
-                ProcessResult<string> prAccessToken = await encompassAuthService.CheckAndGetAccessToken(instanceId);
-
-                if(!prAccessToken.Success)
+                if (context.Items["x-e-token"] == null)
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync(prAccessToken.Message);
+                    await context.Response.WriteAsync(CommonStrings.EncompassTokenRequired);
                     return;
                 }
 
+                xEToken = context.Items["x-e-token"].ToString();
+            }
+            
+            if (context.Request.Path.Value.ToLower().Contains(encompassOptions.Value.BaseUrl))
+            {
+                xEToken = context.Items["x-e-token"].ToString();
+
                 // Set the token in the header of request
-                context.Request.Headers["Authorization"] = $"Bearer {prAccessToken.Result}";
+                context.Request.Headers["Authorization"] = $"Bearer {xEToken}";
             }
             
             // Call the next middleware

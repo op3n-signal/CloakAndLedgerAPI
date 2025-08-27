@@ -32,7 +32,7 @@ namespace EncompassAPI.Services
             try
             {
                 // Get Documents from Encompass
-                string url = $"{_encompassConfig.BaseUrl}/{_encompassConfig.LoanEndpointV3}/{loanId}/documents?requireActiveAttachments=true";
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?requireActiveAttachments=true";
 
                 IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, _headers);
 
@@ -105,7 +105,7 @@ namespace EncompassAPI.Services
                 // Get the attachment IDs from the attachments
                 char[] attachmentIds = attachments.SelectMany(att => att.entityId).ToArray();
 
-                string url = $"{_encompassConfig.BaseUrl}/{_encompassConfig.LoanEndpointV3}/{loanId}/attachmentDownloadUrl";
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/attachmentDownloadUrl";
 
                 string requestBody = JsonSerializer.Serialize(new
                 {

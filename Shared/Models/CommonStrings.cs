@@ -6,6 +6,7 @@
         public const string IncomingAuthKeyName = "Token";
         public const string AuthKeyRequired = "Auth Token is required.";
         public const string AuthKeyInvalid = "Auth Token is invalid.";
+        public const string EncompassTokenRequired = "Encompass access token required.";
 
         // File
         public const string FailedToDownloadFile = "Failed to download file.";
