@@ -2,7 +2,7 @@ name: DEV Build and Push Encompass Middleware Docker Image
 
 on:
   push:
-    branches:
+    branches-ignore:
       - main
       - master   
   workflow_dispatch:  # Enable manual triggering via GitHub UI
