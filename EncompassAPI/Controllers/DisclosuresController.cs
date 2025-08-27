@@ -23,7 +23,7 @@ namespace EncompassAPI.Controllers
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [HttpGet("Retrieve")]
+        [HttpPost("Retrieve")]
         public async Task<IActionResult> RetrieveDisclosures(CandidIncomingRequest request)
         {
             // Start background process
