@@ -41,15 +41,15 @@ namespace EncompassAPI.Controllers
 
                 if(string.IsNullOrEmpty(arn))
                 {
-                    return BadRequest(CommonStrings.ErrorCreatingSecret);
+                    return BadRequest(CommonFields.ErrorCreatingSecret);
                 }
 
                 return Ok(arn);
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"{CommonStrings.ErrorCreatingSecret}{Environment.NewLine}Exception: {ex}");
-                return Problem(CommonStrings.ErrorCreatingSecret);
+                _logger.Base.LogError($"{CommonFields.ErrorCreatingSecret}{Environment.NewLine}Exception: {ex}");
+                return Problem(CommonFields.ErrorCreatingSecret);
             }
         }
 
@@ -64,15 +64,15 @@ namespace EncompassAPI.Controllers
 
                 if (encompassCredentials == null)
                 {
-                    return BadRequest(CommonStrings.ErrorRetrievingSecret);
+                    return BadRequest(CommonFields.ErrorRetrievingSecret);
                 }
 
                 return Ok(encompassCredentials);
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"{CommonStrings.ErrorRetrievingSecret}{Environment.NewLine}Exception: {ex}");
-                return Problem(CommonStrings.ErrorRetrievingSecret);
+                _logger.Base.LogError($"{CommonFields.ErrorRetrievingSecret}{Environment.NewLine}Exception: {ex}");
+                return Problem(CommonFields.ErrorRetrievingSecret);
             }
         }
     }

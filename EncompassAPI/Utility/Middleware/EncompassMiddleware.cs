@@ -17,25 +17,29 @@ namespace EncompassAPI.Utility.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions, ITokenRepo tokenRepo, IEncompassAuthService encompassAuthService)
+        public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions)
         {
             string xEToken;
 
             if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve"))
             {
-                if (context.Items["x-e-token"] == null)
+                xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
+
+                if (string.IsNullOrWhiteSpace(xEToken))
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync(CommonStrings.EncompassTokenRequired);
+                    await context.Response.WriteAsync(CommonFields.EncompassTokenRequired);
                     return;
                 }
 
-                xEToken = context.Items["x-e-token"].ToString();
+                context.Items[CommonFields.EncompassTokenHeaderName] = xEToken;
             }
             
             if (context.Request.Path.Value.ToLower().Contains(encompassOptions.Value.BaseUrl))
             {
-                xEToken = context.Items["x-e-token"].ToString();
+                xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
+
+                context.Items[CommonFields.EncompassTokenHeaderName] = xEToken;
 
                 // Set the token in the header of request
                 context.Request.Headers["Authorization"] = $"Bearer {xEToken}";

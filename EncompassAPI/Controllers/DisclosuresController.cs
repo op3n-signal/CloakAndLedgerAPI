@@ -35,7 +35,7 @@ namespace EncompassAPI.Controllers
                     var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresService>();
 
                     // Run the background process
-                    disclosuresService.RunEventHandler(request).GetAwaiter().GetResult();
+                    disclosuresService.Retrieve(request).GetAwaiter().GetResult();
                 }
             });
 

@@ -13,7 +13,7 @@ namespace EncompassAPI.Services
         private readonly LoggerService<SalesforceService> _logger;
         private readonly SalesforceConfig _salesforceConfig;
 
-        public SalesforceService(IHttpService http, LoggerService<SalesforceService> logger, IOptionsSnapshot<SalesforceConfig> salesforceOptions)
+        public SalesforceService(IDefaultHttpService http, LoggerService<SalesforceService> logger, IOptionsSnapshot<SalesforceConfig> salesforceOptions)
         {
             _http = http;
             _logger = logger;
@@ -56,7 +56,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string documentId, OrgRequestInfo requestInfo)
+        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string prospectId, string documentId, OrgRequestInfo requestInfo)
         {
             _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {orgId}");
 
@@ -75,11 +75,18 @@ namespace EncompassAPI.Services
                 Document document = new Document
                 {
                     documentId = documentId,
-                    googleDriveFileDownloadableURL = uploadUrl 
+                    googleDriveFileDownloadableURL = uploadUrl,
+                    prospectId = prospectId
+                };
+
+                object objParams = new
+                {
+                    documents = new Document[] { document },
+                    borrowerNames = new string[] {}
                 };
 
 
-                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(document));
+                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(objParams));
         
                 if (responseData == null)
                 {
@@ -110,34 +117,53 @@ namespace EncompassAPI.Services
                 headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
 
                 // Get aws settings for lo
-                GoogleDriveClone googleDriveSettings = await _http.GetAsync<GoogleDriveClone>(endpoint, headers);
+                QueryResult<GoogleDriveClone> qrAWSSettings = await _http.GetAsync<QueryResult<GoogleDriveClone>>(endpoint, headers);
+
+                GoogleDriveClone awsSettings;
 
                 // Check if lo has aws settings
-                if (googleDriveSettings == null || 
-                    string.IsNullOrEmpty(googleDriveSettings.AWS_Access_Key_Id__c) || 
-                    string.IsNullOrEmpty(googleDriveSettings.AWS_Secret_Access_Key__c) || 
-                    string.IsNullOrEmpty(googleDriveSettings.Root_Folder_Name__c))
+                if (qrAWSSettings == null || qrAWSSettings.Total_Size == 0)
                 {
-                    endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidSettingsEndpoint;
+                    endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidSettingsEndpoint + " WHERE+SetupOwnerId='" + orgId + "'";
 
-                    googleDriveSettings = await _http.GetAsync<GoogleDriveClone>(endpoint, headers);
+                    qrAWSSettings = await _http.GetAsync<QueryResult<GoogleDriveClone>>(endpoint, headers);
+
+                    if (qrAWSSettings == null || qrAWSSettings.Total_Size == 0)
+                    {
+                        throw new Exception($"no default aws settings found for org: {orgId}");
+                    }
+
+                    awsSettings = qrAWSSettings.Records[0];
 
                     // Get org default aws settings
-                    if (googleDriveSettings == null ||
-                        string.IsNullOrEmpty(googleDriveSettings.AWS_Access_Key_Id__c) ||
-                        string.IsNullOrEmpty(googleDriveSettings.AWS_Secret_Access_Key__c) ||
-                        string.IsNullOrEmpty(googleDriveSettings.Root_Folder_Name__c))
+                    if (awsSettings == null ||
+                        string.IsNullOrEmpty(awsSettings.AWS_Access_Key_Id__c) ||
+                        string.IsNullOrEmpty(awsSettings.AWS_Secret_Access_Key__c) ||
+                        string.IsNullOrEmpty(awsSettings.Root_Folder_Name__c))
                     {
-                        throw new Exception($"no aws settings found for lo: {loId} or org: {orgId}");
+                        throw new Exception($"no aws settings found for org: {orgId}");
+                    }
+                }
+                else
+                {
+                    awsSettings = qrAWSSettings.Records[0];
+
+                    // Get org default aws settings
+                    if (awsSettings == null ||
+                        string.IsNullOrEmpty(awsSettings.AWS_Access_Key_Id__c) ||
+                        string.IsNullOrEmpty(awsSettings.AWS_Secret_Access_Key__c) ||
+                        string.IsNullOrEmpty(awsSettings.Root_Folder_Name__c))
+                    {
+                        throw new Exception($"no aws settings found for lo: {loId} in org: {orgId}");
                     }
                 }
 
                 _logger.LogVerbose("aws settings found");
-                _logger.LogVerbose(JsonSerializer.Serialize(googleDriveSettings));
+                _logger.LogVerbose(JsonSerializer.Serialize(awsSettings));
 
                 return new ProcessResult<GoogleDriveClone>(true)
                 {
-                    Result = googleDriveSettings
+                    Result = awsSettings
                 };
             }
             catch (Exception ex)
@@ -152,7 +178,7 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string documentId, OrgRequestInfo requestInfo);
+        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string prospectId, string documentId, OrgRequestInfo requestInfo);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }

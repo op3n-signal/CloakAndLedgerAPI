@@ -14,17 +14,21 @@ namespace EncompassAPI.Services
         private readonly FileConfig _fileConfig;
         private readonly LoggerService<FileService> _logger;
 
-        public FileService(IHttpService http, LoggerService<FileService> logger, IOptionsSnapshot<FileConfig> fileOptions)
+        public FileService(IDefaultHttpService http, LoggerService<FileService> logger, IOptionsSnapshot<FileConfig> fileOptions)
         {
             _http = http;
             _fileConfig = fileOptions.Value;
             _logger = logger;
         }
 
-        public async Task<ProcessResult> DownloadMutipleFiles(AttachmentUrls attachmentUrls)
+        public async Task<ProcessResult<string>> DownloadMutipleFiles(AttachmentUrls attachmentUrls, string documentName)
         {
             try
             {
+                // This is currently set up to only accept one attachment so this will not work if user adds documents to e-folder the wrong way
+
+                string filename = "";
+
                 foreach (var item in attachmentUrls.attachments)
                 {
                     Dictionary<string, string> headers = new Dictionary<string, string>() { { "Authorization", item.authorizationHeader } };
@@ -35,29 +39,34 @@ namespace EncompassAPI.Services
                     if (response == null)
                     {
                         _logger.Base.LogError($"Error getting file: {item.url}");
-                        return new ProcessResult(false, CommonStrings.ServerError);
+                        return new ProcessResult<string>(false, CommonFields.ServerError);
                     }
 
                     // Get file bytes
                     byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
 
                     // Get file name
-                    string filename = GetFileNameFromResponse(response);
-                    string fullPath = Path.Combine(_fileConfig.LocalDownloadPath, filename + ".pdf");
+                    filename = documentName + "-" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf";
+                    _logger.LogVerbose($"Downloaded filename: {GetFileNameFromResponse(response)}");
+
+                    string fullPath = Path.Combine(_fileConfig.LocalDownloadPath, filename);
 
                     // Save file to local folder
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
                 }
 
 
-                return new ProcessResult(true);
+                return new ProcessResult<string>(true)
+                {
+                    Result = filename
+                };
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"{CommonStrings.FailedToDownloadAllFiles}{Environment.NewLine}Exception: {ex}");
+                _logger.Base.LogError($"{CommonFields.FailedToDownloadAllFiles}{Environment.NewLine}Exception: {ex}");
 
                 // Failed, we do not want to continue
-                return new ProcessResult(false, CommonStrings.FailedToDownloadAllFiles);
+                return new ProcessResult<string>(false, CommonFields.FailedToDownloadAllFiles);
             }
         }
 
@@ -73,7 +82,7 @@ namespace EncompassAPI.Services
                 if (response == null)
                 {
                     _logger.Base.LogError($"Error getting file: {urlPdfPath}");
-                    return new ProcessResult<FileMetadata>(false, CommonStrings.ServerError);
+                    return new ProcessResult<FileMetadata>(false, CommonFields.ServerError);
                 }
 
                 // Get file bytes
@@ -100,7 +109,7 @@ namespace EncompassAPI.Services
                 _logger.Base.LogError($"Failed to download file from {urlPdfPath}{Environment.NewLine}Exception: {ex}");
 
                 // Failed, we do not want to continue
-                return new ProcessResult<FileMetadata>(false, CommonStrings.FailedToDownloadFile);
+                return new ProcessResult<FileMetadata>(false, CommonFields.FailedToDownloadFile);
             }
         }
 
@@ -140,7 +149,7 @@ namespace EncompassAPI.Services
 
     public interface IFileService
     {
-        Task<ProcessResult> DownloadMutipleFiles(AttachmentUrls attachmentUrls);
+        Task<ProcessResult<string>> DownloadMutipleFiles(AttachmentUrls attachmentUrls, string documentName);
         Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
     }
 }

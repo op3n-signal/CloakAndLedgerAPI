@@ -3,39 +3,20 @@ using System.Text.Json;
 
 namespace EncompassAPI.Services
 {
-    public class HttpService : IHttpService
+    public class HttpService : IHttpService, IDefaultHttpService, IEncompassHttpService
     {
         private const double Timeout = 300000; //5 minutes
         private readonly ILogger<HttpService> _logger;
         private HttpClient _httpClient;
-        private readonly object _lock = new object();
 
-        public HttpClient HttpClient
+        public HttpService(HttpClient httpClient, ILogger<HttpService> logger)
         {
-            get
-            {
-                return GetHttpClient();
-            }
-
-            set             
-            {
-                lock (_lock)
-                {
-                    _httpClient = value;
-                }
-            }
-        }
-
-        public HttpService(ILogger<HttpService> logger)
-        {
-            _httpClient = new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(Timeout)
-            };
+            _httpClient = httpClient;
+            _httpClient.Timeout = TimeSpan.FromSeconds(Timeout);
             _logger = logger;
         }
 
-        public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -79,7 +60,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -97,7 +77,7 @@ namespace EncompassAPI.Services
         /// <param name="maxRetries"></param>
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
-        public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -141,7 +121,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -160,7 +139,7 @@ namespace EncompassAPI.Services
         /// <param name="maxRetries"></param>
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
-        public async Task<T> PostAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<T> PostAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -203,7 +182,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -212,7 +190,7 @@ namespace EncompassAPI.Services
             return default(T);
         }
 
-        public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -246,7 +224,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -304,7 +281,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -366,7 +342,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -374,41 +349,10 @@ namespace EncompassAPI.Services
 
             return null;
         }
-
-        private HttpClient GetHttpClient()
-        {
-            lock (_lock)
-            {
-                if (_httpClient == null)
-                {
-                    _httpClient = CreateHttpClient();
-                }
-                return _httpClient;
-            }
-        }
-
-        private HttpClient CreateHttpClient()
-        {
-            return new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(Timeout)
-            };
-        }
-
-        // Method to recreate HttpClient in case of issues with the static HttpClient
-        private void RecreateHttpClient()
-        {
-            lock (_lock)
-            {
-                _httpClient?.Dispose();  // Dispose of the old client, releasing resources
-                _httpClient = CreateHttpClient();  // Create a new HttpClient instance
-            }
-        }
     }
 
     public interface IHttpService
     {
-        HttpClient HttpClient { get; set; }
 
         Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
         /// <summary>
@@ -449,5 +393,15 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<string> PostAsync(string url, Dictionary<string, string> headers, StringContent body, int maxRetries = 3, int delayMilliseconds = 2000);
+    }
+
+    public interface IDefaultHttpService : IHttpService
+    {
+        // No extra members — just distinguishes this service in DI
+    }
+
+    public interface IEncompassHttpService : IHttpService
+    {
+        // No extra members — just distinguishes this service in DI
     }
 }

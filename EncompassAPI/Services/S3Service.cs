@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -8,6 +9,7 @@ using EncompassAPI.Models.Salesforce;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using Shared.Models;
+using System.IO;
 
 namespace EncompassAPI.Services
 {
@@ -16,26 +18,29 @@ namespace EncompassAPI.Services
         private readonly LoggerService<S3Service> _logger;
         private readonly FileConfig _fileConfig;
         private readonly S3Config _s3Config;
-        private readonly IAmazonS3 _s3Client;
+        private readonly AmazonS3Client _s3Client;
 
-        public S3Service(LoggerService<S3Service> logger, IOptionsSnapshot<FileConfig> fileOptions, IOptionsSnapshot<S3Config> s3Options, IAmazonS3 s3Client) 
+        public S3Service(LoggerService<S3Service> logger, IOptionsSnapshot<FileConfig> fileOptions, IOptionsSnapshot<S3Config> s3Options) 
         {
             _logger = logger;
             _fileConfig = fileOptions.Value;
             _s3Config = s3Options.Value;
-            _s3Client = s3Client;
+            _s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(_s3Config.AwsRegion)); ;
         }
 
         public async Task<string> InitiateMultiPartUpload(string bucketName, string key)
         {
+            using var s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(_s3Config.AwsRegion));
+
             var request = new InitiateMultipartUploadRequest
             {
                 BucketName = bucketName,
                 Key = key,
-                ContentType = "application/octet-stream"
+                ContentType = "application/pdf",
+
             };
 
-            InitiateMultipartUploadResponse response = await _s3Client.InitiateMultipartUploadAsync(request);
+            InitiateMultipartUploadResponse response = await s3Client.InitiateMultipartUploadAsync(request);
 
             return response.UploadId;
         }
@@ -87,21 +92,28 @@ namespace EncompassAPI.Services
         {
             _logger.LogVerbose(nameof(PushFileToS3));
 
-            string fileToPushToS3 = _fileConfig.LocalDownloadPath + fileName;
+            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "\\" + fileName;
             string bucket = awsSettings.Root_Folder_Name__c.Replace(" ", "-").ToLower();
 
             try
             {
-                using var s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(_s3Config.AwsRegion));
 
                 if (!File.Exists(fileToPushToS3))
                 {
-                    _logger.Base.LogError($"{CommonStrings.FileDoesNotExist}: {fileName}");
-                    return new ProcessResult<string>(false, CommonStrings.FileDoesNotExist);
+                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {fileName}");
+                    return new ProcessResult<string>(false, CommonFields.FileDoesNotExist);
                 }
 
-                TransferUtility xferUtility = new TransferUtility(s3Client);
-                await xferUtility.UploadAsync(fileToPushToS3, bucket, path + "/" + fileName);
+                TransferUtility transferUtility = new TransferUtility(_s3Client);
+
+                TransferUtilityUploadRequest request = new TransferUtilityUploadRequest()
+                {
+                    BucketName = bucket,
+                    Key = path + "/" + fileName,
+                    FilePath = fileToPushToS3
+                };
+
+                await transferUtility.UploadAsync(request);
 
                 _logger.LogVerbose($"File {fileName} has been successfully uploaded to bucket {bucket}.");
                 return new ProcessResult<string>(true)
@@ -109,10 +121,10 @@ namespace EncompassAPI.Services
                     Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + fileName
                 };
             }
-            catch (Exception ex)
+            catch (AmazonS3Exception ex)
             {
-                _logger.Base.LogError($"{CommonStrings.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, CommonStrings.FailedToUploadFile);
+                _logger.Base.LogError($"{CommonFields.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, CommonFields.FailedToUploadFile);
             }
         }
     }

@@ -3,6 +3,7 @@ using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Repos;
 using Microsoft.Extensions.Options;
+using Shared.Models;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -12,18 +13,12 @@ namespace EncompassAPI.Services
     {
         private readonly EncompassConfig _encompassConfig;
         private readonly IHttpService _http;
-        private readonly ITokenRepo _tokenRepo;
         private readonly LoggerService<eFolderService> _logger;
-        private static readonly Dictionary<string, string> _headers = new Dictionary<string, string>
-        {
-            { "Content-Type", "application/json" }
-        };
 
-        public eFolderService(IOptionsSnapshot<EncompassConfig> encompassOptions, IHttpService http, ITokenRepo tokenRepo, LoggerService<eFolderService> logger)
+        public eFolderService(IOptionsSnapshot<EncompassConfig> encompassOptions, IEncompassHttpService http, LoggerService<eFolderService> logger)
         {
             _encompassConfig = encompassOptions.Value;
             _http = http;
-            _tokenRepo = tokenRepo;
             _logger = logger;
         }
 
@@ -34,7 +29,7 @@ namespace EncompassAPI.Services
                 // Get Documents from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?requireActiveAttachments=true";
 
-                IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, _headers);
+                IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, CommonFields.EncompassHeaders);
 
                 return new ProcessResult<IEnumerable<EncompassDocument>>(true)
                 {
@@ -76,6 +71,13 @@ namespace EncompassAPI.Services
                         _logger.Base.LogError($"No documents found with type {documentType} in loan {loanId} for org {orgId}.");
                         return new ProcessResult<Attachment[]>(false, $"No documents found with type {documentType} in loan {loanId} for org {orgId}.");
                     }
+
+                    // Do not allow documents with multiple attachments. For now, we only allow disclosures to be added to e-folder as one attachment
+                    if(ieDocuments.Count() > 1)
+                    {
+                        _logger.Base.LogError($"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed. User probably did not add to e-folder correctly. We only allow users to add to e-folder as 1 attachment.");
+                        return new ProcessResult<Attachment[]>(false, $"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed.");
+                    }
                 }
 
                 // Get all attachments for the documents
@@ -103,7 +105,7 @@ namespace EncompassAPI.Services
                 }
 
                 // Get the attachment IDs from the attachments
-                char[] attachmentIds = attachments.SelectMany(att => att.entityId).ToArray();
+                string[] attachmentIds = attachments.Select(att => att.entityId).ToArray();
 
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/attachmentDownloadUrl";
 
@@ -112,7 +114,7 @@ namespace EncompassAPI.Services
                     attachments = attachmentIds
                 });
 
-                AttachmentUrls attachmentUrls = await _http.PostAsync<AttachmentUrls>(url, _headers, requestBody);
+                AttachmentUrls attachmentUrls = await _http.PostAsync<AttachmentUrls>(url, CommonFields.EncompassHeaders, requestBody);
 
                 if(attachmentUrls == null || attachmentUrls.attachments == null || attachmentUrls.attachments.Length == 0)
                 {

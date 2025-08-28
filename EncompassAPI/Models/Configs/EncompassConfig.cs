@@ -9,5 +9,13 @@
         public string TokenEndpoint { get; set; }   
 
         public string IntrospectionEndpoint { get; set; }
+
+        public string OpeningAuditEndpoint { get; set; }
+
+        public string OpeningDocSetEndpoint { get; set; }
+
+        public string OpeningLoanAuditEndpoint { get; set; }
+
+        public string GetEFolderDocsEndpoint { get; set; }
     }
 }

@@ -37,7 +37,6 @@ namespace EncompassAPITests
                 })
                 .AddScoped<IDisclosuresService, DisclosuresService>()
                 .AddSingleton<IHttpService, HttpService>()
-                .AddScoped<IEncompassAuthService, EncompassAuthService>()
                 .AddScoped<IFileService, FileService>()
                 .AddScoped<IeFolderService, eFolderService>()
                 .AddScoped<ITokenRepo, TokenRepo>()

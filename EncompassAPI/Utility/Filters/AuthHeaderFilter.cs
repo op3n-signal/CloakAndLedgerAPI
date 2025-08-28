@@ -21,7 +21,7 @@ namespace EncompassAPI.Utility.Filters
 
                 operation.Parameters.Add(new OpenApiParameter
                 {
-                    Name = CommonStrings.IncomingAuthKeyName,
+                    Name = CommonFields.IncomingAuthKeyName,
                     In = ParameterLocation.Header,
                     Required = true, // Mark as required or optional as needed
                     Description = "Required to authenticate to this API",

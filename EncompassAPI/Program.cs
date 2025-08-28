@@ -34,11 +34,8 @@ builder.Services.Configure<EncompassConfig>(options => builder.Configuration.Get
 builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.GetSection(nameof(SalesforceConfig)).Bind(options));
 
 builder.Services.AddScoped<IDisclosuresService, DisclosuresService>();
-builder.Services.AddSingleton<IHttpService, HttpService>();
-builder.Services.AddScoped<IEncompassAuthService, EncompassAuthService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
-builder.Services.AddScoped<ITokenRepo, TokenRepo>();
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
 builder.Services.AddScoped(typeof(S3Service));
 builder.Services.AddScoped(typeof(AWSSecretService));
@@ -48,6 +45,7 @@ builder.Services.AddScoped<ISalesforceService, SalesforceService>();
 builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<ICandidDataService, CandidDataService>();
+builder.Services.AddScoped<IEncompassService, DocsService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
@@ -101,6 +99,31 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(Security.Policy, policy => policy.RequireRole(Security.Role));
 });
+
+builder.Services.AddTransient<EncompassTokenHandler>();
+
+// Client with the handler
+builder.Services.AddHttpClient<IHttpService, HttpService>("EncompassClient")
+       .AddHttpMessageHandler<EncompassTokenHandler>();
+
+// Client without the handler
+builder.Services.AddHttpClient<IHttpService, HttpService>("DefaultClient");
+
+// Register two IHttpService instances via factory
+builder.Services.AddScoped<IEncompassHttpService>(sp =>
+{
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("EncompassClient");
+    return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
+});
+
+// If you need another service without handler, register with a different interface or named service
+builder.Services.AddScoped<IDefaultHttpService>(sp =>
+{
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("DefaultClient");
+    return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
+});
+
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
