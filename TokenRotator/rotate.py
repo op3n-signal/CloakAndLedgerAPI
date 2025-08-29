@@ -45,7 +45,7 @@ def put_secret(secret_name, secret_value, region_name="us-east-1"):
         print(f"Error updating secret: {e}")
         return None
     
-def put_secret(secret_name, secret_value, region_name="us-east-1"):
+def update_secret(secret_name, secret_value, region_name="us-east-1"):
     """
     Updates an existing AWS secret with a new value.
     secret_value can be a dict (JSON) or a string
