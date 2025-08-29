@@ -67,7 +67,7 @@ jobs:
     timeout-minutes: 15
     env:
       REGISTRY_IMAGE: ghcr.io/${{ github.repository }}   #Gets loaded with the lowercase repo name later in the steps
-      SERVER: 172.31.17.153
+      SERVER: 172.31.47.203
       SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
       PORT: 8185
       INSIDE_PORT: 8080
