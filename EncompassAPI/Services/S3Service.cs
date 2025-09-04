@@ -88,19 +88,18 @@ namespace EncompassAPI.Services
             await _s3Client.AbortMultipartUploadAsync(request);
         }
 
-        public async Task<ProcessResult<string>> PushFileToS3(GoogleDriveClone awsSettings, string path, string fileName)
+        public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId)
         {
             _logger.LogVerbose(nameof(PushFileToS3));
 
-            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "\\" + fileName;
-            string bucket = awsSettings.Root_Folder_Name__c.Replace(" ", "-").ToLower();
+            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "\\" + prospectId + "\\" + _fileConfig.DisclosuresFileName;
 
             try
             {
 
                 if (!File.Exists(fileToPushToS3))
                 {
-                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {fileName}");
+                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {_fileConfig.DisclosuresFileName}");
                     return new ProcessResult<string>(false, CommonFields.FileDoesNotExist);
                 }
 
@@ -109,16 +108,16 @@ namespace EncompassAPI.Services
                 TransferUtilityUploadRequest request = new TransferUtilityUploadRequest()
                 {
                     BucketName = bucket,
-                    Key = path + "/" + fileName,
+                    Key = path + "/" + _fileConfig.DisclosuresFileName,
                     FilePath = fileToPushToS3
                 };
 
                 await transferUtility.UploadAsync(request);
 
-                _logger.LogVerbose($"File {fileName} has been successfully uploaded to bucket {bucket}.");
+                _logger.LogVerbose($"File {_fileConfig.DisclosuresFileName} has been successfully uploaded to bucket {bucket}.");
                 return new ProcessResult<string>(true)
                 {
-                    Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + fileName
+                    Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + _fileConfig.DisclosuresFileName
                 };
             }
             catch (AmazonS3Exception ex)

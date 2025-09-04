@@ -122,8 +122,15 @@ namespace EncompassAPI.Services
                 GoogleDriveClone awsSettings;
 
                 // Check if lo has aws settings
-                if (qrAWSSettings == null || qrAWSSettings.Total_Size == 0)
+                if (qrAWSSettings == null || 
+                    qrAWSSettings.Total_Size == 0 || 
+                    qrAWSSettings.Records == null || 
+                    qrAWSSettings.Records[0] == null || 
+                    string.IsNullOrEmpty(qrAWSSettings.Records[0].AWS_Access_Key_Id__c) ||
+                    string.IsNullOrEmpty(qrAWSSettings.Records[0].AWS_Secret_Access_Key__c) ||
+                    string.IsNullOrEmpty(qrAWSSettings.Records[0].Root_Folder_Name__c))
                 {
+                    // Try again but get org default aws settings this time
                     endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidSettingsEndpoint + " WHERE+SetupOwnerId='" + orgId + "'";
 
                     qrAWSSettings = await _http.GetAsync<QueryResult<GoogleDriveClone>>(endpoint, headers);
@@ -147,15 +154,6 @@ namespace EncompassAPI.Services
                 else
                 {
                     awsSettings = qrAWSSettings.Records[0];
-
-                    // Get org default aws settings
-                    if (awsSettings == null ||
-                        string.IsNullOrEmpty(awsSettings.AWS_Access_Key_Id__c) ||
-                        string.IsNullOrEmpty(awsSettings.AWS_Secret_Access_Key__c) ||
-                        string.IsNullOrEmpty(awsSettings.Root_Folder_Name__c))
-                    {
-                        throw new Exception($"no aws settings found for lo: {loId} in org: {orgId}");
-                    }
                 }
 
                 _logger.LogVerbose("aws settings found");

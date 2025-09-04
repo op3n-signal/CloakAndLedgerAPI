@@ -1,5 +1,6 @@
 ﻿using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
+using EncompassAPI.Models.Docusign;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
@@ -19,8 +20,9 @@ namespace EncompassAPI.AppLayer
         private readonly ISalesforceService _sfService;
         private readonly IUploadService _uploadService;
         private readonly IEncompassService _docsService;
+        private readonly IDocusignService _docusignService;
 
-        public DisclosuresService(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IUploadService uploadService, IEncompassService docsService)
+        public DisclosuresService(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IUploadService uploadService, IEncompassService docsService, IDocusignService docusignService)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;
@@ -29,6 +31,7 @@ namespace EncompassAPI.AppLayer
             _sfService = sfService;
             _uploadService = uploadService;
             _docsService = docsService;
+            _docusignService = docusignService;
         }
 
         public async Task Retrieve(CandidIncomingRequest request)
@@ -55,10 +58,128 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            // Download attachments from encompass
-            ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(prAttachmentsUrls.Result, prAttachments.Result[0].entityName);
+            // Download attachments from encompass. It has to be multiple attachments because we can only get the signature coordinates by each document. Documents have page numbers.
+            ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.ProspectId, prAttachmentsUrls.Result, prAttachments.Result);
 
             if (!prFileDownload.Success)
+            {
+                return;
+            }
+
+            // Make list of attachments we have to find
+            Dictionary<string, bool> dictAttachmentNamesToFind = prAttachments.Result.Select(att => att.entityName).ToDictionary(name => name, name => false);
+
+            // Get the resource lock id from loan
+            ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(request.OrgId, request.LoanId);
+
+            if (prRetrievedLockId.Success)
+            {
+                // Remove resource lock from loan
+                ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(request.OrgId, request.LoanId, prRetrievedLockId.Result);
+
+                if (!prLockRemoved.Success)
+                {
+                    // If we can't remove the lock, we can't proceed
+                    return;
+                }
+            }
+
+            // Get application id from loan because we need this for the audit
+            ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(request.OrgId, request.LoanId);
+
+            if (!prApplicationId.Success)
+            {
+                return;
+            }
+
+            ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(request.OrgId, request.LoanId, prApplicationId.Result);
+
+            if (!prAuditId.Success)
+            {
+                return;
+            }
+
+            //todo maybe return response of what failed in the audit // send back in response to candid
+            ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(request.OrgId, request.LoanId, prAuditId.Result);
+
+            if (!prAuditSuccess.Success)
+            {
+                return;
+            }
+
+            // Get documents with signature coordinates
+            ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(request.OrgId, request.LoanId, prAuditId.Result);
+
+            if(!prOrderId.Success)
+            {
+                return;
+            }
+
+            // This only returns a select amount of documents
+            ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(request.OrgId, request.LoanId, prOrderId.Result);
+
+            if(!prDocuments.Success)
+            {
+                return;
+            }
+
+            // Removes documents that are not needed from the doc set api
+            List<Models.Encompass.Document> docSetDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, prDocuments.Result);
+
+            // Check if attachmentNamesToFind are found in documents
+            ProcessResult prAllExist = _docsService.CheckIfAllDocumentsExist(dictAttachmentNamesToFind, docSetDocuments);
+
+            // Only enter here if not all docs were found
+            if (!prAllExist.Success)
+            {
+                // Retrieve efolder docs
+                ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(request.OrgId, request.LoanId, dictAttachmentNamesToFind);
+
+                if (!prEFolderDocumentNames.Success)
+                {
+                    return;
+                }
+
+                //todo then add to list
+                ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result);
+
+                if (!prJobId.Success)
+                {
+                    return;
+                }
+
+                prDocuments = await _docsService.GetOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prJobId.Result);
+
+                if (!prDocuments.Success)
+                {
+                    return;
+                }
+
+                // Removes documents that are not needed from the doc set api
+                docSetDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, prDocuments.Result);
+
+                // Check if attachmentNamesToFind are found in documents
+                prAllExist = _docsService.CheckIfAllDocumentsExist(dictAttachmentNamesToFind, docSetDocuments);
+
+                if (!prAllExist.Success)
+                {
+                    // todo find other documents if all are still not found, if we can't just respnd back to event, let candid know we couldn't find all documents
+                    // todo maybe check efolder
+                }
+            }
+
+            // Merge files here and this file is what I send back to candid... 
+            ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result);
+
+            if (!prFilePageCounts.Success)
+            {
+                return;
+            }
+
+            // Map signature coordinates to draft edit request for docusign
+            ProcessResult<DraftEditRequest> prDraftEditRequest = _docsService.MapToDraftEditRequest(request, docSetDocuments, prFilePageCounts.Result);
+
+            if (!prDraftEditRequest.Success)
             {
                 return;
             }
@@ -87,7 +208,12 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            ProcessResult<string> prUpload = await _s3Service.PushFileToS3(prAWSSettings.Result, request.Path, prFileDownload.Result);
+            // Set up bucket name
+            string bucket = prAWSSettings.Result.Root_Folder_Name__c.Replace(" ", "-").ToLower();
+            prDraftEditRequest.Result.S3RootFolderName = bucket;
+            prDraftEditRequest.Result.Status = "sent";
+
+            ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId);
 
             if (!prUpload.Success)
             {
@@ -101,74 +227,12 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            // Get application id from loan because we need this in the next requests
-            ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(request.OrgId, request.LoanId);
+            ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result);
 
-            if (!prApplicationId.Success)
+            if (!prEnvelopeId.Success)
             {
                 return;
             }
-
-            ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(request.OrgId, request.LoanId, prApplicationId.Result);
-
-            if (!prAuditId.Success)
-            {
-                return;
-            }
-
-            //todo maybe return response of what failed in the audit
-            ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(request.OrgId, request.LoanId, prAuditId.Result);
-
-            if (!prAuditSuccess.Success)
-            {
-                return;
-            }
-
-            // Get documents with signature coordinates
-            ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(request.OrgId, request.LoanId, prAuditId.Result);
-
-            if(!prOrderId.Success)
-            {
-                return;
-            }
-
-            ProcessResult<Models.Encompass.Document[]> prDocuments = await _docsService.GetOrderStatus(request.OrgId, request.LoanId, prOrderId.Result);
-
-            if(!prDocuments.Success)
-            {
-                return;
-            }
-            
-            //todo check if all documents are found
-
-            //todo only enter here if not all docs were found
-            if (false)
-            {
-                //todo retrieve efolder docs first only if not all docs are found
-                ProcessResult<string[]> prEFolderDocuments = await _docsService.GetEFolderDocuments(request.OrgId, request.LoanId);
-
-                if (!prEFolderDocuments.Success)
-                {
-                    return;
-                }
-
-                //todo then add to list
-                ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocuments.Result);
-
-                if (!prJobId.Success)
-                {
-                    return;
-                }
-
-                prDocuments = await _docsService.GetOrderStatus(request.OrgId, request.LoanId, prJobId.Result);
-
-                if (!prDocuments.Success)
-                {
-                    return;
-                }
-            }
-
-            //todo matching logic
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using EncompassAPI.Models;
+﻿using Amazon.Runtime.Internal;
+using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
 using Microsoft.Extensions.Options;
@@ -21,13 +22,18 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult<string>> DownloadMutipleFiles(AttachmentUrls attachmentUrls, string documentName)
+        public async Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo)
         {
+            // Remove files if they exist already first
+            RemoveFiles(prospectId);
+
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}\\{prospectId}";
+
             try
             {
-                // This is currently set up to only accept one attachment so this will not work if user adds documents to e-folder the wrong way
-
                 string filename = "";
+                //string timeStartedDownwloading = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                Directory.CreateDirectory(prefixDownloadPath); // Create directory if not exists
 
                 foreach (var item in attachmentUrls.attachments)
                 {
@@ -46,10 +52,13 @@ namespace EncompassAPI.Services
                     byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
 
                     // Get file name
-                    filename = documentName + "-" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf";
-                    _logger.LogVerbose($"Downloaded filename: {GetFileNameFromResponse(response)}");
 
-                    string fullPath = Path.Combine(_fileConfig.LocalDownloadPath, filename);
+                    Attachment attachment = attachmentInfo.First(att => att.entityId == item.id);
+
+                    filename = $"{attachment.entityName}.pdf";
+                    _logger.LogVerbose($"Downloaded filename: {filename}");
+
+                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
 
                     // Save file to local folder
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
@@ -58,7 +67,7 @@ namespace EncompassAPI.Services
 
                 return new ProcessResult<string>(true)
                 {
-                    Result = filename
+                    Result = prefixDownloadPath
                 };
             }
             catch (Exception ex)
@@ -113,6 +122,29 @@ namespace EncompassAPI.Services
             }
         }
 
+        public void RemoveFiles(string prospectId)
+        {
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}\\{prospectId}";
+
+            if (Directory.Exists(prefixDownloadPath))
+            {
+                // Get all files in the directory
+                string[] files = Directory.GetFiles(prefixDownloadPath);
+
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Base.LogError($"Failed to delete file {file}{Environment.NewLine}Exception: {e}");
+                    }
+                }
+            }
+        }
+
         private string GetFileNameFromResponse(HttpResponseMessage response)
         {
             string filename = String.Empty;
@@ -149,7 +181,8 @@ namespace EncompassAPI.Services
 
     public interface IFileService
     {
-        Task<ProcessResult<string>> DownloadMutipleFiles(AttachmentUrls attachmentUrls, string documentName);
+        Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo);
         Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
+        void RemoveFiles(string prospectId);
     }
 }

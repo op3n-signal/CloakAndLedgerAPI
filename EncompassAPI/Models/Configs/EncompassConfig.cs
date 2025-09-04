@@ -17,5 +17,7 @@
         public string OpeningLoanAuditEndpoint { get; set; }
 
         public string GetEFolderDocsEndpoint { get; set; }
+
+        public string ResourceLockEndpoint { get; set; }
     }
 }

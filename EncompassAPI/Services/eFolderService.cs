@@ -72,12 +72,12 @@ namespace EncompassAPI.Services
                         return new ProcessResult<Attachment[]>(false, $"No documents found with type {documentType} in loan {loanId} for org {orgId}.");
                     }
 
-                    // Do not allow documents with multiple attachments. For now, we only allow disclosures to be added to e-folder as one attachment
+/*                     // Do not allow documents with multiple attachments. For now, we only allow disclosures to be added to e-folder as one attachment
                     if(ieDocuments.Count() > 1)
                     {
                         _logger.Base.LogError($"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed. User probably did not add to e-folder correctly. We only allow users to add to e-folder as 1 attachment.");
                         return new ProcessResult<Attachment[]>(false, $"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed.");
-                    }
+                    } */
                 }
 
                 // Get all attachments for the documents

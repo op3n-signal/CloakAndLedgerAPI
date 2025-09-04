@@ -20,18 +20,18 @@ namespace EncompassAPI.Models.Docusign
 
         public string EmailMessage { get; set; }
 
-        public string ReplyToEmail { get; set; } //need
+        public string ReplyToEmail { get; set; }
 
-        public string ReplyToName { get; set; } //need
+        public string ReplyToName { get; set; } 
 
-        public string EmbeddedRecipientStartURL { get; set; }
+        public string Status { get; set; }
     }
 
     public class Recipient
     {
-        public string RecipientName { get; set; } //need
-        public string RecipientEmail { get; set; } //need
-        public int RecipientId { get; set; } //need
+        public string RecipientName { get; set; } 
+        public string RecipientEmail { get; set; } 
+        public int RecipientId { get; set; }
         public Tabs Tabs { get; set; }
     }
 
@@ -50,6 +50,10 @@ namespace EncompassAPI.Models.Docusign
         public string TabLabel { get; set; }
         public string XPosition { get; set; }
         public string YPosition { get; set; }
+        public string AnchorUnits { get; set; }
+        public string ScaleValue { get; set; }
+        public string Width { get; set; }
+        public string Height { get; set; }
     }
 
     public class InitialHere
@@ -60,6 +64,10 @@ namespace EncompassAPI.Models.Docusign
         public string TabLabel { get; set; }
         public string XPosition { get; set; }
         public string YPosition { get; set; }
+        public string AnchorUnits { get; set; }
+        public string ScaleValue { get; set; }
+        public string Width { get; set; }
+        public string Height { get; set; }
     }
 
     public class DateSigned
@@ -70,5 +78,9 @@ namespace EncompassAPI.Models.Docusign
         public string TabLabel { get; set; }
         public string XPosition { get; set; }
         public string YPosition { get; set; }
+        public string AnchorUnits { get; set; }
+        public string ScaleValue { get; set; }
+        public string Width { get; set; }
+        public string Height { get; set; }
     }
 }

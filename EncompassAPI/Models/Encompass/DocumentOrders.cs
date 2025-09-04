@@ -4,7 +4,7 @@
     {
         public string id { get; set; }
         public string status { get; set; }
-        public Document[] documents { get; set; }
+        public List<Document> documents { get; set; }
         public object[] failedDocuments { get; set; }
         public Party[] parties { get; set; }
         public string printMode { get; set; }
@@ -47,18 +47,6 @@
         public float bottom { get; set; }
         public string type { get; set; }
         public float scale { get; set; }
-        public Itemfield[] itemFields { get; set; }
-    }
-
-    public class Itemfield
-    {
-        public string name { get; set; }
-        public string value { get; set; }
-        public int page { get; set; }
-        public float left { get; set; }
-        public float right { get; set; }
-        public float top { get; set; }
-        public float bottom { get; set; }
     }
 
     public class Reviewer

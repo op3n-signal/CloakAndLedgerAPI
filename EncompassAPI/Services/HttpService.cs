@@ -16,6 +16,56 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
+        public async Task<bool> DeleteAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
+        {
+            int retryCount = 0;
+
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url);
+
+                    if (headers != null)
+                    {
+                        foreach (var kvp in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        throw new HttpRequestException($"Server returned error code: {response.StatusCode}. Request URL: {url}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //This catches the exception thrown above so we can retry 
+
+                    _logger.LogError(ex.ToString());
+
+                    //todo if (ex.Message.ToLower().Contains("unauthorized"))
+                    //terminate = true;
+
+                    //This is to avoid this section on the last retry
+                    if (retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        await Task.Delay(delayMilliseconds * retryCount);
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
@@ -101,6 +151,11 @@ namespace EncompassAPI.Services
                     {
                         string json = await response.Content.ReadAsStringAsync();
 
+                        if (json.Contains("status") && json.Contains("RUNNING"))
+                        {
+                            throw new HttpRequestException($"Server response in still in status: running");
+                        }
+
                         return JsonSerializer.Deserialize<T>(json);
                     }
                     else
@@ -121,7 +176,7 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        await Task.Delay(delayMilliseconds * retryCount);
+                        await Task.Delay(delayMilliseconds);
                     }
                 }
             }
@@ -353,7 +408,7 @@ namespace EncompassAPI.Services
 
     public interface IHttpService
     {
-
+        Task<bool> DeleteAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000);
         Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
         /// <summary>
         /// Only for JSON responses

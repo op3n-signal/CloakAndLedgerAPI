@@ -9,7 +9,7 @@
     public class Forms
     {
         public Entity scope { get; set; }
-        public string[] templates { get; set; }
+        public List<string> templates { get; set; }
         public string printMode { get; set; }
     }
 }
