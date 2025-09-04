@@ -24,7 +24,7 @@ namespace EncompassAPI.Controllers
         }
 
         [HttpPost("Retrieve")]
-        public async Task<IActionResult> RetrieveDisclosures(CandidIncomingRequest request)
+        public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
         {
             // Start background process
             var task = Task.Run(() =>
@@ -39,7 +39,6 @@ namespace EncompassAPI.Controllers
                 }
             });
 
-            await task;
             // Return 202 Accepted
             return Accepted();
         }
