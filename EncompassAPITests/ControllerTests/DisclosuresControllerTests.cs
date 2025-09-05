@@ -17,7 +17,7 @@ namespace EncompassAPITests.ControllerTests
         }
 
         [Fact]
-        public async void Test()
+        public void Test()
         {
             // Arrange
             CandidIncomingRequest request = new CandidIncomingRequest()
@@ -30,7 +30,7 @@ namespace EncompassAPITests.ControllerTests
             };
 
             // Act
-            var actionResult = await thisController.RetrieveDisclosures(request);
+            var actionResult = thisController.RetrieveDisclosures(request);
             var objectResult = actionResult as ObjectResult;
             AcceptedResult response = objectResult.Value as AcceptedResult;
 
