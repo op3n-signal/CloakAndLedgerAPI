@@ -220,7 +220,7 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            ProcessResult prPush = await _sfService.PushUploadUrlToCandid(prUpload.Result, request.OrgId, request.ProspectId, request.DocumentId, prOrgRequestInfo.Result);
+            ProcessResult prPush = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result);
 
             if (!prPush.Success)
             {

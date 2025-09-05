@@ -3,6 +3,7 @@ using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Repos;
 using Microsoft.Extensions.Options;
+using Shared.Models;
 using System.Text.Json;
 
 namespace EncompassAPI.Services
@@ -56,9 +57,9 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string prospectId, string documentId, OrgRequestInfo requestInfo)
+        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo)
         {
-            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {orgId}");
+            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
 
             try
             {
@@ -74,9 +75,18 @@ namespace EncompassAPI.Services
 
                 Document document = new Document
                 {
-                    documentId = documentId,
+                    documentId = incomingRequest.DocumentId,
+                    documentName = CommonFields.DocumentName,
+                    documentCategory = CommonFields.DocumentName,
+                    documentStatus = CommonFields.DocumentStatus,
+                    //documentLastActivity = DateTime.UtcNow.ToString("o"),
+                    isTask = true,
+                    //taskType
+                    //esignstatus
                     googleDriveFileDownloadableURL = uploadUrl,
-                    prospectId = prospectId
+                    prospectId = incomingRequest.ProspectId,
+                    documentAssignedTo = incomingRequest.AssignedTo,
+                    borrower = incomingRequest.BorrowerValue
                 };
 
                 object objParams = new
@@ -90,7 +100,7 @@ namespace EncompassAPI.Services
         
                 if (responseData == null)
                 {
-                    throw new Exception($"No response while pushing document for org: {orgId}");
+                    throw new Exception($"No response while pushing document for org: {incomingRequest.OrgId}");
                 }
 
                 _logger.LogVerbose(JsonSerializer.Serialize(responseData));
@@ -99,9 +109,9 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Error while pushing upload url to salesforce org: {orgId}{Environment.NewLine}Exception: {ex}");
+                _logger.Base.LogError($"Error while pushing upload url to salesforce org: {incomingRequest.OrgId}{Environment.NewLine}Exception: {ex}");
 
-                return new ProcessResult(false, $"Error while pushing upload url to salesforce org: {orgId}");
+                return new ProcessResult(false, $"Error while pushing upload url to salesforce org: {incomingRequest.OrgId}");
             }
         }
 
@@ -176,7 +186,7 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, string orgId, string prospectId, string documentId, OrgRequestInfo requestInfo);
+        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }

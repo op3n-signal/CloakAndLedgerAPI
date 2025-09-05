@@ -19,6 +19,10 @@
         public string ReplyToEmail { get; set; }
 
         public string Path { get; set; }
+
+        public string AssignedTo { get; set; }
+
+        public string BorrowerValue { get; set; }
     }
 
     public class Recipient
