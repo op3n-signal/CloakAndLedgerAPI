@@ -151,7 +151,7 @@ namespace EncompassAPI.Services
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningAuditEndpoint}/{auditId}";
 
 
-                AuditResult auditResult = await _http.GetAsync<AuditResult>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 5000);
+                AuditResult auditResult = await _http.GetAsync<AuditResult>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (auditResult.status.ToLower() != "succeeded")
                 {
@@ -203,7 +203,7 @@ namespace EncompassAPI.Services
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}";
 
 
-                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 5000);
+                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (documentOrders.status.ToLower() != "succeeded")
                 {
@@ -307,7 +307,7 @@ namespace EncompassAPI.Services
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents/{jobId}";
 
 
-                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 5000);
+                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (documentOrders.status.ToLower() != "succeeded")
                 {
