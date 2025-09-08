@@ -22,6 +22,73 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
+        public async Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token)
+        {
+            try
+            {
+                // Get Disclosure tracking logs from Encompass
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token }
+                };
+
+                IEnumerable<DisclosureTrackingLog> ieDisclosureLogs = await _http.GetAsync<DisclosureTrackingLog[]>(url, headers);
+
+                if (!ieDisclosureLogs.Any())
+                {
+                    _logger.Base.LogError($"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
+                }
+
+                return new ProcessResult<DisclosureTrackingLog>(true)
+                {
+                    Result = ieDisclosureLogs.First()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DisclosureTrackingLog>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
+        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, string token)
+        {
+            try
+            {
+                // Get Disclosure tracking logs from Encompass
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
+
+                object payload = new
+                {
+                    includedInTimeline = false
+                };
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                DisclosureTrackingLog disclosureLog = await _http.PatchAsync<DisclosureTrackingLog>(url, headers, JsonSerializer.Serialize(payload));
+
+                if(disclosureLog == null || disclosureLog.includedInTimeline != false)
+                {
+                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}.");
+                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}.");
+                }
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
         {
             try
@@ -149,7 +216,8 @@ namespace EncompassAPI.Services
 
     public interface IeFolderService
     {
-
+        Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, string token);
         /// <summary>
         /// Returns all eFolder documents for a specified loan. 
         /// The list can be filtered for retrieving documents which are not removed, or documents that have active attachments only. todo view full

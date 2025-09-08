@@ -36,6 +36,13 @@ namespace EncompassAPI.AppLayer
 
         public async Task Retrieve(CandidIncomingRequest request, string token)
         {
+            ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = await _eFolderService.GetLastestDisclosureTrackingLog(request.OrgId, request.LoanId, token);
+
+            if (true) // (!prDisclosureTrackingLog.Success)
+            {
+                return;
+            }
+
             // Retrieve documents
             ProcessResult<IEnumerable<EncompassDocument>> prEncompassDocuments = await _eFolderService.GetListOfDocuments(request.OrgId, request.LoanId, token);
 
