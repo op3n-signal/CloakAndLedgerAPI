@@ -42,6 +42,12 @@ namespace EncompassAPI.Services
                     return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
                 }
 
+                if(ieDisclosureLogs.Any(log => log.includedInTimeline != true))
+                {
+                    _logger.Base.LogError($"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
+                }
+
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {
                     Result = ieDisclosureLogs.First()
