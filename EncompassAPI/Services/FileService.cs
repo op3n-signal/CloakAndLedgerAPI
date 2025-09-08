@@ -27,7 +27,7 @@ namespace EncompassAPI.Services
             // Remove files if they exist already first
             RemoveFiles(prospectId);
 
-            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}\\{prospectId}";
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
 
             try
             {
@@ -124,7 +124,7 @@ namespace EncompassAPI.Services
 
         public void RemoveFiles(string prospectId)
         {
-            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}\\{prospectId}";
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
 
             if (Directory.Exists(prefixDownloadPath))
             {
