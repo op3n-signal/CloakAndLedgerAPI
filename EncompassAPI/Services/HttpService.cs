@@ -245,7 +245,7 @@ namespace EncompassAPI.Services
             return default(T);
         }
 
-        public async Task<T> PatchAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000)
+        public async Task<HttpResponseMessage> PatchAsync(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -266,12 +266,10 @@ namespace EncompassAPI.Services
                     }
 
                     HttpResponseMessage response = await _httpClient.SendAsync(request);
-                    string json = await response.Content.ReadAsStringAsync();
+
                     if (response.IsSuccessStatusCode)
                     {
-
-
-                        return JsonSerializer.Deserialize<T>(json);
+                        return response;
                     }
                     else
                     {
@@ -293,7 +291,7 @@ namespace EncompassAPI.Services
                 }
             }
 
-            return default(T);
+            return null;
         }
 
         public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 2, int delayMilliseconds = 2000)
@@ -471,7 +469,7 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
-        Task<T> PatchAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000);
+        Task<HttpResponseMessage> PatchAsync(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000);
 
         /// <summary>
         /// Only for JSON responses

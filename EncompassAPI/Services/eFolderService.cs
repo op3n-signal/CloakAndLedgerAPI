@@ -78,12 +78,12 @@ namespace EncompassAPI.Services
                     { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
                 };
 
-                DisclosureTrackingLog disclosureLog = await _http.PatchAsync<DisclosureTrackingLog>(url, headers, JsonSerializer.Serialize(payload));
+                HttpResponseMessage response = await _http.PatchAsync(url, headers, JsonSerializer.Serialize(payload));
 
-                if(disclosureLog == null || disclosureLog.includedInTimeline != false)
+                if(!response.IsSuccessStatusCode)
                 {
-                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}.");
-                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}.");
+                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
+                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
                 }
 
                 return new ProcessResult(true);
