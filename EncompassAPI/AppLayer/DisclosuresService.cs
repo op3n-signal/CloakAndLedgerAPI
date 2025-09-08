@@ -191,14 +191,6 @@ namespace EncompassAPI.AppLayer
                 }
             }
 
-            // We need to update the log to be included in the timeline now that we are done
-            prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, true, token);
-
-            if (!prLogUpdated.Success)
-            {
-                return;
-            }
-
             // Merge files here and this file is what I send back to candid... 
             ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result);
 
@@ -261,6 +253,14 @@ namespace EncompassAPI.AppLayer
             ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result);
 
             if (!prEnvelopeId.Success)
+            {
+                return;
+            }
+
+            // We need to update the log to be included in the timeline now that we are done
+            prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, true, token);
+
+            if (!prLogUpdated.Success)
             {
                 return;
             }
