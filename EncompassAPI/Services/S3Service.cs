@@ -92,7 +92,7 @@ namespace EncompassAPI.Services
         {
             _logger.LogVerbose(nameof(PushFileToS3));
 
-            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "\\" + prospectId + "\\" + _fileConfig.DisclosuresFileName;
+            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "/" + prospectId + "/" + _fileConfig.DisclosuresFileName;
 
             try
             {
