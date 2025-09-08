@@ -474,7 +474,7 @@ namespace EncompassAPI.Services
                         string signerName = signer.partyId.Replace("Borrower-", "");
 
                         // Find recipient by the partyId
-                        Models.Docusign.Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName == signerName);
+                        Models.Docusign.Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
 
                         // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
                         if (doc.name == "Credit Score Disclosure")
