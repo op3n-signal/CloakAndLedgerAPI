@@ -27,7 +27,7 @@ namespace EncompassAPI.Controllers
         public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
         {
             // Start background process
-            var task = Task.Run(() =>
+            var task = Task.Run(async () =>
             {
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
@@ -35,7 +35,7 @@ namespace EncompassAPI.Controllers
                     var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresService>();
 
                     // Run the background process
-                    disclosuresService.Retrieve(request).GetAwaiter().GetResult();
+                    await disclosuresService.Retrieve(request);
                 }
             });
 
