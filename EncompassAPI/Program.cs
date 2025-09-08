@@ -126,8 +126,6 @@ builder.Services.AddScoped<IDefaultHttpService>(sp =>
     return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
 });
 
-builder.Services.AddHttpContextAccessor();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
