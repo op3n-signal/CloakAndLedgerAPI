@@ -82,7 +82,7 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            ProcessResult<Attachment[]> prAttachments = await _eFolderService.GetAttachments(request.OrgId, request.LoanId, "EDisclosures", prEncompassDocuments.Result);
+            ProcessResult<Attachment[]> prAttachments = await _eFolderService.GetAttachments(request.OrgId, request.LoanId, prEncompassDocuments.Result);
 
             if (!prAttachments.Success)
             {

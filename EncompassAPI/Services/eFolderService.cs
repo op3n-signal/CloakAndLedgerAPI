@@ -1,4 +1,5 @@
-﻿using EncompassAPI.Models;
+﻿using Amazon.Runtime.Documents;
+using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Repos;
@@ -144,7 +145,9 @@ namespace EncompassAPI.Services
                     { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
                 };
 
-                IEnumerable <EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, headers);
+                IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, headers);
+
+                ieEncompassDocuments = ieEncompassDocuments.Where(doc => doc.documentTypes.Contains("EDisclosures"));
 
                 return new ProcessResult<IEnumerable<EncompassDocument>>(true)
                 {
@@ -158,7 +161,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, string documentType, IEnumerable<EncompassDocument> documents)
+        public async Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, IEnumerable<EncompassDocument> documents)
         {
             try
             {
@@ -169,36 +172,10 @@ namespace EncompassAPI.Services
                     return new ProcessResult<Attachment[]>(false, $"{loanId} in org {orgId} has no documents in eFolder.");
                 }
 
-                // Filter by eDisclosure document type
-                IEnumerable<EncompassDocument> ieDocuments;
-
-                if (string.IsNullOrEmpty(documentType))
-                {
-                    ieDocuments = documents;
-                }
-                else
-                {
-                    ieDocuments = documents.Where(doc => doc.documentTypes.Contains(documentType));
-
-                    // Check if any documents were found with the specified type
-                    if (ieDocuments.Count() == 0)
-                    {
-                        _logger.Base.LogError($"No documents found with type {documentType} in loan {loanId} for org {orgId}.");
-                        return new ProcessResult<Attachment[]>(false, $"No documents found with type {documentType} in loan {loanId} for org {orgId}.");
-                    }
-
-/*                     // Do not allow documents with multiple attachments. For now, we only allow disclosures to be added to e-folder as one attachment
-                    if(ieDocuments.Count() > 1)
-                    {
-                        _logger.Base.LogError($"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed. User probably did not add to e-folder correctly. We only allow users to add to e-folder as 1 attachment.");
-                        return new ProcessResult<Attachment[]>(false, $"Multiple documents found with type {documentType} in loan {loanId} for org {orgId}. Only one attachment is allowed.");
-                    } */
-                }
-
                 // Get all attachments for the documents
                 return new ProcessResult<Attachment[]>(true)
                 {
-                    Result = ieDocuments.SelectMany(doc => doc.attachments).ToArray()
+                    Result = documents.SelectMany(doc => doc.attachments).ToArray()
                 };
             }
             catch (Exception ex)
@@ -278,7 +255,7 @@ namespace EncompassAPI.Services
         /// <param name="documentType"></param>
         /// <param name="documents"></param>
         /// <returns></returns>
-        Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, string documentType, IEnumerable<EncompassDocument> documents);
+        Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, IEnumerable<EncompassDocument> documents);
 
         /// <summary>
         /// Retrieves the download URLs for a given list of attachments.
