@@ -72,7 +72,7 @@
     public class Documents
     {
         public string viewableFormsFile { get; set; }
-        public Form2[] forms { get; set; }
+        public List<Form2> forms { get; set; }
     }
 
     public class Form2

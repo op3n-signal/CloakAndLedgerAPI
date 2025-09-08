@@ -54,7 +54,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, string token)
+        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace EncompassAPI.Services
 
                 object payload = new
                 {
-                    includedInTimeline = false
+                    includedInTimeline = includeInTimeline
                 };
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
@@ -87,6 +87,42 @@ namespace EncompassAPI.Services
                 _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
                 return new ProcessResult(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
             }
+        }
+
+        public ProcessResult RemoveDocumentsNotInDisclosureLog(string orgId, string loanId, List<Form2> forms, string disclosureLogId, IEnumerable<EncompassDocument> documents)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(RemoveDocumentsNotInDisclosureLog)}");
+
+            // First let's make sure all forms in disclosure log are in eFolder documents
+            foreach (var form in forms)
+            {
+                bool found = documents.Any(doc => doc.title == form.formName);
+
+                if (!found)
+                {
+                    return new ProcessResult(false, $"Form {form.formName} listed in disclosure log {disclosureLogId} for loan {loanId} in org {orgId} was not found in eFolder documents.");
+                }
+            }
+
+            List<EncompassDocument> neededDocuments = new List<EncompassDocument>();
+
+            // Now let's remove all documents that are not in disclosure log
+            foreach (var document in documents)
+            {
+                bool exists = forms.Any(form => form.formName == document.title);
+
+                if (exists)
+                {
+                    neededDocuments.Add(document);
+                    continue;
+                }
+
+                _logger.Base.LogInformation($"Removing {document.title}");
+            }
+
+            documents = neededDocuments;
+
+            return new ProcessResult(true);
         }
 
         public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
@@ -217,7 +253,8 @@ namespace EncompassAPI.Services
     public interface IeFolderService
     {
         Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token);
-        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token);
+        ProcessResult RemoveDocumentsNotInDisclosureLog(string orgId, string loanId, List<Form2> forms, string disclosureLogId, IEnumerable<EncompassDocument> documents);
         /// <summary>
         /// Returns all eFolder documents for a specified loan. 
         /// The list can be filtered for retrieving documents which are not removed, or documents that have active attachments only. todo view full

@@ -36,9 +36,18 @@ namespace EncompassAPI.AppLayer
 
         public async Task Retrieve(CandidIncomingRequest request, string token)
         {
+            // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
             ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = await _eFolderService.GetLastestDisclosureTrackingLog(request.OrgId, request.LoanId, token);
 
-            if (true) // (!prDisclosureTrackingLog.Success)
+            if (!prDisclosureTrackingLog.Success)
+            {
+                return;
+            }
+
+            // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
+            ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, false, token);
+
+            if (!prLogUpdated.Success)
             {
                 return;
             }
@@ -47,6 +56,13 @@ namespace EncompassAPI.AppLayer
             ProcessResult<IEnumerable<EncompassDocument>> prEncompassDocuments = await _eFolderService.GetListOfDocuments(request.OrgId, request.LoanId, token);
 
             if (!prEncompassDocuments.Success)
+            {
+                return;
+            }
+
+            ProcessResult prRemoved = _eFolderService.RemoveDocumentsNotInDisclosureLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.documents.forms, prDisclosureTrackingLog.Result.id, prEncompassDocuments.Result);
+
+            if (!prRemoved.Success)
             {
                 return;
             }
@@ -73,7 +89,7 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            // Make list of attachments we have to find
+            // Make list of documents we have to find
             Dictionary<string, bool> dictAttachmentNamesToFind = prAttachments.Result.Select(att => att.entityName).ToDictionary(name => name, name => false);
 
             // Get the resource lock id from loan
@@ -173,6 +189,14 @@ namespace EncompassAPI.AppLayer
                     // todo find other documents if all are still not found, if we can't just respnd back to event, let candid know we couldn't find all documents
                     // todo maybe check efolder
                 }
+            }
+
+            // We need to update the log to be included in the timeline now that we are done
+            prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, true, token);
+
+            if (!prLogUpdated.Success)
+            {
+                return;
             }
 
             // Merge files here and this file is what I send back to candid... 
