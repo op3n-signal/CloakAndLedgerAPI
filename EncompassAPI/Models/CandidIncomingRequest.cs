@@ -10,8 +10,6 @@
 
         public string ProspectId { get; set; }
 
-        public string DocumentId { get; set; }
-
         public List<Recipient> Recipients { get; set; }
 
         public string ReplyToName { get; set; }

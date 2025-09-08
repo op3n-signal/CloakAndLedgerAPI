@@ -75,7 +75,6 @@ namespace EncompassAPI.Services
 
                 Document document = new Document
                 {
-                    documentId = incomingRequest.DocumentId,
                     documentName = CommonFields.DocumentName,
                     documentCategory = CommonFields.DocumentName,
                     documentStatus = CommonFields.DocumentStatus,
