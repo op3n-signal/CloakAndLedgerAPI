@@ -183,7 +183,7 @@ namespace EncompassAPI.Services
                 // Get all attachments for the documents
                 return new ProcessResult<Attachment[]>(true)
                 {
-                    Result = documents.SelectMany(doc => doc.attachments).ToArray()
+                    Result = documents.SelectMany(doc => doc.attachments).DistinctBy(att => att.entityName).ToArray()
                 };
             }
             catch (Exception ex)
