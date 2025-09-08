@@ -93,6 +93,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetApplicationIdFromLoan)}");
+
             try
             {
                 // Get loan audit result
@@ -126,6 +128,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(CreateLoanAuditForOpeningOrder)}");
             try
             {
                 // Run loan audit
@@ -167,6 +170,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetDocumentAuditForOpeningOrder)}");
+
             try
             {
                 // Get loan audit result
@@ -197,6 +202,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GenerateOpeningDocSet)}");
+
             try
             {
                 // Run loan audit

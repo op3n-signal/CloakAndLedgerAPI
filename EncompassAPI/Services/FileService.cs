@@ -24,6 +24,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo)
         {
+            _logger.Base.LogInformation($"Entering {nameof(DownloadMutipleFiles)}");
+
             // Remove files if they exist already first
             RemoveFiles(prospectId);
 

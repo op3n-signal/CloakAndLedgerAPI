@@ -25,6 +25,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetLastestDisclosureTrackingLog)}");
+
             try
             {
                 // Get Disclosure tracking logs from Encompass
@@ -63,6 +65,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(UpdateDisclosureTrackingLog)}");
+
             try
             {
                 // Get Disclosure tracking logs from Encompass
@@ -134,6 +138,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetListOfDocuments)}");
+
             try
             {
                 // Get Documents from Encompass
@@ -147,7 +153,7 @@ namespace EncompassAPI.Services
 
                 IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, headers);
 
-                ieEncompassDocuments = ieEncompassDocuments.Where(doc => doc.documentTypes.Contains("EDisclosures"));
+                ieEncompassDocuments = ieEncompassDocuments.Where(doc => doc.documentTypes.Contains("EDisclosures")).DistinctBy(e => e.title);
 
                 return new ProcessResult<IEnumerable<EncompassDocument>>(true)
                 {
@@ -163,6 +169,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, IEnumerable<EncompassDocument> documents)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetAttachments)}");
+
             try
             {
                 // Check if documents were retrieved or if there are no documents
@@ -187,6 +195,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetAttachmentDownloadUrls)}");
+
             try
             {
                 // Check if any of the documents have attachments
