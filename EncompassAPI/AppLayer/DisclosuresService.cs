@@ -34,10 +34,10 @@ namespace EncompassAPI.AppLayer
             _docusignService = docusignService;
         }
 
-        public async Task Retrieve(CandidIncomingRequest request)
+        public async Task Retrieve(CandidIncomingRequest request, string token)
         {
             // Retrieve documents
-            ProcessResult<IEnumerable<EncompassDocument>> prEncompassDocuments = await _eFolderService.GetListOfDocuments(request.OrgId, request.LoanId);
+            ProcessResult<IEnumerable<EncompassDocument>> prEncompassDocuments = await _eFolderService.GetListOfDocuments(request.OrgId, request.LoanId, token);
 
             if (!prEncompassDocuments.Success)
             {
@@ -51,7 +51,7 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            ProcessResult<AttachmentUrls> prAttachmentsUrls = await _eFolderService.GetAttachmentDownloadUrls(request.OrgId, request.LoanId, prAttachments.Result);
+            ProcessResult<AttachmentUrls> prAttachmentsUrls = await _eFolderService.GetAttachmentDownloadUrls(request.OrgId, request.LoanId, prAttachments.Result, token);
 
             if (!prAttachmentsUrls.Success)
             {
@@ -70,12 +70,12 @@ namespace EncompassAPI.AppLayer
             Dictionary<string, bool> dictAttachmentNamesToFind = prAttachments.Result.Select(att => att.entityName).ToDictionary(name => name, name => false);
 
             // Get the resource lock id from loan
-            ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(request.OrgId, request.LoanId);
+            ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(request.OrgId, request.LoanId, token);
 
             if (prRetrievedLockId.Success)
             {
                 // Remove resource lock from loan
-                ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(request.OrgId, request.LoanId, prRetrievedLockId.Result);
+                ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(request.OrgId, request.LoanId, prRetrievedLockId.Result, token);
 
                 if (!prLockRemoved.Success)
                 {
@@ -85,14 +85,14 @@ namespace EncompassAPI.AppLayer
             }
 
             // Get application id from loan because we need this for the audit
-            ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(request.OrgId, request.LoanId);
+            ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(request.OrgId, request.LoanId, token);
 
             if (!prApplicationId.Success)
             {
                 return;
             }
 
-            ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(request.OrgId, request.LoanId, prApplicationId.Result);
+            ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(request.OrgId, request.LoanId, prApplicationId.Result, token);
 
             if (!prAuditId.Success)
             {
@@ -100,7 +100,7 @@ namespace EncompassAPI.AppLayer
             }
 
             //todo maybe return response of what failed in the audit // send back in response to candid
-            ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(request.OrgId, request.LoanId, prAuditId.Result);
+            ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(request.OrgId, request.LoanId, prAuditId.Result, token);
 
             if (!prAuditSuccess.Success)
             {
@@ -108,7 +108,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // Get documents with signature coordinates
-            ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(request.OrgId, request.LoanId, prAuditId.Result);
+            ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(request.OrgId, request.LoanId, prAuditId.Result, token);
 
             if(!prOrderId.Success)
             {
@@ -116,7 +116,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // This only returns a select amount of documents
-            ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(request.OrgId, request.LoanId, prOrderId.Result);
+            ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(request.OrgId, request.LoanId, prOrderId.Result, token);
 
             if(!prDocuments.Success)
             {
@@ -133,7 +133,7 @@ namespace EncompassAPI.AppLayer
             if (!prAllExist.Success)
             {
                 // Retrieve efolder docs
-                ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(request.OrgId, request.LoanId, dictAttachmentNamesToFind);
+                ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(request.OrgId, request.LoanId, dictAttachmentNamesToFind, token);
 
                 if (!prEFolderDocumentNames.Success)
                 {
@@ -141,14 +141,14 @@ namespace EncompassAPI.AppLayer
                 }
 
                 //todo then add to list
-                ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result);
+                ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, token);
 
                 if (!prJobId.Success)
                 {
                     return;
                 }
 
-                prDocuments = await _docsService.GetOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prJobId.Result);
+                prDocuments = await _docsService.GetOpeningDocSet(request.OrgId, request.LoanId, prOrderId.Result, prJobId.Result, token);
 
                 if (!prDocuments.Success)
                 {
@@ -245,6 +245,6 @@ namespace EncompassAPI.AppLayer
         /// </summary>
         /// <param name="eventNotification"></param>
         /// <returns></returns>
-        Task Retrieve(CandidIncomingRequest request);
+        Task Retrieve(CandidIncomingRequest request, string token);
     }
 }

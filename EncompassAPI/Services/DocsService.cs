@@ -34,15 +34,20 @@ namespace EncompassAPI.Services
             _fileConfig = fileOptions.Value;
         }
 
-        public async Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId)
+        public async Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token)
         {
             try
             {
                 // Get resource locks
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.ResourceLockEndpoint}?resourceType=loan&resourceId={loanId}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                ProcessId[] lockIds = await _http.GetAsync<ProcessId[]>(url, CommonFields.EncompassHeaders);
+                ProcessId[] lockIds = await _http.GetAsync<ProcessId[]>(url, headers);
 
                 if (lockIds == null || lockIds.Length == 0)
                 {
@@ -62,14 +67,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId)
+        public async Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId, string token)
         {
             try
             {
                 // Remove resource lock since user is in the loan file
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.ResourceLockEndpoint}/{lockId}?resourceType=loan&resourceId={loanId}&force=true";
 
-                bool blDeleted = await _http.DeleteAsync(url, CommonFields.EncompassHeaders);
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                bool blDeleted = await _http.DeleteAsync(url, headers);
 
                 return new ProcessResult(blDeleted);
             }
@@ -80,15 +91,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId)
+        public async Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token)
         {
             try
             {
                 // Get loan audit result
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                LoanInfo loanInfo = await _http.GetAsync<LoanInfo>(url, CommonFields.EncompassHeaders);
+                LoanInfo loanInfo = await _http.GetAsync<LoanInfo>(url, headers);
 
                 if (loanInfo == null || loanInfo.applications == null || loanInfo.applications.Length == 0)
                 {
@@ -108,7 +124,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId)
+        public async Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId, string token)
         {
             try
             {
@@ -129,7 +145,13 @@ namespace EncompassAPI.Services
                     }
                 };
 
-                ProcessId process = await _http.PostAsync<ProcessId>(url, CommonFields.EncompassHeaders, JsonSerializer.Serialize(auditRequest));
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                ProcessId process = await _http.PostAsync<ProcessId>(url, headers, JsonSerializer.Serialize(auditRequest));
 
                 return new ProcessResult<string>(true)
                 {
@@ -143,15 +165,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId)
+        public async Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId, string token)
         {
             try
             {
                 // Get loan audit result
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningAuditEndpoint}/{auditId}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                AuditResult auditResult = await _http.GetAsync<AuditResult>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
+                AuditResult auditResult = await _http.GetAsync<AuditResult>(url, headers, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (auditResult.status.ToLower() != "succeeded")
                 {
@@ -168,7 +195,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId)
+        public async Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId, string token)
         {
             try
             {
@@ -181,7 +208,13 @@ namespace EncompassAPI.Services
                     printMode = CommonFields.PrintMode
                 };
 
-                ProcessId process = await _http.PostAsync<ProcessId>(url, CommonFields.EncompassHeaders, JsonSerializer.Serialize(docSetRequest));
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                ProcessId process = await _http.PostAsync<ProcessId>(url, headers, JsonSerializer.Serialize(docSetRequest));
 
                 return new ProcessResult<string>(true)
                 {
@@ -195,15 +228,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId)
+        public async Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token)
         {
             try
             {
                 // Get loan audit result
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
+                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, headers, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (documentOrders.status.ToLower() != "succeeded")
                 {
@@ -223,15 +261,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind)
+        public async Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token)
         {
             try
             {
                 // Get loan audit result
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.GetEFolderDocsEndpoint}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                EFolderDocument[] efolderDocuments = await _http.GetAsync<EFolderDocument[]>(url, CommonFields.EncompassHeaders);
+                EFolderDocument[] efolderDocuments = await _http.GetAsync<EFolderDocument[]>(url, headers);
 
                 if (efolderDocuments == null || efolderDocuments.Length == 0)
                 {
@@ -263,7 +306,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames)
+        public async Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token)
         {
             try
             {
@@ -285,7 +328,13 @@ namespace EncompassAPI.Services
                     }
                 };
 
-                ProcessId process = await _http.PostAsync<ProcessId>(url, CommonFields.EncompassHeaders, JsonSerializer.Serialize(addToDocSetRequest));
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                ProcessId process = await _http.PostAsync<ProcessId>(url, headers, JsonSerializer.Serialize(addToDocSetRequest));
 
                 return new ProcessResult<string>(true)
                 {
@@ -299,15 +348,20 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId)
+        public async Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId, string token)
         {
             try
             {
                 // Get loan audit result
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents/{jobId}";
 
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
 
-                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, CommonFields.EncompassHeaders, maxRetries: 5, delayMilliseconds: 10000);
+                DocumentOrders documentOrders = await _http.GetAsync<DocumentOrders>(url, headers, maxRetries: 5, delayMilliseconds: 10000);
 
                 if (documentOrders.status.ToLower() != "succeeded")
                 {
@@ -602,9 +656,9 @@ namespace EncompassAPI.Services
 
     public interface IEncompassService
     {
-        Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId);
-        Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId);
-        Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId);
+        Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token);
+        Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId, string token);
+        Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token);
 
         /// <summary>
         /// Creates the initial audit job for an opening order, which is typical for initial disclosures. 
@@ -615,7 +669,7 @@ namespace EncompassAPI.Services
         /// <param name="loanId"></param>
         /// <param name="applicationId"></param>
         /// <returns>Audit Id - 202 Accepted</returns>
-        Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId);
+        Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId, string token);
 
         /// <summary>
         /// Returns the status of an audit request for an opening order.
@@ -623,27 +677,27 @@ namespace EncompassAPI.Services
         /// </summary>
         /// <param name="auditId">The unique identifier of the audit to retrieve. Cannot be null or empty.</param>
         /// <returns>Audit results</returns>
-        Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId);
+        Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId, string token);
 
         /// <summary>
         /// Generates an Opening doc set for the package (Initial Disclosures).
         /// </summary>
         /// <param name="auditId"></param>
         /// <returns>Order Id - 202 Accepted</returns>
-        Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId);
+        Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId, string token);
 
         /// <summary>
         /// Retrieves doc status and details for the specified order (orderID).
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns>Order Details</returns>
-        Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId);
+        Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token);
 
-        Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind);
+        Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token);
 
-        Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames);
+        Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token);
 
-        Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId);
+        Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId, string token);
 
         ProcessResult CheckIfAllDocumentsExist(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
 

@@ -22,14 +22,20 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId)
+        public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
         {
             try
             {
                 // Get Documents from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?requireActiveAttachments=true";
 
-                IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, CommonFields.EncompassHeaders);
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                IEnumerable <EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, headers);
 
                 return new ProcessResult<IEnumerable<EncompassDocument>>(true)
                 {
@@ -93,7 +99,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments)
+        public async Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token)
         {
             try
             {
@@ -114,7 +120,13 @@ namespace EncompassAPI.Services
                     attachments = attachmentIds
                 });
 
-                AttachmentUrls attachmentUrls = await _http.PostAsync<AttachmentUrls>(url, CommonFields.EncompassHeaders, requestBody);
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                AttachmentUrls attachmentUrls = await _http.PostAsync<AttachmentUrls>(url, headers, requestBody);
 
                 if(attachmentUrls == null || attachmentUrls.attachments == null || attachmentUrls.attachments.Length == 0)
                 {
@@ -145,7 +157,7 @@ namespace EncompassAPI.Services
         /// <param name="orgId"></param>
         /// <param name="loanId"></param>
         /// <returns></returns>
-        Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId);
+        Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token);
 
         /// <summary>
         /// Filters the documents by document type and retrieves all attachments for those documents.
@@ -164,6 +176,6 @@ namespace EncompassAPI.Services
         /// <param name="loanId"></param>
         /// <param name="attachments"></param>
         /// <returns></returns>
-        Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments);
+        Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token);
     }
 }

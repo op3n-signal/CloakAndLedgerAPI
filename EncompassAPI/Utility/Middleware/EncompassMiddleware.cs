@@ -19,6 +19,7 @@ namespace EncompassAPI.Utility.Middleware
 
         public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions)
         {
+            // This gets the token from the initial api call and stores it in the context for later use
             string xEToken;
 
             if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve"))
@@ -44,7 +45,7 @@ namespace EncompassAPI.Utility.Middleware
                 // Set the token in the header of request
                 context.Request.Headers["Authorization"] = $"Bearer {xEToken}";
             }
-            
+
             // Call the next middleware
             await _next(context);
         }
