@@ -36,6 +36,21 @@ namespace EncompassAPI.AppLayer
 
         public async Task Retrieve(CandidIncomingRequest request, string token)
         {
+            // Get the resource lock id from loan
+            ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(request.OrgId, request.LoanId, token);
+
+            if (prRetrievedLockId.Success)
+            {
+                // Remove resource lock from loan
+                ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(request.OrgId, request.LoanId, prRetrievedLockId.Result, token);
+
+                if (!prLockRemoved.Success)
+                {
+                    // If we can't remove the lock, we can't proceed
+                    return;
+                }
+            }
+
             // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
             ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = await _eFolderService.GetLastestDisclosureTrackingLog(request.OrgId, request.LoanId, token);
 
@@ -91,21 +106,6 @@ namespace EncompassAPI.AppLayer
 
             // Make list of documents we have to find
             Dictionary<string, bool> dictAttachmentNamesToFind = prAttachments.Result.Select(att => att.entityName).ToDictionary(name => name, name => false);
-
-            // Get the resource lock id from loan
-            ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(request.OrgId, request.LoanId, token);
-
-            if (prRetrievedLockId.Success)
-            {
-                // Remove resource lock from loan
-                ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(request.OrgId, request.LoanId, prRetrievedLockId.Result, token);
-
-                if (!prLockRemoved.Success)
-                {
-                    // If we can't remove the lock, we can't proceed
-                    return;
-                }
-            }
 
             // Get application id from loan because we need this for the audit
             ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(request.OrgId, request.LoanId, token);
