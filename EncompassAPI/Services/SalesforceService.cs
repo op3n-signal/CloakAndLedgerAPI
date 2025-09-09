@@ -57,7 +57,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo)
+        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName)
         {
             _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
 
@@ -75,8 +75,8 @@ namespace EncompassAPI.Services
 
                 Document document = new Document
                 {
-                    documentName = CommonFields.DocumentName,
-                    documentCategory = CommonFields.DocumentName,
+                    documentName = disclosuresName.Replace(".pdf", ""),
+                    documentCategory = CommonFields.DocumentCategory,
                     documentStatus = CommonFields.DocumentStatus,
                     //documentLastActivity = DateTime.UtcNow.ToString("o"),
                     isTask = true,
@@ -193,7 +193,7 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo);
+        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }

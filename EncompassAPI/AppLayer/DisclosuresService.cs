@@ -59,6 +59,13 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
+            ProcessResult<string> prDisclosuresName = _docsService.GetDisclosuresName(prDisclosureTrackingLog.Result.disclosureType);
+
+            if (!prDisclosuresName.Success)
+            {
+                return;
+            }
+
             // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
             ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, false, token);
 
@@ -192,7 +199,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // Merge files here and this file is what I send back to candid... 
-            ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result);
+            ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result, prDisclosuresName.Result);
 
             if (!prFilePageCounts.Success)
             {
@@ -236,14 +243,14 @@ namespace EncompassAPI.AppLayer
             prDraftEditRequest.Result.S3RootFolderName = bucket;
             prDraftEditRequest.Result.Status = "sent";
 
-            ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId);
+            ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, prDisclosuresName.Result);
 
             if (!prUpload.Success)
             {
                 return;
             }
 
-            ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result);
+            ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result, prDisclosuresName.Result);
 
             if (!prPushDocument.Success)
             {
@@ -253,7 +260,7 @@ namespace EncompassAPI.AppLayer
             // Set document id
             prDraftEditRequest.Result.DocumentId = prPushDocument.Result;
 
-            ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result);
+            ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result, prDisclosuresName.Result);
 
             if (!prEnvelopeId.Success)
             {

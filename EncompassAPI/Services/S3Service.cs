@@ -88,18 +88,18 @@ namespace EncompassAPI.Services
             await _s3Client.AbortMultipartUploadAsync(request);
         }
 
-        public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId)
+        public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId, string disclosuresName)
         {
             _logger.LogVerbose(nameof(PushFileToS3));
 
-            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "/" + prospectId + "/" + _fileConfig.DisclosuresFileName;
+            string fileToPushToS3 = _fileConfig.LocalDownloadPath + "/" + prospectId + "/" + disclosuresName;
 
             try
             {
 
                 if (!File.Exists(fileToPushToS3))
                 {
-                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {_fileConfig.DisclosuresFileName}");
+                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {disclosuresName}");
                     return new ProcessResult<string>(false, CommonFields.FileDoesNotExist);
                 }
 
@@ -108,16 +108,16 @@ namespace EncompassAPI.Services
                 TransferUtilityUploadRequest request = new TransferUtilityUploadRequest()
                 {
                     BucketName = bucket,
-                    Key = path + "/" + _fileConfig.DisclosuresFileName,
+                    Key = path + "/" + disclosuresName,
                     FilePath = fileToPushToS3
                 };
 
                 await transferUtility.UploadAsync(request);
 
-                _logger.LogVerbose($"File {_fileConfig.DisclosuresFileName} has been successfully uploaded to bucket {bucket}.");
+                _logger.LogVerbose($"File {disclosuresName} has been successfully uploaded to bucket {bucket}.");
                 return new ProcessResult<string>(true)
                 {
-                    Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + _fileConfig.DisclosuresFileName
+                    Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + disclosuresName
                 };
             }
             catch (AmazonS3Exception ex)

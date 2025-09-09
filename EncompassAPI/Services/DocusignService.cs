@@ -25,13 +25,13 @@ namespace EncompassAPI.Services
             _fileConfig = fileOptions.Value;
         }
 
-        public async Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest)
+        public async Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest, string disclosuresName)
         {
             _logger.LogVerbose($"Entering {nameof(RequestDraftEdit)}");
 
             try
             {
-                draftEditRequest.S3Path += "/" + _fileConfig.DisclosuresFileName;
+                draftEditRequest.S3Path += "/" + disclosuresName;
 
                 DocusignSecret docusignSecret = await SecretService.GetSecret<DocusignSecret>(_awsConfig.DocusignSecretPath);
 
@@ -139,7 +139,7 @@ namespace EncompassAPI.Services
 
     public interface IDocusignService
     {
-        Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest);
+        Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest, string disclosuresName);
         Task<ProcessResult<string>> LinkForEditorEndpoint(string envelopeId, string orgId);
     }
 }

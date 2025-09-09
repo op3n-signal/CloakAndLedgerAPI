@@ -51,9 +51,12 @@ namespace EncompassAPI.Services
                     return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
                 }
 
+                DisclosureTrackingLog log = ieDisclosureLogs.First();
+                _logger.LogVerbose("disclosureType: " + log.disclosureType);
+
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {
-                    Result = ieDisclosureLogs.First()
+                    Result = log
                 };
             }
             catch (Exception ex)

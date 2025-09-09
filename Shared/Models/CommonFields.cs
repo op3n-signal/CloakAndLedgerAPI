@@ -32,7 +32,7 @@
         public const string LoanEntityType = "urn:elli:encompass:loan";
         public const string BorrowerEntityType = "urn:elli:encompass:loan:borrower";
         public const string PrintMode = "LoanData";
-        public const string DocumentName = "Disclosures";
+        public const string DocumentCategory = "Disclosures";
         public const string DocumentStatus = "Sent";
     }
 }

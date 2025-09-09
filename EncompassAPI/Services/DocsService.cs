@@ -615,7 +615,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix)
+        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName)
         {
             try
             {
@@ -645,7 +645,7 @@ namespace EncompassAPI.Services
                     }
 
                     // Save the merged document
-                    outputDocument.Save($"{downloadPathPrefix}/{_fileConfig.DisclosuresFileName}");
+                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
                 }
 
                 return new ProcessResult<Dictionary<string, int>>(true)
@@ -657,6 +657,45 @@ namespace EncompassAPI.Services
             {
                 _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
                 return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
+            }
+        }
+
+        public ProcessResult<string> GetDisclosuresName(string disclosureType)
+        {
+            try
+            {
+                string disclosuresName;
+
+                switch (disclosureType)
+                {
+                    case "Initial":
+                        disclosuresName = _fileConfig.IntialDisclosuresName;
+                        break;
+                    case "Revised":
+                        disclosuresName = "";
+                        break;
+                    case "Final":
+                        disclosuresName = "";
+                        break;
+                    default:
+                        disclosuresName = "";
+                        break;
+                }
+
+                if(string.IsNullOrWhiteSpace(disclosuresName))
+                {
+                    return new ProcessResult<string>(false, $"No disclosures name found for type {disclosureType}");
+                }
+
+                return new ProcessResult<string>(true)
+                {
+                    Result = disclosuresName
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.Base.LogError($"Failed to get disclosures name for type {disclosureType}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, $"Failed to get disclosures name for type {disclosureType}. Exception: {ex}");
             }
         }
     }
@@ -710,9 +749,10 @@ namespace EncompassAPI.Services
 
         ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts);
 
-        ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix);
+        ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
+        ProcessResult<string> GetDisclosuresName(string disclosureType);
 
         /*        /// <summary>
                 /// Commit and send an Opening Package (Initial Disclosures) to a recipient.

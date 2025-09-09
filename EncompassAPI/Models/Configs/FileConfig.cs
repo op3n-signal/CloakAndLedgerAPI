@@ -3,6 +3,6 @@
     public class FileConfig
     {
         public string LocalDownloadPath { get; set; }
-        public string DisclosuresFileName { get; set; }
+        public string IntialDisclosuresName { get; set; }
     }
 }
