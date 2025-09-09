@@ -86,6 +86,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prLogUpdated.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -94,6 +96,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prEncompassDocuments.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -101,6 +105,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prRemoved.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -108,6 +114,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prAttachments.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -115,6 +123,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prAttachmentsUrls.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -123,6 +133,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prFileDownload.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -134,6 +146,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prApplicationId.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -141,6 +155,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prAuditId.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -149,6 +165,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prAuditSuccess.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -157,6 +175,8 @@ namespace EncompassAPI.AppLayer
 
             if(!prOrderId.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -165,6 +185,8 @@ namespace EncompassAPI.AppLayer
 
             if(!prDocuments.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -182,6 +204,8 @@ namespace EncompassAPI.AppLayer
 
                 if (!prEFolderDocumentNames.Success)
                 {
+                    // We need to update the log to be included in the timeline now that we are done
+                    prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                     return;
                 }
 
@@ -190,6 +214,8 @@ namespace EncompassAPI.AppLayer
 
                 if (!prJobId.Success)
                 {
+                    // We need to update the log to be included in the timeline now that we are done
+                    prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                     return;
                 }
 
@@ -197,6 +223,8 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDocuments.Success)
                 {
+                    // We need to update the log to be included in the timeline now that we are done
+                    prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                     return;
                 }
 
@@ -218,6 +246,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prFilePageCounts.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -226,6 +256,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prDraftEditRequest.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -234,6 +266,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prOrgInfo.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -242,6 +276,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prOrgRequestInfo.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -250,6 +286,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prAWSSettings.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -262,6 +300,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prUpload.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -269,6 +309,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prPushDocument.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -279,6 +321,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prEnvelopeId.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
 
@@ -287,6 +331,8 @@ namespace EncompassAPI.AppLayer
 
             if (!prLogUpdated.Success)
             {
+                // We need to update the log to be included in the timeline now that we are done
+                prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
                 return;
             }
         }
