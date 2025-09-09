@@ -24,8 +24,6 @@ namespace EncompassAPI.Models.Salesforce
 
         public string borrower { get; set; }
 
-        public string documentNumber { get; set; }
-
         public string documentComments { get; set; }
 
         public string documentModifiedDate { get; set; }
