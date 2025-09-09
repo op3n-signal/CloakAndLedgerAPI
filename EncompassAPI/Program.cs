@@ -36,6 +36,7 @@ builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.Ge
 builder.Services.Configure<DocusignConfig>(options => builder.Configuration.GetSection(nameof(DocusignConfig)).Bind(options));
 
 builder.Services.AddScoped<IDisclosuresService, DisclosuresService>();
+builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
