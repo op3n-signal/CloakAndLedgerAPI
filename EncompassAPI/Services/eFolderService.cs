@@ -123,6 +123,29 @@ namespace EncompassAPI.Services
             }
         }
 
+        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, bool includeInTimeline, string token)
+        {
+            try
+            {
+                foreach (var id in logIds)
+                {
+                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, id, includeInTimeline, token);
+
+                    if (!result.Success)
+                    {
+                        return result;
+                    }
+                }
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(UpdateDisclosureTrackingLog)}");
@@ -308,6 +331,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token);
         ProcessResult RemoveDocumentsNotInDisclosureLog(string orgId, string loanId, List<Form2> forms, string disclosureLogId, IEnumerable<EncompassDocument> documents);
         /// <summary>
