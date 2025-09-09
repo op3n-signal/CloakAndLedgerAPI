@@ -1,4 +1,5 @@
 ﻿using Amazon.CloudWatchLogs;
+using Amazon.S3.Model;
 using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
@@ -615,7 +616,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName)
+        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
         {
             try
             {
@@ -623,8 +624,15 @@ namespace EncompassAPI.Services
 
                 int currentPageCount = 0;
 
-                // Get all PDF files in the folder
+                // Get all PDF files with path in the folder
                 string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
+
+                // Order the files based on how they were ordered
+                var sortedFiles = attachmentNames
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .ToArray();
+
+                _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
 
                 using (PdfDocument outputDocument = new PdfDocument())
                 {
@@ -749,7 +757,7 @@ namespace EncompassAPI.Services
 
         ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts);
 
-        ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName);
+        ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
         ProcessResult<string> GetDisclosuresName(string disclosureType);

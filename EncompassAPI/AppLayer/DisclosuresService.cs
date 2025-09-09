@@ -199,7 +199,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // Merge files here and this file is what I send back to candid... 
-            ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result, prDisclosuresName.Result);
+            ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
 
             if (!prFilePageCounts.Success)
             {
