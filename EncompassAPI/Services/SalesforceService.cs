@@ -95,7 +95,7 @@ namespace EncompassAPI.Services
                 };
 
 
-                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(objParams));
+                object responseData = await _http.PostAsync<object>(endpoint, headers, JsonSerializer.Serialize(objParams));
         
                 if (responseData == null)
                 {
