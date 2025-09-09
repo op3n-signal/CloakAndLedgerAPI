@@ -57,7 +57,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo)
+        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo)
         {
             _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
 
@@ -95,22 +95,30 @@ namespace EncompassAPI.Services
                 };
 
 
-                object responseData = await _http.PostAsync<object>(endpoint, headers, JsonSerializer.Serialize(objParams));
+                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(objParams));
         
                 if (responseData == null)
                 {
                     throw new Exception($"No response while pushing document for org: {incomingRequest.OrgId}");
                 }
 
+                if(responseData.response.ToLower() != "success")
+                {
+                    throw new Exception($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
+                }
+
                 _logger.LogVerbose(JsonSerializer.Serialize(responseData));
 
-                return new ProcessResult(true);
+                return new ProcessResult<string>(true)
+                {
+                    Result = responseData.itemsNeeded[0].documentId
+                };
             }
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Error while pushing upload url to salesforce org: {incomingRequest.OrgId}{Environment.NewLine}Exception: {ex}");
 
-                return new ProcessResult(false, $"Error while pushing upload url to salesforce org: {incomingRequest.OrgId}");
+                return new ProcessResult<string>(false, $"Error while pushing upload url to salesforce org: {incomingRequest.OrgId}");
             }
         }
 
@@ -185,7 +193,7 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo);
+        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }
