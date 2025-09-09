@@ -30,7 +30,7 @@ namespace EncompassAPI.Controllers
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
 
             // Start background process
-            var task = Task.Run(() =>
+            var task = Task.Run(async () =>
             {
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
@@ -40,7 +40,7 @@ namespace EncompassAPI.Controllers
                     disclosuresService.Init(request, token);
 
                     // Run the background process
-                    disclosuresService.Retrieve().GetAwaiter().GetResult();
+                    await disclosuresService.Retrieve();
                 }
             });
 
