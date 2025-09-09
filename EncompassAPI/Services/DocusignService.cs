@@ -47,6 +47,10 @@ namespace EncompassAPI.Services
                     { "Authorization", "Bearer " + docusignSecret.jwt_token }
                 };
 
+                _logger.LogVerbose("Draft edit request:");
+                _logger.LogVerbose(JsonSerializer.Serialize(draftEditRequest));
+                _logger.LogVerbose(JsonSerializer.Serialize(draftEditRequest));
+
                 DocusignDraftResponse docusignDraftResponse = await _http.PostAsync<DocusignDraftResponse>(docusignSecret.requestDraftForEditingEndpoint, headers, JsonSerializer.Serialize(draftEditRequest));
 
                 if (docusignDraftResponse == null)

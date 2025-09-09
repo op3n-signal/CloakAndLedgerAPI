@@ -216,6 +216,7 @@ namespace EncompassAPI.Services
 
                     HttpResponseMessage response = await _httpClient.SendAsync(request);
                     string json = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation(json);
                     if (response.IsSuccessStatusCode)
                     {
 
