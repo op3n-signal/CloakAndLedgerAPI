@@ -7,6 +7,7 @@
         public bool includedInTimeline { get; set; }
         public string status { get; set; }
         public string disclosureType { get; set; }
+        public int revision { get; set; }
         public Discloseddate disclosedDate { get; set; }
         public Disclosedby disclosedBy { get; set; }
         public string disclosedMethod { get; set; }

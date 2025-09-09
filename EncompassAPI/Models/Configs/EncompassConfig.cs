@@ -4,6 +4,8 @@
     {
         public string BaseUrl { get; set; }
 
+        public string LoanEndpointV1 { get; set; }
+
         public string LoanEndpointV3 { get; set; }
 
         public string TokenEndpoint { get; set; }   

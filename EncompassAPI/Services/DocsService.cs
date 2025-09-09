@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace EncompassAPI.Services
 {
@@ -33,6 +34,64 @@ namespace EncompassAPI.Services
             _encompassConfig = encompassOptions.Value;
             _http = http;
             _fileConfig = fileOptions.Value;
+        }
+
+        public async Task<ProcessResult<DisclosureStage>> GetDisclosureStage(string orgId, string loanId, string token)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(GetDisclosureStage)}");
+
+            try
+            {
+                // Get field values
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV1}/{loanId}/fieldReader";
+
+                string[] payload = new string[] { "3152", "3154", "3977", "3979" };
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                FieldReaderResponse[] response = await _http.PostAsync<FieldReaderResponse[]>(url, headers, JsonSerializer.Serialize(payload));
+
+                if (response == null || response.Length == 0)
+                {
+                    _logger.Base.LogError("No field values found");
+                    return new ProcessResult<DisclosureStage>(false, "No field values found");
+                }
+
+                IEnumerable<FieldReaderResponse> fieldReaderResponse = response.OrderByDescending(x => x.fieldId);
+
+                foreach (FieldReaderResponse fieldReader in fieldReaderResponse)
+                {
+                    if(string.IsNullOrEmpty(fieldReader.value)) 
+                    { 
+                        continue;
+                    }
+
+                    switch (fieldReader.fieldId)
+                    {
+                        case "3979":
+                            return new ProcessResult<DisclosureStage>(true) { Result = DisclosureStage.RevisedInitialClosingDisclosures };
+                        case "3977":
+                            return new ProcessResult<DisclosureStage>(true) { Result = DisclosureStage.InitialClosingDisclosures };
+                        case "3154":
+                            return new ProcessResult<DisclosureStage>(true) { Result = DisclosureStage.RevisedInitialDisclosures };
+                        case "3152":
+                            return new ProcessResult<DisclosureStage>(true) { Result = DisclosureStage.InitialDisclosures };
+                        default:
+                            break;
+                    }
+                }
+
+                return new ProcessResult<DisclosureStage>(false, "No matching field id found");
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve loan audit for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DisclosureStage>(false, $"Failed to retrieve loan audit for loan {loanId} in org {orgId}.");
+            }
         }
 
         public async Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token)
@@ -668,22 +727,25 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<string> GetDisclosuresName(string disclosureType)
+        public ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision)
         {
             try
             {
                 string disclosuresName;
 
-                switch (disclosureType)
+                switch (stage)
                 {
-                    case "Initial":
+                    case DisclosureStage.RevisedInitialClosingDisclosures:
+                        disclosuresName = _fileConfig.RevisedInitialClosingDisclosuresName;
+                        break;
+                    case DisclosureStage.InitialClosingDisclosures:
+                        disclosuresName = _fileConfig.InitialClosingDisclosuresName;
+                        break;
+                    case DisclosureStage.RevisedInitialDisclosures:
+                        disclosuresName = _fileConfig.RevisedIntialDisclosuresName;
+                        break;
+                    case DisclosureStage.InitialDisclosures:
                         disclosuresName = _fileConfig.IntialDisclosuresName;
-                        break;
-                    case "Revised":
-                        disclosuresName = "";
-                        break;
-                    case "Final":
-                        disclosuresName = "";
                         break;
                     default:
                         disclosuresName = "";
@@ -692,7 +754,12 @@ namespace EncompassAPI.Services
 
                 if(string.IsNullOrWhiteSpace(disclosuresName))
                 {
-                    return new ProcessResult<string>(false, $"No disclosures name found for type {disclosureType}");
+                    return new ProcessResult<string>(false, $"No disclosures name found for type {stage}");
+                }
+
+                if (stage.ToString().ToLower().Contains("revised") && revision > 1)
+                {
+                    disclosuresName = disclosuresName.Replace(".pdf", $" v{revision}.pdf");
                 }
 
                 return new ProcessResult<string>(true)
@@ -702,14 +769,15 @@ namespace EncompassAPI.Services
             }
             catch(Exception ex)
             {
-                _logger.Base.LogError($"Failed to get disclosures name for type {disclosureType}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, $"Failed to get disclosures name for type {disclosureType}. Exception: {ex}");
+                _logger.Base.LogError($"Failed to get disclosures name for type {stage}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, $"Failed to get disclosures name for type {stage}. Exception: {ex}");
             }
         }
     }
 
     public interface IEncompassService
     {
+        Task<ProcessResult<DisclosureStage>> GetDisclosureStage(string orgId, string loanId, string token);
         Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token);
         Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId, string token);
         Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token);
@@ -760,7 +828,7 @@ namespace EncompassAPI.Services
         ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
-        ProcessResult<string> GetDisclosuresName(string disclosureType);
+        ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision);
 
         /*        /// <summary>
                 /// Commit and send an Opening Package (Initial Disclosures) to a recipient.

@@ -59,7 +59,14 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            ProcessResult<string> prDisclosuresName = _docsService.GetDisclosuresName(prDisclosureTrackingLog.Result.disclosureType);
+            ProcessResult<DisclosureStage> prDisclosureStage = await _docsService.GetDisclosureStage(request.OrgId, request.LoanId, token);
+
+            if (!prDisclosureStage.Success)
+            {
+                return;
+            }
+
+            ProcessResult<string> prDisclosuresName = _docsService.GetDisclosuresName(prDisclosureStage.Result, prDisclosureTrackingLog.Result.revision);
 
             if (!prDisclosuresName.Success)
             {
