@@ -23,9 +23,9 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token)
+        public async Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetLastestDisclosureTrackingLog)}");
+            _logger.Base.LogInformation($"Entering {nameof(GetDisclosureTrackingLogs)}");
 
             try
             {
@@ -42,18 +42,37 @@ namespace EncompassAPI.Services
                 if (!ieDisclosureLogs.Any())
                 {
                     _logger.Base.LogError($"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
-                    return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<IEnumerable<DisclosureTrackingLog>> (false, $"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
                 }
 
-                if(!ieDisclosureLogs.Any(log => log.includedInTimeline == true))
+                if (!ieDisclosureLogs.Any(log => log.includedInTimeline == true))
                 {
                     _logger.Base.LogError($"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
-                    return new ProcessResult<DisclosureTrackingLog>(false, $"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<IEnumerable<DisclosureTrackingLog>> (false, $"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
                 }
 
                 // Get all logs that are included in timeline
                 ieDisclosureLogs = ieDisclosureLogs.Where(log => log.includedInTimeline == true);
 
+                return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(true)
+                {
+                    Result = ieDisclosureLogs
+                }
+                ;
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<IEnumerable<DisclosureTrackingLog>> (false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
+        public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(GetLastestDisclosureTrackingLog)}");
+
+            try
+            {
                 // Order logs by created date descending
                 IOrderedEnumerable<DisclosureTrackingLog> orderedLogs = ieDisclosureLogs.OrderByDescending(log => log.disclosureCreatedDate);
 
@@ -78,6 +97,29 @@ namespace EncompassAPI.Services
             {
                 _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
                 return new ProcessResult<DisclosureTrackingLog>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
+        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, bool includeInTimeline, string token)
+        {
+            try
+            {
+                foreach (var log in ieDisclosureLogs)
+                {
+                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, log.id, includeInTimeline, token);
+
+                    if (!result.Success)
+                    {
+                        return result;
+                    }
+                }
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.");
             }
         }
 
@@ -263,7 +305,9 @@ namespace EncompassAPI.Services
 
     public interface IeFolderService
     {
-        Task<ProcessResult<DisclosureTrackingLog>> GetLastestDisclosureTrackingLog(string orgId, string loanId, string token);
+        Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
+        ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
+        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token);
         ProcessResult RemoveDocumentsNotInDisclosureLog(string orgId, string loanId, List<Form2> forms, string disclosureLogId, IEnumerable<EncompassDocument> documents);
         /// <summary>

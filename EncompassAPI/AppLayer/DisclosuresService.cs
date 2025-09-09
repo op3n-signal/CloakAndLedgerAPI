@@ -51,8 +51,16 @@ namespace EncompassAPI.AppLayer
                 }
             }
 
+            // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
+            ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _eFolderService.GetDisclosureTrackingLogs(request.OrgId, request.LoanId, token);
+
+            if (!prDisclosureLogs.Success)
+            {
+                return;
+            }
+
             // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
-            ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = await _eFolderService.GetLastestDisclosureTrackingLog(request.OrgId, request.LoanId, token);
+            ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _eFolderService.GetLastestDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureLogs.Result);
 
             if (!prDisclosureTrackingLog.Success)
             {
@@ -74,7 +82,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-            ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, false, token);
+            ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, false, token);
 
             if (!prLogUpdated.Success)
             {
@@ -275,7 +283,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // We need to update the log to be included in the timeline now that we are done
-            prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLog(request.OrgId, request.LoanId, prDisclosureTrackingLog.Result.id, true, token);
+            prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(request.OrgId, request.LoanId, prDisclosureLogs.Result, true, token);
 
             if (!prLogUpdated.Success)
             {
