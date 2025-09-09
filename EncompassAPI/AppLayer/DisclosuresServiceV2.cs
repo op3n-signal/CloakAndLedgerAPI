@@ -296,5 +296,7 @@ namespace EncompassAPI.AppLayer
         /// <param name="eventNotification"></param>
         /// <returns></returns>
         Task Retrieve();
+
+        ValueTask DisposeAsync();
     }
 }
