@@ -87,6 +87,7 @@ namespace EncompassAPI.Services
                 }
 
                 _logger.LogVerbose("disclosureType: " + latestLog.disclosureType);
+                _logger.LogVerbose("disclosureType: " + JsonSerializer.Serialize(latestLog.documents.forms));
 
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {

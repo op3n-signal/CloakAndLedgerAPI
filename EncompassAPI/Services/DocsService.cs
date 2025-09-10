@@ -691,12 +691,16 @@ namespace EncompassAPI.Services
                 .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
                 .ToArray();
 
+                _logger.LogVerbose("Sorted files: " + JsonSerializer.Serialize(attachmentNames));
+
                 _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
 
                 using (PdfDocument outputDocument = new PdfDocument())
                 {
                     foreach (string file in inputFiles)
                     {
+                        _logger.LogVerbose($"Merging file: {file}");
+
                         using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
                         {
                             // Add the page count as the total page count so far
@@ -752,7 +756,10 @@ namespace EncompassAPI.Services
                         break;
                 }
 
-                if(string.IsNullOrWhiteSpace(disclosuresName))
+                _logger.LogVerbose($"Disclosures name for type {stage} is {disclosuresName}");
+                _logger.LogVerbose(revision.ToString());
+
+                if (string.IsNullOrWhiteSpace(disclosuresName))
                 {
                     return new ProcessResult<string>(false, $"No disclosures name found for type {stage}");
                 }
