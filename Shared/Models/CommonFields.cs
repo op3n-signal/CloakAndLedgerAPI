@@ -34,5 +34,7 @@
         public const string PrintMode = "LoanData";
         public const string DocumentCategory = "Disclosures";
         public const string DocumentStatus = "Sent";
+        public const string TaskType = "E-Sign";
+        public const string EsignStatus = "Pending Signature";
     }
 }

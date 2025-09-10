@@ -64,8 +64,6 @@ namespace EncompassAPI.Models.Salesforce
 
         public decimal statementHistoryDuration {  get; set; }
 
-        //public string tasks { get; set; }
-
-        //public string ESign_Status__c { get; set; }
+        public string esignStatus { get; set; }
     }
 }

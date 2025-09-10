@@ -78,10 +78,9 @@ namespace EncompassAPI.Services
                     documentName = disclosuresName.Replace(".pdf", ""),
                     documentCategory = CommonFields.DocumentCategory,
                     documentStatus = CommonFields.DocumentStatus,
-                    //documentLastActivity = DateTime.UtcNow.ToString("o"),
                     isTask = true,
-                    //taskType
-                    //esignstatus
+                    taskType = CommonFields.TaskType,
+                    esignStatus = CommonFields.EsignStatus,
                     googleDriveFileDownloadableURL = uploadUrl,
                     prospectId = incomingRequest.ProspectId,
                     documentAssignedTo = incomingRequest.AssignedTo,
