@@ -81,7 +81,7 @@ namespace EncompassAPI.Services
 
                 if (latestLog.disclosureType.ToLower() == "revised")
                 {
-                    ieDisclosureLogs = ieDisclosureLogs.TakeWhile(d => d.disclosureType == "revised");
+                    ieDisclosureLogs = orderedLogs.TakeWhile(d => d.disclosureType.ToLower() == "revised");
 
                     latestLog.revision = ieDisclosureLogs.Count();
                 }
