@@ -546,11 +546,11 @@ namespace EncompassAPI.Services
                         // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
                         if (doc.name == "Credit Score Disclosure")
                         {
-                            recipient = draftEditRequest.Recipients[0];
+                            recipient = draftEditRequest.Recipients[1];
                         }
                         else if(doc.name == "Credit Score Disclosure, 2")
                         {
-                            recipient = draftEditRequest.Recipients[1];
+                            recipient = draftEditRequest.Recipients[0];
                         }
 
                         if (recipient == null)
