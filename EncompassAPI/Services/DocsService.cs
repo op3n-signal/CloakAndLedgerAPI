@@ -693,7 +693,7 @@ namespace EncompassAPI.Services
                 .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
                 .ToArray();
 
-                _logger.LogVerbose("Sorted files: " + JsonSerializer.Serialize(attachmentNames));
+                _logger.LogVerbose("Sorted files: ");
 
                 _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
 
@@ -705,6 +705,7 @@ namespace EncompassAPI.Services
 
                         if(string.IsNullOrEmpty(file))
                         {
+
                             _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
                             return new ProcessResult<Dictionary<string, int>>(false, "One of the files to merge is null or empty.");
                         }
