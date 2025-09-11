@@ -522,7 +522,7 @@ namespace EncompassAPI.Services
                     {
                         beginningPageNumber = 0;
                     }
-                    else if((indexOfCurrentItem - 1) != 0)
+                    else 
                     {
                         beginningPageNumber = filePageCounts.ElementAt(indexOfCurrentItem - 1).Value;
                     }
