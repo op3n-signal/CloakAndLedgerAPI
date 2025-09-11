@@ -699,7 +699,7 @@ namespace EncompassAPI.Services
 
                 using (PdfDocument outputDocument = new PdfDocument())
                 {
-                    foreach (string file in inputFiles)
+                    foreach (string file in sortedFiles)
                     {
                         _logger.LogVerbose($"Merging file: {file}");
 
