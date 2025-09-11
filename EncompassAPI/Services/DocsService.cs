@@ -707,7 +707,7 @@ namespace EncompassAPI.Services
                         {
 
                             _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
-                            return new ProcessResult<Dictionary<string, int>>(false, "One of the files to merge is null or empty.");
+                            continue;
                         }
 
                         using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
