@@ -92,6 +92,7 @@
         public string name { get; set; }
         public string email { get; set; }
         public string disclosedMethod { get; set; }
+        public string actualReceivedDate { get; set; }
         public Role2 role { get; set; }
     }
 

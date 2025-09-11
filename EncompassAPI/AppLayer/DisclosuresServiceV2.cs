@@ -22,11 +22,12 @@ namespace EncompassAPI.AppLayer
         private readonly ISalesforceService _sfService;
         private readonly IEncompassService _docsService;
         private readonly IDocusignService _docusignService;
+        private readonly IDisclosureAuditService _disclosureAuditService;
         private CandidIncomingRequest _request;
         private string _token;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService)
+        public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;
@@ -35,6 +36,7 @@ namespace EncompassAPI.AppLayer
             _sfService = sfService;
             _docsService = docsService;
             _docusignService = docusignService;
+            _disclosureAuditService = disclosureAuditService;
         }
 
         public void Init(CandidIncomingRequest request, string token)
@@ -63,7 +65,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
-                ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _eFolderService.GetDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _token);
+                ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _disclosureAuditService.GetDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _token);
 
                 if (!prDisclosureLogs.Success)
                 {
@@ -73,7 +75,7 @@ namespace EncompassAPI.AppLayer
                 _logIds = prDisclosureLogs.Result.Select(log => log.id).ToList();
 
                 // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
-                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _eFolderService.GetLastestDisclosureTrackingLog(_request.OrgId, _request.LoanId, prDisclosureLogs.Result);
+                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_request.OrgId, _request.LoanId, prDisclosureLogs.Result);
 
                 if (!prDisclosureTrackingLog.Success)
                 {
@@ -95,7 +97,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-                ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, prDisclosureLogs.Result, false, _token);
+                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, prDisclosureLogs.Result, false, _token);
 
                 if (!prLogUpdated.Success)
                 {
@@ -266,6 +268,13 @@ namespace EncompassAPI.AppLayer
                 {
                     return;
                 }
+
+                ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_request.OrgId, _request.LoanId, prDisclosureTrackingLog.Result, _token);
+
+                if (!prUpdateLogActualReceivedDate.Success)
+                {
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -276,7 +285,7 @@ namespace EncompassAPI.AppLayer
         public async ValueTask DisposeAsync()
         {
             // We need to update the log to be included in the timeline now that we are done
-            ProcessResult prLogUpdated = await _eFolderService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _logIds, true, _token);
+            ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _logIds, true, _token);
 
             if (!prLogUpdated.Success)
             {

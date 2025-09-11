@@ -118,11 +118,12 @@ if __name__ == "__main__":
     # Get existing secret value
     encompass_secret = get_secret("encompassMiddleware")
     retrieveDisclosuresEndpoint = encompass_secret.get("retrieveDisclosuresEndpoint")
+    updateIntentToProceedEndpoint = encompass_secret.get("updateIntentToProceedEndpoint")
 
     log_with_time("New Token Generated")
     log_with_time("Token valid for days:" +valid_days )
     # Wrap token in a dict so Secrets Manager stores it as JSON
-    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint}
+    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint, "updateIntentToProceedEndpoint": updateIntentToProceedEndpoint}
 
     put_secret("encompassMiddleware", secret_payload)
     log_with_time("AWS Secret Updated")
