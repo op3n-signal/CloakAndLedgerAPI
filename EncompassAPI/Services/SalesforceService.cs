@@ -108,9 +108,11 @@ namespace EncompassAPI.Services
 
                 _logger.LogVerbose(JsonSerializer.Serialize(responseData));
 
+                Document uploadedDoc = responseData.itemsNeeded.Find(item => item.documentName == disclosuresName.Replace(".pdf", ""));
+
                 return new ProcessResult<string>(true)
                 {
-                    Result = responseData.itemsNeeded[0].documentId
+                    Result = uploadedDoc.documentId
                 };
             }
             catch (Exception ex)
