@@ -318,8 +318,6 @@ namespace EncompassAPI.Services
                     return new ProcessResult<List<Document>>(false, "The document orders response has errors");
                 }
 
-                _logger.LogVerbose("Doc set: " + JsonSerializer.Serialize(documentOrders));
-
                 return new ProcessResult<List<Document>>(true)
                 {
                     Result = documentOrders.documents
@@ -484,6 +482,12 @@ namespace EncompassAPI.Services
 
             foreach (var document in documents)
             {
+                if (document.signatureType == "Wet Sign Only")
+                {
+                    _logger.Base.LogInformation($"Removing {document.name} since it is wet sign only");
+                    continue;
+                }
+
                 bool exists = dictAttachmentNamesToFind.ContainsKey(document.name);
 
                 if (exists)
