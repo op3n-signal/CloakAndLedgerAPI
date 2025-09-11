@@ -482,11 +482,12 @@ namespace EncompassAPI.Services
 
             foreach (var document in documents)
             {
-                if (document.signatureType == "Wet Sign Only")
-                {
-                    _logger.Base.LogInformation($"Removing {document.name} since it is wet sign only");
-                    continue;
-                }
+                //Let's not remove wet sign only documents for now
+                /* if (document.signatureType == "Wet Sign Only")
+                 {
+                     _logger.Base.LogInformation($"Removing {document.name} since it is wet sign only");
+                     continue;
+                 }*/
 
                 bool exists = dictAttachmentNamesToFind.ContainsKey(document.name);
 
