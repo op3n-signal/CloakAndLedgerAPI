@@ -505,8 +505,13 @@ namespace EncompassAPI.Services
                 int totalPageCount = filePageCounts.Last().Value;
                 List<string> keys = filePageCounts.Keys.ToList();
 
+                _logger.LogVerbose("Page counts: ");
+                _logger.LogVerbose(JsonSerializer.Serialize(filePageCounts));
+
                 foreach (Document doc in documents ?? new List<Document>())
                 {
+                    _logger.LogVerbose($"Mapping document: {doc.name}");
+
                     // Get current item in page count dictionary
                     KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == doc.name.Replace("/", "_"));
                     int indexOfCurrentItem = keys.ToList().IndexOf(currentItem.Key);
@@ -534,9 +539,12 @@ namespace EncompassAPI.Services
 
                     foreach (Signer signer in doc.signers ?? Array.Empty<Signer>())
                     {
-                        if(signer.partyId.ToLower().Contains("originator"))
+                        _logger.LogVerbose($"Mapping signer: {signer.partyId}");
+
+                        if (signer.partyId.ToLower().Contains("originator"))
                         {
                             // Skip originator
+                            _logger.LogVerbose("Skipping originator");
                             continue;
                         }
 
@@ -630,6 +638,8 @@ namespace EncompassAPI.Services
 
                                         leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
                                     }
+
+                                    _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
 
                                     recipient.Tabs.SignHereTabs.Add(new SignHere
                                     {
