@@ -318,6 +318,8 @@ namespace EncompassAPI.Services
                     return new ProcessResult<List<Document>>(false, "The document orders response has errors");
                 }
 
+                _logger.LogVerbose("Doc set: " + JsonSerializer.Serialize(documentOrders));
+
                 return new ProcessResult<List<Document>>(true)
                 {
                     Result = documentOrders.documents
