@@ -527,6 +527,8 @@ namespace EncompassAPI.Services
                         beginningPageNumber = filePageCounts.ElementAt(indexOfCurrentItem - 1).Value;
                     }
 
+                    _logger.LogVerbose($"Beginning page number for {doc.name} is {beginningPageNumber}");
+
                     string tabLabelSignature1 = "";
                     string tabLabelSignature2 = "";
                     bool alreadySignedFirstHalf = false;
