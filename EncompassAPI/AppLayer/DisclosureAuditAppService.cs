@@ -36,7 +36,9 @@ namespace EncompassAPI.AppLayer
                 return processResult;
             }
 
-            ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result.id, token);
+            bool blContainsLE = prDisclosureTrackingLog.Result.contents.Any(item => item.ToLower().Contains("le"));
+
+            ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result.id, blContainsLE, token);
 
             if (!prUpdate.Success)
             {

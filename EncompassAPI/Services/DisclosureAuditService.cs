@@ -22,7 +22,7 @@ namespace EncompassAPI.Services
             _http = http;
         }
 
-        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token)
+        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(UpdateIntentToProceedInDisclosureLog)}");
 
@@ -34,9 +34,10 @@ namespace EncompassAPI.Services
 
                 object intentToProceed = new
                 {
-                    intent = false,  //todo indicating if the disclosure 
+                    intent = containsLE,
                     date = currentDate,
-                    receivedMethod = ReceivedMethod,
+                    receivedMethod = "Other",
+                    receivedMethodOther = "Candid",
                     receivedBy = new {
                         useUserValue = false
                     }
@@ -328,7 +329,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosureAuditService
     {
-        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token);
+        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token);
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureMethodDescription status, bool includeInTimeline, string token);
