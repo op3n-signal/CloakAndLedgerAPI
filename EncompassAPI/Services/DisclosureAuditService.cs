@@ -288,7 +288,9 @@ namespace EncompassAPI.Services
                 disclosureRecipients.Add(new
                 {
                     id = disclosureLog.disclosureRecipients[0].id,
-                    actualReceivedDate = currentDate
+                    actualReceivedDate = currentDate,
+                    disclosedMethod = "Other",
+                    disclosedMethodDescription = CommonFields.AppName
                 });
 
                 if (disclosureLog.disclosureRecipients.Length > 1)
@@ -296,7 +298,9 @@ namespace EncompassAPI.Services
                     disclosureRecipients.Add(new
                     {
                         id = disclosureLog.disclosureRecipients[1].id,
-                        actualReceivedDate = currentDate
+                        actualReceivedDate = currentDate,
+                        disclosedMethod = "Other",
+                        disclosedMethodDescription = CommonFields.AppName,
                     });
                 }
 

@@ -37,6 +37,7 @@
         public const string TaskType = "E-Sign";
         public const string EsignStatus = "Pending Signature";
         public const string DisclosedMethod = "Other";
+        public const string AppName = "Candid";
     }
 
     public enum DisclosureMethodDescription
