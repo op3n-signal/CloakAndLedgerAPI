@@ -80,6 +80,8 @@ namespace EncompassAPI.Services
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs";
 
+                _logger.LogVerbose("token: " + token);
+
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
                     { "Authorization", "Bearer " + token }
@@ -110,8 +112,8 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+                _logger.Base.LogError($"Failed to retrieve disclosure logs for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(false, $"Failed to retrieve disclosure logs for loan {loanId} in org {orgId}.");
             }
         }
 
