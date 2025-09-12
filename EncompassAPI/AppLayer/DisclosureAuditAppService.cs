@@ -36,7 +36,7 @@ namespace EncompassAPI.AppLayer
                 return processResult;
             }
 
-            ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result, token);
+            ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result.id, token);
 
             if (!prUpdate.Success)
             {

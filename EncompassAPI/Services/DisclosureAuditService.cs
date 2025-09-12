@@ -4,8 +4,6 @@ using EncompassAPI.Models.Encompass;
 using Microsoft.Extensions.Options;
 using Shared.Models;
 using System.Text.Json;
-using static System.Net.WebRequestMethods;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EncompassAPI.Services
 {
@@ -24,14 +22,14 @@ namespace EncompassAPI.Services
             _http = http;
         }
 
-        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token)
+        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(UpdateIntentToProceedInDisclosureLog)}");
 
             try
             {
                 // Get Disclosure tracking logs from Encompass
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLog.id}";
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
                 string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
 
                 object intentToProceed = new
@@ -59,8 +57,8 @@ namespace EncompassAPI.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLog.id} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
-                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLog.id} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
+                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
+                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
                 }
 
                 return new ProcessResult(true);
@@ -135,6 +133,13 @@ namespace EncompassAPI.Services
                     latestLog.revision = ieDisclosureLogs.Count();
                 }
 
+                // Let's only proceed if the actual received date is not set
+                if (latestLog.disclosedMethod == "Other")
+                {
+                    _logger.Base.LogError($"Disclosed Method is set to {latestLog.disclosedMethod} and description {latestLog.disclosedMethodDescription} in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<DisclosureTrackingLog>(false, $"Disclosed Method is set to {latestLog.disclosedMethod} and description {latestLog.disclosedMethodDescription} in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
+                }
+
                 _logger.LogVerbose("disclosureType: " + latestLog.disclosureType);
                 _logger.LogVerbose("disclosureType: " + JsonSerializer.Serialize(latestLog.documents.forms));
 
@@ -180,13 +185,13 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, bool includeInTimeline, string token)
+        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureMethodDescription status, bool includeInTimeline, string token)
         {
             try
             {
                 foreach (var log in ieDisclosureLogs)
                 {
-                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, log.id, includeInTimeline, token);
+                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, log.id, log.id == latestLogId, status, includeInTimeline, token);
 
                     if (!result.Success)
                     {
@@ -203,13 +208,13 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, bool includeInTimeline, string token)
+        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, DisclosureMethodDescription status, bool includeInTimeline, string token)
         {
             try
             {
                 foreach (var id in logIds)
                 {
-                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, id, includeInTimeline, token);
+                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, id, id == latestLogId, status, includeInTimeline, token);
 
                     if (!result.Success)
                     {
@@ -226,7 +231,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token)
+        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureMethodDescription status, bool includeInTimeline, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(UpdateDisclosureTrackingLog)}");
 
@@ -235,10 +240,13 @@ namespace EncompassAPI.Services
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
 
-                object payload = new
-                {
-                    includedInTimeline = includeInTimeline
-                };
+                dynamic payload = new System.Dynamic.ExpandoObject();
+                payload.includedInTimeline = includeInTimeline;
+
+                if (isLatestLog) {
+                    payload.disclosedMethod = CommonFields.DisclosedMethod;
+                    payload.disclosedMethodDescription = status.ToString();
+                }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -320,12 +328,12 @@ namespace EncompassAPI.Services
 
     public interface IDisclosureAuditService
     {
-        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token);
+        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token);
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
-        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, bool includeInTimeline, string token);
-        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, bool includeInTimeline, string token);
-        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureMethodDescription status, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, DisclosureMethodDescription status, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureMethodDescription status, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogByReceivedDate(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
     }

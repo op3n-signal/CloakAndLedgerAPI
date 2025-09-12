@@ -37,10 +37,10 @@ namespace EncompassAPI.Controllers
                     // Get a scoped service in THIS scope
                     await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV2>();
 
-                    disclosuresService.Init(request, token);
+                    disclosuresService.Init(token);
 
                     // Run the background process
-                    await disclosuresService.Retrieve();
+                    await disclosuresService.Retrieve(request);
                 }
             });
 

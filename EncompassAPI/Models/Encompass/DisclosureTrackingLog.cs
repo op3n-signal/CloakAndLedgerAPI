@@ -11,6 +11,7 @@
         public Discloseddate disclosedDate { get; set; }
         public Disclosedby disclosedBy { get; set; }
         public string disclosedMethod { get; set; }
+        public string disclosedMethodDescription { get; set; }
         public Disclosurerecipient[] disclosureRecipients { get; set; }
         public Discloseddailyinterest disclosedDailyInterest { get; set; }
         public Disclosedapr disclosedApr { get; set; }

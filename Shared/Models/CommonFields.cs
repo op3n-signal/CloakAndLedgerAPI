@@ -36,5 +36,13 @@
         public const string DocumentStatus = "Sent";
         public const string TaskType = "E-Sign";
         public const string EsignStatus = "Pending Signature";
+        public const string DisclosedMethod = "Other";
+    }
+
+    public enum DisclosureMethodDescription
+    {
+        Candid,
+        Error,
+        Running
     }
 }

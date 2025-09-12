@@ -23,8 +23,12 @@ namespace EncompassAPI.AppLayer
         private readonly IEncompassService _docsService;
         private readonly IDocusignService _docusignService;
         private readonly IDisclosureAuditService _disclosureAuditService;
-        private CandidIncomingRequest _request;
+
+        private string _orgId;
+        private string _loanId;
         private string _token;
+        private string _latestLogId;
+        private DisclosureMethodDescription _status;
         private List<string> _logIds = new List<string>();
 
         public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService)
@@ -39,23 +43,43 @@ namespace EncompassAPI.AppLayer
             _disclosureAuditService = disclosureAuditService;
         }
 
-        public void Init(CandidIncomingRequest request, string token)
+        public void Init(string token)
         {
-            _request = request;
             _token = token;
         }
 
-        public async Task Retrieve()
+        public async Task Retrieve(CandidIncomingRequest request)
         {
             try
             {
+                _orgId = request.OrgId;
+                _loanId = request.LoanId;
+
+                // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
+                ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _disclosureAuditService.GetDisclosureTrackingLogs(_orgId, _loanId, _token);
+
+                if (!prDisclosureLogs.Success)
+                {
+                    return;
+                }
+
+                // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
+                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_orgId, _loanId, prDisclosureLogs.Result);
+
+                if (!prDisclosureTrackingLog.Success)
+                {
+                    return;
+                }
+
+                _latestLogId = prDisclosureTrackingLog.Result.id;
+
                 // Get the resource lock id from loan
-                ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(_request.OrgId, _request.LoanId, _token);
+                ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(_orgId, request.LoanId, _token);
 
                 if (prRetrievedLockId.Success)
                 {
                     // Remove resource lock from loan
-                    ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(_request.OrgId, _request.LoanId, prRetrievedLockId.Result, _token);
+                    ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(_orgId, request.LoanId, prRetrievedLockId.Result, _token);
 
                     if (!prLockRemoved.Success)
                     {
@@ -64,25 +88,9 @@ namespace EncompassAPI.AppLayer
                     }
                 }
 
-                // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
-                ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _disclosureAuditService.GetDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _token);
-
-                if (!prDisclosureLogs.Success)
-                {
-                    return;
-                }
-
                 _logIds = prDisclosureLogs.Result.Select(log => log.id).ToList();
 
-                // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
-                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_request.OrgId, _request.LoanId, prDisclosureLogs.Result);
-
-                if (!prDisclosureTrackingLog.Success)
-                {
-                    return;
-                }
-
-                ProcessResult<DisclosureStage> prDisclosureStage = await _docsService.GetDisclosureStage(_request.OrgId, _request.LoanId, _token);
+                ProcessResult<DisclosureStage> prDisclosureStage = await _docsService.GetDisclosureStage(_orgId, _loanId, _token);
 
                 if (!prDisclosureStage.Success)
                 {
@@ -96,8 +104,10 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
+                _status = DisclosureMethodDescription.Running;
+
                 // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, prDisclosureLogs.Result, false, _token);
+                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, prDisclosureLogs.Result, _latestLogId, _status, false, _token);
 
                 if (!prLogUpdated.Success)
                 {
@@ -108,7 +118,7 @@ namespace EncompassAPI.AppLayer
                 Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).ToDictionary(name => name, name => false);
 
                 // Get application id from loan because we need this for the audit
-                ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(_request.OrgId, _request.LoanId, _token);
+                ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(_orgId, _loanId, _token);
 
                 if (!prApplicationId.Success)
                 {
@@ -116,7 +126,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(_request.OrgId, _request.LoanId, prApplicationId.Result, _token);
+                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(_orgId, _loanId, prApplicationId.Result, _token);
 
                 if (!prAuditId.Success)
                 {
@@ -124,7 +134,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 //todo maybe return response of what failed in the audit // send back in response to candid
-                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(_request.OrgId, _request.LoanId, prAuditId.Result, _token);
+                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(_orgId, _loanId, prAuditId.Result, _token);
 
                 if (!prAuditSuccess.Success)
                 {
@@ -132,7 +142,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Get documents with signature coordinates
-                ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(_request.OrgId, _request.LoanId, prAuditId.Result, _token);
+                ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(_orgId, _loanId, prAuditId.Result, _token);
 
                 if (!prOrderId.Success)
                 {
@@ -140,7 +150,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // This only returns a select amount of documents
-                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_request.OrgId, _request.LoanId, prOrderId.Result, _token);
+                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_orgId, _loanId, prOrderId.Result, _token);
 
                 if (!prDocuments.Success)
                 {
@@ -157,7 +167,7 @@ namespace EncompassAPI.AppLayer
                 if (!prAllExist.Success)
                 {
                     // Retrieve efolder docs
-                    ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(_request.OrgId, _request.LoanId, dictAttachmentNamesToFind, _token);
+                    ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(_orgId, _loanId, dictAttachmentNamesToFind, _token);
 
                     if (!prEFolderDocumentNames.Success)
                     {
@@ -165,14 +175,14 @@ namespace EncompassAPI.AppLayer
                     }
 
                     //todo then add to list
-                    ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(_request.OrgId, _request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token);
+                    ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(_orgId, _loanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token);
 
                     if (!prJobId.Success)
                     {
                         return;
                     }
 
-                    prDocuments = await _docsService.GetOpeningDocSet(_request.OrgId, _request.LoanId, prOrderId.Result, prJobId.Result, _token);
+                    prDocuments = await _docsService.GetOpeningDocSet(_orgId, _loanId, prOrderId.Result, prJobId.Result, _token);
 
                     if (!prDocuments.Success)
                     {
@@ -193,7 +203,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Download attachments from encompass. It has to be multiple attachments because we can only get the signature coordinates by each document. Documents have page numbers.
-                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(_request.ProspectId, docSetDocuments);
+                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.ProspectId, docSetDocuments);
 
                 if (!prFileDownload.Success)
                 {
@@ -209,7 +219,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Map signature coordinates to draft edit _request for docusign
-                ProcessResult<DraftEditRequest> prDraftEditRequest = _docsService.MapToDraftEditRequest(_request, docSetDocuments, prFilePageCounts.Result);
+                ProcessResult<DraftEditRequest> prDraftEditRequest = _docsService.MapToDraftEditRequest(request, docSetDocuments, prFilePageCounts.Result);
 
                 if (!prDraftEditRequest.Success)
                 {
@@ -217,7 +227,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Get salesforce credentials for org
-                ProcessResult<OrgInfo> prOrgInfo = await _candidDataService.GetCandidCredentialsByOrg(_request.OrgId);
+                ProcessResult<OrgInfo> prOrgInfo = await _candidDataService.GetCandidCredentialsByOrg(_orgId);
 
                 if (!prOrgInfo.Success)
                 {
@@ -233,7 +243,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Get AWS settings
-                ProcessResult<GoogleDriveClone> prAWSSettings = await _sfService.GetOrgAWSSettings(_request.OrgId, _request.LoId, prOrgRequestInfo.Result);
+                ProcessResult<GoogleDriveClone> prAWSSettings = await _sfService.GetOrgAWSSettings(_orgId, request.LoId, prOrgRequestInfo.Result);
 
                 if (!prAWSSettings.Success)
                 {
@@ -245,14 +255,14 @@ namespace EncompassAPI.AppLayer
                 prDraftEditRequest.Result.S3RootFolderName = bucket;
                 prDraftEditRequest.Result.Status = "sent";
 
-                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, _request.Path, _request.ProspectId, prDisclosuresName.Result);
+                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, prDisclosuresName.Result);
 
                 if (!prUpload.Success)
                 {
                     return;
                 }
 
-                ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, _request, prOrgRequestInfo.Result, prDisclosuresName.Result);
+                ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result, prDisclosuresName.Result);
 
                 if (!prPushDocument.Success)
                 {
@@ -269,7 +279,9 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_request.OrgId, _request.LoanId, prDisclosureTrackingLog.Result, _token);
+                _status = DisclosureMethodDescription.Candid;
+
+                ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_orgId, _loanId, prDisclosureTrackingLog.Result, _token);
 
                 if (!prUpdateLogActualReceivedDate.Success)
                 {
@@ -284,8 +296,10 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
+            _status = _status == DisclosureMethodDescription.Candid ? _status : DisclosureMethodDescription.Error;
+
             // We need to update the log to be included in the timeline now that we are done
-            ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_request.OrgId, _request.LoanId, _logIds, true, _token);
+            ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, _status, true, _token);
 
             if (!prLogUpdated.Success)
             {
@@ -296,7 +310,7 @@ namespace EncompassAPI.AppLayer
 
     public interface IDisclosuresServiceV2
     {
-        void Init(CandidIncomingRequest request, string token);
+        void Init(string token);
         /// <summary>
         /// This will handle the event notification from Encompass.
         /// This will detect the org the event is for, and then retrieve the access token for that org.
@@ -304,7 +318,7 @@ namespace EncompassAPI.AppLayer
         /// </summary>
         /// <param name="eventNotification"></param>
         /// <returns></returns>
-        Task Retrieve();
+        Task Retrieve(CandidIncomingRequest request);
 
         ValueTask DisposeAsync();
     }
