@@ -17,26 +17,35 @@ namespace EncompassAPI.Utility.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions, ITokenRepo tokenRepo, IEncompassAuthService encompassAuthService)
+        public async Task InvokeAsync(HttpContext context, IOptionsSnapshot<EncompassConfig> encompassOptions)
         {
-            if (context.Request.Path.Value.ToLower().Contains(encompassOptions.Value.BaseUrl))
+            // This gets the token from the initial api call and stores it in the context for later use
+            string xEToken;
+
+            if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve") || context.Request.Path.Value.ToLower().Contains("api/disclosureaudit"))
             {
-                string instanceId = context.Items["instanceid"].ToString();
+                xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
 
-                // Get the encompass access token
-                ProcessResult<string> prAccessToken = await encompassAuthService.CheckAndGetAccessToken(instanceId);
-
-                if(!prAccessToken.Success)
+                if (string.IsNullOrWhiteSpace(xEToken))
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync(prAccessToken.Message);
+                    await context.Response.WriteAsync(CommonFields.EncompassTokenRequired);
                     return;
                 }
 
-                // Set the token in the header of request
-                context.Request.Headers["Authorization"] = $"Bearer {prAccessToken.Result}";
+                context.Items[CommonFields.EncompassTokenHeaderName] = xEToken;
             }
             
+            if (context.Request.Path.Value.ToLower().Contains(encompassOptions.Value.BaseUrl))
+            {
+                xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
+
+                context.Items[CommonFields.EncompassTokenHeaderName] = xEToken;
+
+                // Set the token in the header of request
+                context.Request.Headers["Authorization"] = $"Bearer {xEToken}";
+            }
+
             // Call the next middleware
             await _next(context);
         }

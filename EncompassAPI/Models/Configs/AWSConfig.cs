@@ -7,5 +7,7 @@
         public string SecurityKeysPath { get; set; }
 
         public string CandidDbPath { get; set; }
+
+        public string DocusignSecretPath { get; set; }
     }
 }

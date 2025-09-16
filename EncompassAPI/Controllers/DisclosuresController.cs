@@ -5,6 +5,7 @@ using EncompassAPI.Utility.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.Models;
 using System.Threading.Tasks;
 using TokenGenerator;
 
@@ -23,23 +24,26 @@ namespace EncompassAPI.Controllers
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [HttpGet("Retrieve")]
-        public async Task<IActionResult> RetrieveDisclosures(CandidIncomingRequest request)
+        [HttpPost("Retrieve")]
+        public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
         {
+            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
+
             // Start background process
-            var task = Task.Run(() =>
+            var task = Task.Run(async () =>
             {
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     // Get a scoped service in THIS scope
-                    var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresService>();
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV2>();
+
+                    disclosuresService.Init(token);
 
                     // Run the background process
-                    disclosuresService.RunEventHandler(request).GetAwaiter().GetResult();
+                    await disclosuresService.Retrieve(request);
                 }
             });
 
-            await task;
             // Return 202 Accepted
             return Accepted();
         }

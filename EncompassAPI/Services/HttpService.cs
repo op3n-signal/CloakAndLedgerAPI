@@ -3,39 +3,70 @@ using System.Text.Json;
 
 namespace EncompassAPI.Services
 {
-    public class HttpService : IHttpService
+    public class HttpService : IHttpService, IDefaultHttpService, IEncompassHttpService
     {
         private const double Timeout = 300000; //5 minutes
         private readonly ILogger<HttpService> _logger;
         private HttpClient _httpClient;
-        private readonly object _lock = new object();
 
-        public HttpClient HttpClient
+        public HttpService(HttpClient httpClient, ILogger<HttpService> logger)
         {
-            get
-            {
-                return GetHttpClient();
-            }
-
-            set             
-            {
-                lock (_lock)
-                {
-                    _httpClient = value;
-                }
-            }
-        }
-
-        public HttpService(ILogger<HttpService> logger)
-        {
-            _httpClient = new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(Timeout)
-            };
+            _httpClient = httpClient;
+            _httpClient.Timeout = TimeSpan.FromSeconds(Timeout);
             _logger = logger;
         }
 
-        public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<bool> DeleteAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
+        {
+            int retryCount = 0;
+
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url);
+
+                    if (headers != null)
+                    {
+                        foreach (var kvp in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        throw new HttpRequestException($"Server returned error code: {response.StatusCode}. Request URL: {url}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //This catches the exception thrown above so we can retry 
+
+                    _logger.LogError(ex.ToString());
+
+                    //todo if (ex.Message.ToLower().Contains("unauthorized"))
+                    //terminate = true;
+
+                    //This is to avoid this section on the last retry
+                    if (retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        await Task.Delay(delayMilliseconds * retryCount);
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public async Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -79,7 +110,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -97,7 +127,7 @@ namespace EncompassAPI.Services
         /// <param name="maxRetries"></param>
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
-        public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -121,6 +151,11 @@ namespace EncompassAPI.Services
                     {
                         string json = await response.Content.ReadAsStringAsync();
 
+                        if (json.Contains("status") && json.Contains("RUNNING"))
+                        {
+                            throw new HttpRequestException($"Server response in still in status: running");
+                        }
+
                         return JsonSerializer.Deserialize<T>(json);
                     }
                     else
@@ -141,8 +176,7 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
-                        await Task.Delay(delayMilliseconds * retryCount);
+                        await Task.Delay(delayMilliseconds);
                     }
                 }
             }
@@ -160,7 +194,7 @@ namespace EncompassAPI.Services
         /// <param name="maxRetries"></param>
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
-        public async Task<T> PostAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<T> PostAsync<T>(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -182,6 +216,7 @@ namespace EncompassAPI.Services
 
                     HttpResponseMessage response = await _httpClient.SendAsync(request);
                     string json = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation(json);
                     if (response.IsSuccessStatusCode)
                     {
 
@@ -203,7 +238,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -212,7 +246,56 @@ namespace EncompassAPI.Services
             return default(T);
         }
 
-        public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 3, int delayMilliseconds = 2000)
+        public async Task<HttpResponseMessage> PatchAsync(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000)
+        {
+            int retryCount = 0;
+
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, url);
+
+                    if (body != null) request.Content = new StringContent(body, null, "application/json");
+
+                    if (headers != null)
+                    {
+                        foreach (var kvp in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return response;
+                    }
+                    else
+                    {
+                        throw new HttpRequestException($"Server returned error code: {response.StatusCode}. Request URL: {url}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //This catches the exception thrown above so we can retry 
+
+                    _logger.LogError(ex.ToString());
+
+                    //This is to avoid this section on the last retry
+                    if (retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        await Task.Delay(delayMilliseconds * retryCount);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public async Task<T> PostAsync<T>(string url, FormUrlEncodedContent formContent, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -246,7 +329,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -304,7 +386,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -366,7 +447,6 @@ namespace EncompassAPI.Services
                     if (retryCount < maxRetries)
                     {
                         retryCount++;
-                        RecreateHttpClient();
                         await Task.Delay(delayMilliseconds * retryCount);
                     }
                 }
@@ -374,42 +454,11 @@ namespace EncompassAPI.Services
 
             return null;
         }
-
-        private HttpClient GetHttpClient()
-        {
-            lock (_lock)
-            {
-                if (_httpClient == null)
-                {
-                    _httpClient = CreateHttpClient();
-                }
-                return _httpClient;
-            }
-        }
-
-        private HttpClient CreateHttpClient()
-        {
-            return new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(Timeout)
-            };
-        }
-
-        // Method to recreate HttpClient in case of issues with the static HttpClient
-        private void RecreateHttpClient()
-        {
-            lock (_lock)
-            {
-                _httpClient?.Dispose();  // Dispose of the old client, releasing resources
-                _httpClient = CreateHttpClient();  // Create a new HttpClient instance
-            }
-        }
     }
 
     public interface IHttpService
     {
-        HttpClient HttpClient { get; set; }
-
+        Task<bool> DeleteAsync(string url, Dictionary<string, string> headers, int maxRetries = 2, int delayMilliseconds = 2000);
         Task<T> GetAsync<T>(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
         /// <summary>
         /// Only for JSON responses
@@ -421,6 +470,7 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<HttpResponseMessage> GetAsync(string url, Dictionary<string, string> headers, int maxRetries = 3, int delayMilliseconds = 2000);
+        Task<HttpResponseMessage> PatchAsync(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000);
 
         /// <summary>
         /// Only for JSON responses
@@ -449,5 +499,15 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<string> PostAsync(string url, Dictionary<string, string> headers, StringContent body, int maxRetries = 3, int delayMilliseconds = 2000);
+    }
+
+    public interface IDefaultHttpService : IHttpService
+    {
+        // No extra members — just distinguishes this service in DI
+    }
+
+    public interface IEncompassHttpService : IHttpService
+    {
+        // No extra members — just distinguishes this service in DI
     }
 }

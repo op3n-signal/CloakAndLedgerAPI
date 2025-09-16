@@ -44,6 +44,28 @@ def put_secret(secret_name, secret_value, region_name="us-east-1"):
     except Exception as e:
         print(f"Error updating secret: {e}")
         return None
+    
+def update_secret(secret_name, secret_value, region_name="us-east-1"):
+    """
+    Updates an existing AWS secret with a new value.
+    secret_value can be a dict (JSON) or a string
+    """
+    client = boto3.client("secretsmanager", region_name=region_name)
+
+    # Convert dict to JSON string if necessary
+    if isinstance(secret_value, dict):
+        secret_value = json.dumps(secret_value)
+
+    try:
+        response = client.update_secret(
+            SecretId=secret_name,
+            SecretString=secret_value
+        )
+        print(f"Secret updated successfully: {response['ARN']}")
+        return response
+    except Exception as e:
+        print(f"Error updating secret: {e}")
+        return None
 
 def log_with_time(message: str):
     """Helper to print messages with timestamp"""
@@ -96,11 +118,12 @@ if __name__ == "__main__":
     # Get existing secret value
     encompass_secret = get_secret("encompassMiddleware")
     retrieveDisclosuresEndpoint = encompass_secret.get("retrieveDisclosuresEndpoint")
+    updateIntentToProceedEndpoint = encompass_secret.get("updateIntentToProceedEndpoint")
 
     log_with_time("New Token Generated")
     log_with_time("Token valid for days:" +valid_days )
     # Wrap token in a dict so Secrets Manager stores it as JSON
-    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint}
+    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint, "updateIntentToProceedEndpoint": updateIntentToProceedEndpoint}
 
     put_secret("encompassMiddleware", secret_payload)
     log_with_time("AWS Secret Updated")

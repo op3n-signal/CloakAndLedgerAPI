@@ -1,4 +1,5 @@
 using Amazon.S3;
+using EncompassAPI;
 using EncompassAPI.AppLayer;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Repos;
@@ -6,12 +7,10 @@ using EncompassAPI.Services;
 using EncompassAPI.Utility.Filters;
 using EncompassAPI.Utility.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Reflection;
 using TokenGenerator;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,19 +25,19 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<AuthHeaderFilter>();
 });
 
+builder.Services.AddAutoMapper(typeof(MapperProfile));
+
 builder.Services.Configure<AWSConfig>(options => builder.Configuration.GetSection(nameof(AWSConfig)).Bind(options));
 builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSection(nameof(LoggingConfig)).Bind(options));
 builder.Services.Configure<FileConfig>(options => builder.Configuration.GetSection(nameof(FileConfig)).Bind(options));
 builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));
 builder.Services.Configure<EncompassConfig>(options => builder.Configuration.GetSection(nameof(EncompassConfig)).Bind(options));
 builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.GetSection(nameof(SalesforceConfig)).Bind(options));
+builder.Services.Configure<DocusignConfig>(options => builder.Configuration.GetSection(nameof(DocusignConfig)).Bind(options));
 
-builder.Services.AddScoped<IDisclosuresService, DisclosuresService>();
-builder.Services.AddSingleton<IHttpService, HttpService>();
-builder.Services.AddScoped<IEncompassAuthService, EncompassAuthService>();
+builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
-builder.Services.AddScoped<ITokenRepo, TokenRepo>();
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
 builder.Services.AddScoped(typeof(S3Service));
 builder.Services.AddScoped(typeof(AWSSecretService));
@@ -48,6 +47,10 @@ builder.Services.AddScoped<ISalesforceService, SalesforceService>();
 builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<ICandidDataService, CandidDataService>();
+builder.Services.AddScoped<IEncompassService, DocsService>();
+builder.Services.AddScoped<IDocusignService, DocusignService>();
+builder.Services.AddTransient<IDisclosureAuditService, DisclosureAuditService>();
+builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
@@ -100,6 +103,29 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(Security.Policy, policy => policy.RequireRole(Security.Role));
+});
+
+builder.Services.AddTransient<EncompassTokenHandler>();
+
+// Client with the handler
+builder.Services.AddHttpClient<IHttpService, HttpService>("EncompassClient")
+       .AddHttpMessageHandler<EncompassTokenHandler>();
+
+// Client without the handler
+builder.Services.AddHttpClient<IHttpService, HttpService>("DefaultClient");
+
+// Register two IHttpService instances via factory
+builder.Services.AddScoped<IEncompassHttpService>(sp =>
+{
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("EncompassClient");
+    return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
+});
+
+// If you need another service without handler, register with a different interface or named service
+builder.Services.AddScoped<IDefaultHttpService>(sp =>
+{
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("DefaultClient");
+    return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
 });
 
 var app = builder.Build();

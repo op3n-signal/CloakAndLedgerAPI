@@ -39,7 +39,7 @@ namespace EncompassAPI.Services
                 // Convert secrets to base64 for Basic Authentication
                 byte[] byteArray = Encoding.ASCII.GetBytes($"{credentials.client_id}:{credentials.client_secret}");
                 string authorizationBase64 = Convert.ToBase64String(byteArray);
-                _http.HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authorizationBase64);
+                //_http.HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authorizationBase64);
 
                 // Get the token info from the database
                 EncompassTokenInfo[] tokenInfo = _repo.Get(credentials.org_id);
@@ -63,8 +63,8 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{CommonStrings.CannotRetrieveAccessToken}{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, CommonStrings.CannotRetrieveAccessToken);
+                _logger.LogError($"{CommonFields.CannotRetrieveAccessToken}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, CommonFields.CannotRetrieveAccessToken);
             }
         }
 
@@ -81,7 +81,7 @@ namespace EncompassAPI.Services
 
             if(token == null || string.IsNullOrEmpty(token.access_token))
             {
-                _logger.LogError(CommonStrings.CannotRetrieveAccessToken);
+                _logger.LogError(CommonFields.CannotRetrieveAccessToken);
                 return null;
             }
 
@@ -105,7 +105,7 @@ namespace EncompassAPI.Services
 
                 if (introspection == null)
                 {
-                    _logger.LogError(CommonStrings.CannotRetrieveIntrospection);
+                    _logger.LogError(CommonFields.CannotRetrieveIntrospection);
                     return false;
                 }
 
@@ -120,7 +120,7 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{CommonStrings.CannotRetrieveIntrospection}{Environment.NewLine}Exception: {ex}");
+                _logger.LogError($"{CommonFields.CannotRetrieveIntrospection}{Environment.NewLine}Exception: {ex}");
                 return false;
             }
         }

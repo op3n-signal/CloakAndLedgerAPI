@@ -1,6 +1,9 @@
 ﻿using Amazon.S3.Model;
 using EncompassAPI.Models;
+using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Salesforce;
+using Microsoft.Extensions.Options;
 
 namespace EncompassAPI.Services
 {
@@ -9,60 +12,46 @@ namespace EncompassAPI.Services
         private readonly IFileService _fileService;
         private readonly S3Service _s3Service;
         private readonly LoggerService<UploadService> _logger;
+        private readonly FileConfig _fileConfig;
 
-        public UploadService(IFileService fileService, S3Service s3Service, LoggerService<UploadService> logger)
+        public UploadService(IFileService fileService, S3Service s3Service, LoggerService<UploadService> logger, IOptionsSnapshot<FileConfig> fileOptions)
         {
             _fileService = fileService;
             _s3Service = s3Service;
             _logger = logger;
+            _fileConfig = fileOptions.Value;
         }
 
-        /*public async Task<ProcessResult<string>> UploadAttachments(AttachmentUploadRequest attachmentUploadRequest)
+        public async Task<ProcessResult<string>> UploadMultiPart(string orgId, GoogleDriveClone awsSettings, string path, string fileName)
         {
             try
             {
+                string fileToPushToS3 = _fileConfig.LocalDownloadPath + "/" + fileName;
+                string bucket = awsSettings.Root_Folder_Name__c.Replace(" ", "-").ToLower();
+                string key = path + "/" + fileName;
+
                 // Initiate multipart upload
-                string uploadId = await _s3Service.InitiateMultiPartUpload(attachmentUploadRequest.bucketName, attachmentUploadRequest.key);
+                string uploadId = await _s3Service.InitiateMultiPartUpload(bucket, key);
                 List<string> filePaths = new List<string>();
-
-                // Loop through each attachment URL
-                foreach (AttachmentUrl att in attachmentUploadRequest.attachments)
-                {
-                    // Get file content from skydrive
-                    ProcessResult<FileMetadata> prFileMetadata = await _fileService.DownloadFile(att.url, att.authorizationHeader);
-
-                    if (!prFileMetadata.Success)
-                    {
-                        //todo
-                    }
-
-                    // Add saved local file path to the list
-                    filePaths.Add(prFileMetadata.Result.Path);
-                }
 
                 int partNumber = 1;
                 List<PartETag> partETags = new List<PartETag>();
 
                 try
                 {
-                    foreach (string filePath in filePaths)
+                    // Upload part
+                    using (var stream = new FileStream(fileToPushToS3, FileMode.Open, FileAccess.Read))
                     {
-                        // Read file bytes
-                        byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+                        stream.Position = 0;
+                        var partResponse = await _s3Service.UploadPartAsync(bucket, key, uploadId, partNumber, stream, true);
 
-                        // Upload part
-                        using (var stream = new MemoryStream(fileBytes))
-                        {
-                            var partResponse = await _s3Service.UploadPartAsync(attachmentUploadRequest.bucketName, attachmentUploadRequest.key, uploadId, partNumber, stream, true);
+                        partETags.Add(new PartETag(partResponse.PartNumber, partResponse.ETag));
 
-                            partETags.Add(new PartETag(partResponse.PartNumber, partResponse.ETag));
-
-                            partNumber++;
-                        }
+                        partNumber++;
                     }
 
                     // Complete multipart upload
-                    string uri = await _s3Service.CompleteMultipartUploadAsync(attachmentUploadRequest.bucketName, attachmentUploadRequest.key, uploadId, partETags);
+                    string uri = await _s3Service.CompleteMultipartUploadAsync(bucket, key, uploadId, partETags);
 
                     return new ProcessResult<string>(true)
                     {
@@ -72,7 +61,7 @@ namespace EncompassAPI.Services
                 catch (Exception ex)
                 {
                     // Abort multipart upload in case of failure
-                    await _s3Service.AbortMultipartUploadAsync(attachmentUploadRequest.bucketName, attachmentUploadRequest.key, uploadId);
+                    await _s3Service.AbortMultipartUploadAsync(bucket, key, uploadId);
 
                     throw new Exception(ex.Message);
                 }
@@ -80,14 +69,14 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to upload files to S3 for org: {attachmentUploadRequest.orgId}{Environment.NewLine}Exception: {ex.Message}");
-                return new ProcessResult<string>(false, $"Failed to upload files to S3 for org: {attachmentUploadRequest.orgId}");
+                _logger.Base.LogError($"Failed to upload files to S3 for org: {orgId}{Environment.NewLine}Exception: {ex.Message}");
+                return new ProcessResult<string>(false, $"Failed to upload files to S3 for org: {orgId}");
             }
-        }*/
+        }
     }
 
     public interface IUploadService
     {
-        //Task<ProcessResult<string>> UploadAttachments(AttachmentUploadRequest attachmentUploadRequest);
+        Task<ProcessResult<string>> UploadMultiPart(string orgId, GoogleDriveClone awsSettings, string path, string fileName);
     }
 }
