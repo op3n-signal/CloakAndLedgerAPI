@@ -57,7 +57,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName)
+        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId)
         {
             _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
 
@@ -76,6 +76,7 @@ namespace EncompassAPI.Services
                 Document document = new Document
                 {
                     documentName = disclosuresName.Replace(".pdf", ""),
+                    documentId = incomingRequest.DocumentId,
                     documentCategory = CommonFields.DocumentCategory,
                     documentStatus = CommonFields.DocumentStatus,
                     isTask = true,
@@ -84,8 +85,15 @@ namespace EncompassAPI.Services
                     googleDriveFileDownloadableURL = uploadUrl,
                     prospectId = incomingRequest.ProspectId,
                     documentAssignedTo = incomingRequest.AssignedTo,
-                    borrower = incomingRequest.BorrowerValue
+                    borrower = incomingRequest.BorrowerValue,
+                    docusignEnvelopeId = envelopeId,
+                    docusignRecipientId = incomingRequest.Recipients[0].RecipientId.ToString()
                 };
+
+                if(incomingRequest.Recipients.Count > 1)
+                {
+                    document.docusignRecipient2Id = incomingRequest.Recipients[1].RecipientId.ToString();
+                }
 
                 object objParams = new
                 {
@@ -194,7 +202,7 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName);
+        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }

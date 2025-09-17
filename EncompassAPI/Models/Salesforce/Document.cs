@@ -65,5 +65,11 @@ namespace EncompassAPI.Models.Salesforce
         public decimal statementHistoryDuration {  get; set; }
 
         public string esignStatus { get; set; }
+
+        public string docusignEnvelopeId { get; set; }
+
+        public string docusignRecipientId { get; set; }
+
+        public string docusignRecipient2Id { get; set; }
     }
 }
