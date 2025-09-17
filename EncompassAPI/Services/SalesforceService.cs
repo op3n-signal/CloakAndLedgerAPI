@@ -57,9 +57,9 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName)
+        public async Task<ProcessResult<string>> CreateDocument(CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName)
         {
-            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
+            _logger.LogVerbose($"Starting {nameof(CreateDocument)} for org: {incomingRequest.OrgId}");
 
             try
             {
@@ -81,10 +81,82 @@ namespace EncompassAPI.Services
                     isTask = true,
                     taskType = CommonFields.TaskType,
                     esignStatus = CommonFields.EsignStatus,
-                    googleDriveFileDownloadableURL = uploadUrl,
                     prospectId = incomingRequest.ProspectId,
                     documentAssignedTo = incomingRequest.AssignedTo,
                     borrower = incomingRequest.BorrowerValue
+                };
+
+                object objParams = new
+                {
+                    documents = new Document[] { document },
+                    borrowerNames = new string[] { }
+                };
+
+
+                ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(objParams));
+
+                if (responseData == null)
+                {
+                    throw new Exception($"No response while pushing document for org: {incomingRequest.OrgId}");
+                }
+
+                if (responseData.response.ToLower() != "success")
+                {
+                    throw new Exception($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
+                }
+
+                _logger.LogVerbose(JsonSerializer.Serialize(responseData));
+
+                Document uploadedDoc = responseData.itemsNeeded.Find(item => item.documentName == disclosuresName.Replace(".pdf", ""));
+
+                return new ProcessResult<string>(true)
+                {
+                    Result = uploadedDoc.documentId
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Error while pushing document to salesforce org: {incomingRequest.OrgId}{Environment.NewLine}Exception: {ex}");
+
+                return new ProcessResult<string>(false, $"Error while pushing document to salesforce org: {incomingRequest.OrgId}");
+            }
+        }
+
+        public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId, string documentId)
+        {
+            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
+
+            try
+            {
+                // Set endpoint to push upload URL to Candid
+                string endpoint = requestInfo.Instance_Url + _salesforceConfig.CandidPushEndpoint;
+                _logger.LogVerbose(endpoint);
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
+
+                _logger.LogVerbose("requestInfo.Access_Token");
+                _logger.LogVerbose(requestInfo.Access_Token);
+
+                Document document = new Document
+                {
+                    documentId = documentId,
+                    documentName = disclosuresName.Replace(".pdf", ""),
+                    documentCategory = CommonFields.DocumentCategory,
+                    documentStatus = CommonFields.DocumentStatus,
+                    isTask = true,
+                    taskType = CommonFields.TaskType,
+                    esignStatus = CommonFields.EsignStatus,
+                    googleDriveFileDownloadableURL = uploadUrl,
+                    prospectId = incomingRequest.ProspectId,
+                    documentAssignedTo = incomingRequest.AssignedTo,
+                    borrower = incomingRequest.BorrowerValue,
+                    contactInformation = new ContactInfo()
+                    {
+                        docusignEnvelopeId = envelopeId,
+                        docusingRecipientId = incomingRequest.Recipients[0].RecipientId.ToString(),
+                        docusignRecipient2Id = incomingRequest.Recipients.Count > 1 ? incomingRequest.Recipients[1].RecipientId.ToString() : null
+                    }
                 };
 
                 object objParams = new
@@ -194,7 +266,8 @@ namespace EncompassAPI.Services
     public interface ISalesforceService
     {
         Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo);
-        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName);
+        Task<ProcessResult<string>> CreateDocument(CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName);
+        Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId, string documentId);
         Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo);
     }
 }

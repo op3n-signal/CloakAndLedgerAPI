@@ -262,19 +262,27 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result, prDisclosuresName.Result);
+                // Create document in Candid
+                ProcessResult<string> prDocumentId = await _sfService.CreateDocument(request, prOrgRequestInfo.Result, prDisclosuresName.Result);
 
-                if (!prPushDocument.Success)
+                if (!prDocumentId.Success)
                 {
                     return;
                 }
 
-                // Set document id
-                prDraftEditRequest.Result.DocumentId = prPushDocument.Result;
+                // Pass document id to docusign request
+                prDraftEditRequest.Result.DocumentId = prDocumentId.Result;
 
                 ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result, prDisclosuresName.Result);
 
                 if (!prEnvelopeId.Success)
+                {
+                    return;
+                }
+
+                ProcessResult<string> prPushDocument = await _sfService.PushUploadUrlToCandid(prUpload.Result, request, prOrgRequestInfo.Result, prDisclosuresName.Result, prEnvelopeId.Result, prDocumentId.Result);
+
+                if (!prPushDocument.Success)
                 {
                     return;
                 }
