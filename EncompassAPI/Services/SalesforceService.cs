@@ -141,7 +141,16 @@ namespace EncompassAPI.Services
                 Document document = new Document
                 {
                     documentId = documentId,
+                    documentName = disclosuresName.Replace(".pdf", ""),
+                    documentCategory = CommonFields.DocumentCategory,
+                    documentStatus = CommonFields.DocumentStatus,
+                    isTask = true,
+                    taskType = CommonFields.TaskType,
+                    esignStatus = CommonFields.EsignStatus,
                     googleDriveFileDownloadableURL = uploadUrl,
+                    prospectId = incomingRequest.ProspectId,
+                    documentAssignedTo = incomingRequest.AssignedTo,
+                    borrower = incomingRequest.BorrowerValue,
                     docusignEnvelopeId = envelopeId,
                     docusignRecipientId = incomingRequest.Recipients[0].RecipientId.ToString()
                 };
