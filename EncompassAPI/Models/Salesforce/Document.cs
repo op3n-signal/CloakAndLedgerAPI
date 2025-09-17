@@ -42,8 +42,6 @@ namespace EncompassAPI.Models.Salesforce
 
         public string documentCategory { get; set; }
 
-        public object contactInformation { get; set; }
-
         public object creditCardInformation { get; set; }
 
         public string documentAssignedToName { get; set; }
@@ -66,9 +64,14 @@ namespace EncompassAPI.Models.Salesforce
 
         public string esignStatus { get; set; }
 
+        public ContactInfo contactInformation { get; set; }
+    }
+
+    public class ContactInfo
+    {
         public string docusignEnvelopeId { get; set; }
 
-        public string docusignRecipientId { get; set; }
+        public string docusingRecipientId { get; set; }
 
         public string docusignRecipient2Id { get; set; }
     }
