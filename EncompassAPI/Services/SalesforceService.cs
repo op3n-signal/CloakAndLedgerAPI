@@ -152,13 +152,9 @@ namespace EncompassAPI.Services
                     documentAssignedTo = incomingRequest.AssignedTo,
                     borrower = incomingRequest.BorrowerValue,
                     docusignEnvelopeId = envelopeId,
-                    docusignRecipientId = incomingRequest.Recipients[0].RecipientId.ToString()
+                    docusignRecipientId = incomingRequest.Recipients[0].RecipientId.ToString(),
+                    docusignRecipient2Id = incomingRequest.Recipients.Count > 1 ? incomingRequest.Recipients[1].RecipientId.ToString() : null
                 };
-
-                if(incomingRequest.Recipients.Count > 1)
-                {
-                    document.docusignRecipient2Id = incomingRequest.Recipients[1].RecipientId.ToString();
-                }
 
                 object objParams = new
                 {
