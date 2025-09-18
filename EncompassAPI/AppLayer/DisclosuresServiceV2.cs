@@ -126,7 +126,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOpeningOrder(_orgId, _loanId, prApplicationId.Result, _token);
+                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOrder(_orgId, _loanId, prApplicationId.Result, _token, prDisclosureStage.Result);
 
                 if (!prAuditId.Success)
                 {
@@ -134,7 +134,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 //todo maybe return response of what failed in the audit // send back in response to candid
-                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOpeningOrder(_orgId, _loanId, prAuditId.Result, _token);
+                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOrder(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
 
                 if (!prAuditSuccess.Success)
                 {
@@ -142,7 +142,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Get documents with signature coordinates
-                ProcessResult<string> prOrderId = await _docsService.GenerateOpeningDocSet(_orgId, _loanId, prAuditId.Result, _token);
+                ProcessResult<string> prOrderId = await _docsService.GenerateDocSet(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
 
                 if (!prOrderId.Success)
                 {
@@ -150,7 +150,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // This only returns a select amount of documents
-                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_orgId, _loanId, prOrderId.Result, _token);
+                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_orgId, _loanId, prOrderId.Result, _token, prDisclosureStage.Result);
 
                 if (!prDocuments.Success)
                 {
@@ -174,15 +174,15 @@ namespace EncompassAPI.AppLayer
                         return;
                     }
 
-                    //todo then add to list
-                    ProcessResult<string> prJobId = await _docsService.AddToOpeningDocSet(_orgId, _loanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token);
+                    // Add to list
+                    ProcessResult<string> prJobId = await _docsService.AddToDocSet(_orgId, _loanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token, prDisclosureStage.Result);
 
                     if (!prJobId.Success)
                     {
                         return;
                     }
 
-                    prDocuments = await _docsService.GetOpeningDocSet(_orgId, _loanId, prOrderId.Result, prJobId.Result, _token);
+                    prDocuments = await _docsService.GetDocSet(_orgId, _loanId, prOrderId.Result, prJobId.Result, _token, prDisclosureStage.Result);
 
                     if (!prDocuments.Success)
                     {
