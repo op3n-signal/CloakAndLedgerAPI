@@ -188,13 +188,22 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId, string token)
+        public async Task<ProcessResult<string>> CreateLoanAuditForOrder(string orgId, string loanId, string applicationId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(CreateLoanAuditForOpeningOrder)}");
+            _logger.Base.LogInformation($"Entering {nameof(CreateLoanAuditForOrder)}");
             try
             {
                 // Run loan audit
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningAuditEndpoint}";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing")) 
+                {
+                    url += _encompassConfig.ClosingAuditEndpoint;
+                }
+                else
+                {
+                    url += _encompassConfig.OpeningAuditEndpoint;
+                }
 
                 AuditRequest auditRequest = new AuditRequest()
                 {
@@ -230,14 +239,23 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId, string token)
+        public async Task<ProcessResult> GetDocumentAuditForOrder(string orgId, string loanId, string auditId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetDocumentAuditForOpeningOrder)}");
+            _logger.Base.LogInformation($"Entering {nameof(GetDocumentAuditForOrder)}");
 
             try
             {
                 // Get loan audit result
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningAuditEndpoint}/{auditId}";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing"))
+                {
+                    url += $"{_encompassConfig.ClosingAuditEndpoint}/{auditId}";
+                }
+                else
+                {
+                    url += $"{_encompassConfig.OpeningAuditEndpoint}/{auditId}";
+                }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -262,14 +280,23 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId, string token)
+        public async Task<ProcessResult<string>> GenerateDocSet(string orgId, string loanId, string auditId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GenerateOpeningDocSet)}");
+            _logger.Base.LogInformation($"Entering {nameof(GenerateDocSet)}");
 
             try
             {
                 // Run loan audit
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing"))
+                {
+                    url += _encompassConfig.ClosingDocSetEndpoint;
+                }
+                else
+                {
+                    url += _encompassConfig.OpeningDocSetEndpoint;
+                }
 
                 DocSetRequest docSetRequest = new DocSetRequest()
                 {
@@ -297,12 +324,23 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token)
+        public async Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token, DisclosureStage stage)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetOrderStatus)}");
+
             try
             {
                 // Get loan audit result
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing"))
+                {
+                    url += $"{_encompassConfig.ClosingDocSetEndpoint}/{orderId}";
+                }
+                else
+                {
+                    url += $"{_encompassConfig.OpeningDocSetEndpoint}/{orderId}";
+                }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -375,12 +413,23 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token)
+        public async Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage)
         {
+            _logger.Base.LogInformation($"Entering {nameof(AddToDocSet)}");
+
             try
             {
                 // Run loan audit
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing"))
+                {
+                    url += $"{_encompassConfig.ClosingDocSetEndpoint}/{orderId}/documents";
+                }
+                else
+                {
+                    url += $"{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents";
+                }
 
                 AddToDocSetRequest addToDocSetRequest = new AddToDocSetRequest()
                 {
@@ -417,12 +466,23 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId, string token)
+        public async Task<ProcessResult<List<Document>>> GetDocSet(string orgId, string loanId, string orderId, string jobId, string token, DisclosureStage stage)
         {
+            _logger.Base.LogInformation($"Entering {nameof(GetDocSet)}");
+
             try
             {
                 // Get loan audit result
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents/{jobId}";
+                string url = _encompassConfig.BaseUrl;
+
+                if (stage.ToString().ToLower().Contains("closing"))
+                {
+                    url += $"{_encompassConfig.ClosingDocSetEndpoint}/{orderId}/documents/{jobId}";
+                }
+                else
+                {
+                    url += $"{_encompassConfig.OpeningDocSetEndpoint}/{orderId}/documents/{jobId}";
+                }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -826,7 +886,7 @@ namespace EncompassAPI.Services
         /// <param name="loanId"></param>
         /// <param name="applicationId"></param>
         /// <returns>Audit Id - 202 Accepted</returns>
-        Task<ProcessResult<string>> CreateLoanAuditForOpeningOrder(string orgId, string loanId, string applicationId, string token);
+        Task<ProcessResult<string>> CreateLoanAuditForOrder(string orgId, string loanId, string applicationId, string token, DisclosureStage stage);
 
         /// <summary>
         /// Returns the status of an audit request for an opening order.
@@ -834,27 +894,27 @@ namespace EncompassAPI.Services
         /// </summary>
         /// <param name="auditId">The unique identifier of the audit to retrieve. Cannot be null or empty.</param>
         /// <returns>Audit results</returns>
-        Task<ProcessResult> GetDocumentAuditForOpeningOrder(string orgId, string loanId, string auditId, string token);
+        Task<ProcessResult> GetDocumentAuditForOrder(string orgId, string loanId, string auditId, string token, DisclosureStage stage);
 
         /// <summary>
         /// Generates an Opening doc set for the package (Initial Disclosures).
         /// </summary>
         /// <param name="auditId"></param>
         /// <returns>Order Id - 202 Accepted</returns>
-        Task<ProcessResult<string>> GenerateOpeningDocSet(string orgId, string loanId, string auditId, string token);
+        Task<ProcessResult<string>> GenerateDocSet(string orgId, string loanId, string auditId, string token, DisclosureStage stage);
 
         /// <summary>
         /// Retrieves doc status and details for the specified order (orderID).
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns>Order Details</returns>
-        Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token);
+        Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token, DisclosureStage stage);
 
         Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token);
 
-        Task<ProcessResult<string>> AddToOpeningDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token);
+        Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage);
 
-        Task<ProcessResult<List<Document>>> GetOpeningDocSet(string orgId, string loanId, string orderId, string jobId, string token);
+        Task<ProcessResult<List<Document>>> GetDocSet(string orgId, string loanId, string orderId, string jobId, string token, DisclosureStage stage);
 
         ProcessResult CheckIfAllDocumentsExist(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
 

@@ -16,7 +16,9 @@
 
         public string OpeningDocSetEndpoint { get; set; }
 
-        public string OpeningLoanAuditEndpoint { get; set; }
+        public string ClosingAuditEndpoint { get; set; }
+
+        public string ClosingDocSetEndpoint { get; set; }
 
         public string GetEFolderDocsEndpoint { get; set; }
 
