@@ -319,8 +319,8 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to generate opening doc set for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, $"Failed to generate opening doc set for loan {loanId} in org {orgId}.");
+                _logger.Base.LogError($"Failed to generate doc set for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, $"Failed to generate doc set for loan {loanId} in org {orgId}.");
             }
         }
 
@@ -461,8 +461,8 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to add to opening doc set for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, $"Failed to add to opening doc set for loan {loanId} in org {orgId}.");
+                _logger.Base.LogError($"Failed to add to doc set for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, $"Failed to add to doc set for loan {loanId} in org {orgId}.");
             }
         }
 
@@ -878,7 +878,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token);
 
         /// <summary>
-        /// Creates the initial audit job for an opening order, which is typical for initial disclosures. 
+        /// Creates the initial audit job for an order, which is typical for initial disclosures. 
         /// This will run asynchronously until it has completed. 
         /// A Loan Audit ID is returned in the response and a webhook notification will be generated when complete.
         /// Borrower Id is also the application Id in Encompass.
@@ -889,7 +889,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult<string>> CreateLoanAuditForOrder(string orgId, string loanId, string applicationId, string token, DisclosureStage stage);
 
         /// <summary>
-        /// Returns the status of an audit request for an opening order.
+        /// Returns the status of an audit request for an order.
         /// This tells the user needs to fill out information.
         /// </summary>
         /// <param name="auditId">The unique identifier of the audit to retrieve. Cannot be null or empty.</param>
@@ -897,7 +897,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult> GetDocumentAuditForOrder(string orgId, string loanId, string auditId, string token, DisclosureStage stage);
 
         /// <summary>
-        /// Generates an Opening doc set for the package (Initial Disclosures).
+        /// Generates a doc set for the package.
         /// </summary>
         /// <param name="auditId"></param>
         /// <returns>Order Id - 202 Accepted</returns>
@@ -924,22 +924,5 @@ namespace EncompassAPI.Services
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
         ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision);
-
-        /*        /// <summary>
-                /// Commit and send an Opening Package (Initial Disclosures) to a recipient.
-                /// todo Finish other params
-                /// </summary>
-                /// <param name="orderId"></param>
-                /// <returns>Job Id - 202 Accepted</returns>
-                Task SendOpeningPackage(string orderId);
-
-                /// <summary>
-                /// Retrieves delivery details for an Opening Package.
-                /// todo figure out response
-                /// </summary>
-                /// <param name="orderId"></param>
-                /// <param name="jobId"></param>
-                /// <returns></returns>
-                Task GetOpeningPackageDeliveryDetails(string orderId, string jobId);*/
     }
 }
