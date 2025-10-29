@@ -569,6 +569,7 @@ namespace EncompassAPI.Services
             {
                 const string documentId = "3";
                 DraftEditRequest draftEditRequest = _mapper.Map<DraftEditRequest>(request);
+                bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
                 int totalPageCount = filePageCounts.Last().Value;
                 List<string> keys = filePageCounts.Keys.ToList();
 
@@ -623,9 +624,13 @@ namespace EncompassAPI.Services
                         Models.Docusign.Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
 
                         // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
-                        if (doc.name == "Credit Score Disclosure")
+                        if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == false)
                         {
                             recipient = draftEditRequest.Recipients[1];
+                        }
+                        else if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == true)
+                        {
+                            recipient = draftEditRequest.Recipients[0];
                         }
                         else if(doc.name == "Credit Score Disclosure, 2")
                         {
