@@ -655,6 +655,8 @@ namespace EncompassAPI.Services
                             };
                         }
 
+                        _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+
                         // Map fields into recipient tabs
                         foreach (Field field in signer.fields ?? Array.Empty<Field>())
                         {
