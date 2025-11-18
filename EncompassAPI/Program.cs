@@ -1,4 +1,7 @@
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.S3;
+using AutoMapper;
 using EncompassAPI;
 using EncompassAPI.AppLayer;
 using EncompassAPI.Models.Configs;
@@ -10,7 +13,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TokenGenerator;
-using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +53,11 @@ builder.Services.AddScoped<IEncompassService, DocsService>();
 builder.Services.AddScoped<IDocusignService, DocusignService>();
 builder.Services.AddTransient<IDisclosureAuditService, DisclosureAuditService>();
 builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
+builder.Services.AddTransient<IMappingAppService, MappingAppService>();
+builder.Services.AddTransient<IDocumentMappingService, DocumentMappingService>();
+
+builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
