@@ -58,7 +58,7 @@ namespace EncompassAPI.Services
                     new[] { "GLOBAL_DISCLOSURES" },
                     new DynamoDBOperationConfig
                     {
-                        IndexName = "StatusModifiedDateGSI",
+                        IndexName = "Date_GSI",
                         BackwardQuery = false // ascending = oldest first
                     }
                 );
@@ -94,6 +94,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosuresQueueService
     {
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
     }
 }

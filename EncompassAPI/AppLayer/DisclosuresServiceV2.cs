@@ -23,6 +23,7 @@ namespace EncompassAPI.AppLayer
         private readonly IEncompassService _docsService;
         private readonly IDocusignService _docusignService;
         private readonly IDisclosureAuditService _disclosureAuditService;
+        private readonly IDisclosuresQueueService _disclosuresQueueService;
 
         private string _orgId;
         private string _loanId;
@@ -31,7 +32,7 @@ namespace EncompassAPI.AppLayer
         private DisclosureMethodDescription _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService)
+        public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;
@@ -41,6 +42,7 @@ namespace EncompassAPI.AppLayer
             _docsService = docsService;
             _docusignService = docusignService;
             _disclosureAuditService = disclosureAuditService;
+            _disclosuresQueueService = disclosuresQueueService;
         }
 
         public void Init(string token)
@@ -78,7 +80,7 @@ namespace EncompassAPI.AppLayer
 
                 if (prRetrievedLockId.Success)
                 {
-                    //todo add to queue
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, request);
                     return;
                 }
 
