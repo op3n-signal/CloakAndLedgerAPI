@@ -43,7 +43,7 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.LoanId} on disclosure log: {disclosureLogId}");
+                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.LoanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
                 return new ProcessResult(false, "Failed to enqueue disclosure item.");
             }
         }
