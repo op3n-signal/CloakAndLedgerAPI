@@ -73,7 +73,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetDisclosureTrackingLogs)}");
+            _logger.Base.LogInformation($"{nameof(GetDisclosureTrackingLogs)}");
 
             try
             {
@@ -119,7 +119,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetLastestDisclosureTrackingLog)}");
+            _logger.Base.LogInformation($"{nameof(GetLastestDisclosureTrackingLog)}");
 
             try
             {

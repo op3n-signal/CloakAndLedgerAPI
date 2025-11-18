@@ -63,6 +63,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosureLogs.Success)
                 {
+                    _status = DisclosureStatus.None;
                     return;
                 }
 
@@ -71,6 +72,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosureTrackingLog.Success)
                 {
+                    _status = DisclosureStatus.None;
                     return;
                 }
 
