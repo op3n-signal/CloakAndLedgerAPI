@@ -45,6 +45,8 @@ namespace EncompassAPI.Models
     {
         public bool Success { get; set; }
 
+        public ResultStatus Status { get; set; }
+
         public string Message { get; set; }
 
         public ProcessResult()
@@ -59,6 +61,13 @@ namespace EncompassAPI.Models
         public ProcessResult(bool success, string message)
         {
             Success = success;
+            Message = message;
+        }
+
+        public ProcessResult(bool success, ResultStatus status, string message)
+        {
+            Success = success;
+            Status = status;
             Message = message;
         }
     }

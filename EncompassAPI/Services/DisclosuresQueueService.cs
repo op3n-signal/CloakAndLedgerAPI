@@ -4,6 +4,7 @@ using Amazon.DynamoDBv2.Model;
 using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Dynamo;
+using Shared.Models;
 using System.Text.Json;
 
 namespace EncompassAPI.Services
@@ -21,7 +22,7 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request)
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request, DisclosureStatus status)
         {
             try
             {
@@ -32,7 +33,7 @@ namespace EncompassAPI.Services
                 {
                     id = disclosureLogId,
                     json_request = JsonSerializer.Serialize(request),
-                    status = "Pending",
+                    status = status.ToString(),
                     created_date = existing?.created_date ?? now,
                     modified_date = now
                 };
@@ -90,11 +91,78 @@ namespace EncompassAPI.Services
                 return new ProcessResult<DisclosureQueueItem>(false, ResultStatus.InternalError, "Failed to get disclosure queue items.");
             }
         }
+
+        public async Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId)
+        {
+            try
+            {
+                // LoadAsync fetches by primary key (hash key)
+                var item = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
+
+                if (item == null)
+                {
+                    _logger.Base.LogWarning($"Disclosure queue item not found for id: {disclosureLogId}");
+                    return new ProcessResult<DisclosureQueueItem>(false, $"Disclosure queue item not found for id: {disclosureLogId}");
+                }
+
+                return new ProcessResult<DisclosureQueueItem>(true) { Result = item };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to get disclosure queue item by id {disclosureLogId}: {ex}");
+                return new ProcessResult<DisclosureQueueItem>(false, ResultStatus.InternalError, $"Failed to get disclosure queue item by id: {disclosureLogId}");
+            }
+        }
+
+        public async Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId)
+        {
+            try
+            {
+                await _dbContext.DeleteAsync<DisclosureQueueItem>(disclosureLogId);
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to delete disclosure queue item with id {disclosureLogId}: {ex}");
+                return new ProcessResult(false, ResultStatus.InternalError, $"Failed to delete disclosure queue item with id: {disclosureLogId}");
+            }
+        }
+
+        public async Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status)
+        {
+            try
+            {
+                var item = new DisclosureQueueItem
+                {
+                    id = disclosureLogId,       // hash key
+                    status = "Processing"       // new status
+                };
+
+                // Only update the status
+                var config = new DynamoDBOperationConfig
+                {
+                    // This tells DynamoDBContext to only update non-default fields
+                    SkipVersionCheck = true
+                };
+
+                await _dbContext.SaveAsync(item, config);
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to update status for disclosure queue item with id {disclosureLogId}: {ex}");
+                return new ProcessResult(false, ResultStatus.InternalError, $"Failed to update status for disclosure queue item with id: {disclosureLogId}");
+            }
+        }
     }
 
     public interface IDisclosuresQueueService
     {
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request, DisclosureStatus status);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
+        Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
+        Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);
+        Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status);
     }
 }

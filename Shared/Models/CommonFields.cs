@@ -40,10 +40,13 @@
         public const string AppName = "Candid";
     }
 
-    public enum DisclosureMethodDescription
+    public enum DisclosureStatus
     {
-        Candid,
-        Error,
-        Running
+        Completed,
+        Failed,
+        Processing,
+        Pending,
+        Retrying,
+        Locked
     }
 }

@@ -2,6 +2,7 @@
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
+using EncompassAPI.Models.Dynamo;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
@@ -29,7 +30,7 @@ namespace EncompassAPI.AppLayer
         private string _loanId;
         private string _token;
         private string _latestLogId;
-        private DisclosureMethodDescription _status;
+        private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
         public DisclosuresV2Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
@@ -75,12 +76,44 @@ namespace EncompassAPI.AppLayer
 
                 _latestLogId = prDisclosureTrackingLog.Result.id;
 
+                // Check if there is a disclosure queue item for this disclosure log id
+                ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
+
+                if (prDisclosureQueue.Success)
+                {
+                    Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
+
+                    if (status == DisclosureStatus.Processing)
+                    {
+                        // Exit if we are already processing
+                        return;
+                    }
+                    else if (status == DisclosureStatus.Retrying)
+                    {
+                        // Exit if we are retrying
+                        return;
+                    }
+                    else if (status == DisclosureStatus.Completed)
+                    {
+                        // Exit if we are already completed
+                        return;
+                    }
+
+                    // Set status to retrying
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, request, DisclosureStatus.Retrying);
+                }
+                else
+                {
+                    // Set status to processing
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, request, DisclosureStatus.Processing);
+                }
+
                 // Get the resource lock id from loan
                 ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(_orgId, request.LoanId, _token);
 
                 if (prRetrievedLockId.Success)
                 {
-                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, request);
+                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Locked);
                     return;
                 }
 
@@ -100,7 +133,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _status = DisclosureMethodDescription.Running;
+                _status = DisclosureStatus.Processing;
 
                 // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
                 ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, prDisclosureLogs.Result, _latestLogId, _status, false, _token);
@@ -283,7 +316,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _status = DisclosureMethodDescription.Candid;
+                _status = DisclosureStatus.Completed;
 
                 ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_orgId, _loanId, prDisclosureTrackingLog.Result, _token);
 
@@ -300,7 +333,7 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            _status = _status == DisclosureMethodDescription.Candid ? _status : DisclosureMethodDescription.Error;
+            _status = _status == DisclosureStatus.Completed ? _status : DisclosureStatus.Failed;
 
             // We need to update the log to be included in the timeline now that we are done
             ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, _status, true, _token);
