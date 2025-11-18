@@ -10,7 +10,6 @@ namespace EncompassAPI.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Policy = Security.Policy)]
-    [AuthRequired]
     public class DisclosuresQueueController : ControllerBase
     {
         private readonly IDisclosuresQueueService _queueService;
