@@ -135,7 +135,7 @@ namespace EncompassAPI.Services
                 var item = new DisclosureQueueItem
                 {
                     id = disclosureLogId,       // hash key
-                    status = "Processing"       // new status
+                    status = status.ToString()      // new status
                 };
 
                 // Only update the status
