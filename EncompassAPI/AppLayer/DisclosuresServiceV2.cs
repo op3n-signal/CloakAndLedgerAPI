@@ -335,6 +335,8 @@ namespace EncompassAPI.AppLayer
         {
             _status = _status == DisclosureStatus.Completed ? _status : DisclosureStatus.Failed;
 
+            await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
+
             // We need to update the log to be included in the timeline now that we are done
             ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, _status, true, _token);
 

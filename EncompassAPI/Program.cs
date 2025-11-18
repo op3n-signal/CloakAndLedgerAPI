@@ -1,3 +1,4 @@
+using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.S3;
@@ -39,6 +40,10 @@ builder.Services.Configure<DocusignConfig>(options => builder.Configuration.GetS
 
 builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
+builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
+{
+    return new AmazonDynamoDBClient(RegionEndpoint.USEast1);
+});
 
 builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
 builder.Services.AddScoped<IFileService, FileService>();
