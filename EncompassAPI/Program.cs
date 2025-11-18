@@ -51,6 +51,7 @@ builder.Services.AddScoped<IEncompassService, DocsService>();
 builder.Services.AddScoped<IDocusignService, DocusignService>();
 builder.Services.AddTransient<IDisclosureAuditService, DisclosureAuditService>();
 builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
+builder.Services.AddTransient<IDisclosuresQueueService, DisclosuresQueueService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
