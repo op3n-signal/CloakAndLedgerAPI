@@ -13,14 +13,14 @@ namespace EncompassAPI.Models.Dynamo
 
         public string json_request { get; set; }
 
-        public int RetryCount { get; set; }
+        public int retryCount { get; set; }
 
         public string status { get; set; }
 
         [DynamoDBGlobalSecondaryIndexRangeKey("Date_GSI")]
-        public DateTime created_date { get; set; }
+        public long created_date { get; set; }
 
-        public DateTime modified_date { get; set; }
+        public long modified_date { get; set; }
 
         [DynamoDBGlobalSecondaryIndexHashKey("Date_GSI")]
         public string GSI_PK { get; set; } = "GLOBAL_DISCLOSURES";

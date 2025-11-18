@@ -26,7 +26,7 @@ namespace EncompassAPI.Services
             try
             {
                 var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
-                var now = DateTime.UtcNow;
+                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                 DisclosureQueueItem item = new DisclosureQueueItem()
                 {
