@@ -1,4 +1,5 @@
-﻿using Amazon.DynamoDBv2.DataModel;
+﻿using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using AutoMapper;
@@ -12,12 +13,14 @@ namespace EncompassAPI.Services
     public class DisclosuresQueueService : IDisclosuresQueueService
     {
         private readonly IDynamoDBContext _dbContext;
+        private readonly IAmazonDynamoDB _dynamoClient;
         private readonly LoggerService<DisclosuresQueueService> _logger;    
         private readonly IMapper _mapper;
 
-        public DisclosuresQueueService(IDynamoDBContext dbContext, IMapper mapper, LoggerService<DisclosuresQueueService> logger)
+        public DisclosuresQueueService(IDynamoDBContext dbContext, IAmazonDynamoDB dynamoClient, IMapper mapper, LoggerService<DisclosuresQueueService> logger)
         {
             _dbContext = dbContext;
+            _dynamoClient = dynamoClient;
             _mapper = mapper;
             _logger = logger;
         }
@@ -128,24 +131,39 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status)
+        public async Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status, int retryCount = 0)
         {
             try
             {
-                var item = new DisclosureQueueItem
+                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                var request = new UpdateItemRequest
                 {
-                    id = disclosureLogId,       // hash key
-                    status = status.ToString()      // new status
+                    TableName = "DisclosuresQueue",
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        ["id"] = new AttributeValue { S = disclosureLogId }
+                    },
+                    UpdateExpression = "SET #s = :s, modified_date = :m",
+                    ExpressionAttributeNames = new Dictionary<string, string>
+                    {
+                        ["#s"] = "status"
+                    },
+                    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                    {
+                        [":s"] = new AttributeValue { S = status.ToString() },
+                        [":m"] = new AttributeValue { N = now.ToString() }
+                    }
                 };
 
-                // Only update the status
-                var config = new DynamoDBOperationConfig
+                if (status == DisclosureStatus.Retrying)
                 {
-                    // This tells DynamoDBContext to only update non-default fields
-                    SkipVersionCheck = true
-                };
+                    request.UpdateExpression += ", retryCount = :r";
+                    request.ExpressionAttributeValues[":r"] =
+                        new AttributeValue { N = retryCount.ToString() };
+                }
 
-                await _dbContext.SaveAsync(item, config);
+                await _dynamoClient.UpdateItemAsync(request);
 
                 return new ProcessResult(true);
             }
@@ -163,6 +181,6 @@ namespace EncompassAPI.Services
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);
-        Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status);
+        Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status, int retryCount = 0);
     }
 }
