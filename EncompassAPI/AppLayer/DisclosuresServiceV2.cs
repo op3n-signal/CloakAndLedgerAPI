@@ -78,14 +78,8 @@ namespace EncompassAPI.AppLayer
 
                 if (prRetrievedLockId.Success)
                 {
-                    // Remove resource lock from loan
-                    ProcessResult prLockRemoved = await _docsService.RemoveResourceLock(_orgId, request.LoanId, prRetrievedLockId.Result, _token);
-
-                    if (!prLockRemoved.Success)
-                    {
-                        // If we can't remove the lock, we can't proceed
-                        return;
-                    }
+                    //todo add to queue
+                    return;
                 }
 
                 _logIds = prDisclosureLogs.Result.Select(log => log.id).ToList();

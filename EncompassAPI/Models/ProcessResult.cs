@@ -6,6 +6,8 @@ namespace EncompassAPI.Models
     {
         public bool Success { get; set; }
 
+        public ResultStatus Status { get; set; }
+
         public string Message { get; set; }
 
         public T Result { get; set; }
@@ -23,6 +25,19 @@ namespace EncompassAPI.Models
         {
             Success = success;
             Message = message;
+        }
+
+        public ProcessResult(bool success, ResultStatus status, string message)
+        {
+            Success = success;
+            Status = status;
+            Message = message;
+        }
+
+        public ProcessResult(bool success, T result)
+        {
+            Success = success;
+            Result = result;
         }
     }
 
@@ -46,5 +61,13 @@ namespace EncompassAPI.Models
             Success = success;
             Message = message;
         }
+    }
+
+    public enum ResultStatus
+    {
+        Success,
+        ValidationError,
+        NotFound,
+        InternalError
     }
 }
