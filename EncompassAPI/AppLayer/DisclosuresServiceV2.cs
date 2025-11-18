@@ -338,7 +338,7 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            if(_status == DisclosureStatus.Processing || _status == DisclosureStatus.Retrying)
+            if(_status == DisclosureStatus.Processing || _status == DisclosureStatus.Retrying || _status == DisclosureStatus.None)
             {
                 return;
             }
