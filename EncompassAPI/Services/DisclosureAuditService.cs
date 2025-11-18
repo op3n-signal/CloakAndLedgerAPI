@@ -248,7 +248,7 @@ namespace EncompassAPI.Services
 
                 if (isLatestLog) {
                     payload.disclosedMethod = CommonFields.DisclosedMethod;
-                    payload.disclosedMethodDescription = status.ToString();
+                    payload.disclosedMethodDescription = status == DisclosureStatus.Completed ? CommonFields.AppName : DisclosureStatus.Failed.ToString();
                 }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()

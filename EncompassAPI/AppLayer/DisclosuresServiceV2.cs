@@ -86,16 +86,19 @@ namespace EncompassAPI.AppLayer
                     if (status == DisclosureStatus.Processing)
                     {
                         // Exit if we are already processing
+                        _status = DisclosureStatus.Processing;
                         return;
                     }
                     else if (status == DisclosureStatus.Retrying)
                     {
                         // Exit if we are retrying
+                        _status = DisclosureStatus.Retrying;
                         return;
                     }
                     else if (status == DisclosureStatus.Completed)
                     {
                         // Exit if we are already completed
+                        _status = DisclosureStatus.Completed;
                         return;
                     }
 
@@ -113,7 +116,7 @@ namespace EncompassAPI.AppLayer
 
                 if (prRetrievedLockId.Success)
                 {
-                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Locked);
+                    _status = DisclosureStatus.Locked;
                     return;
                 }
 
@@ -333,7 +336,10 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            _status = _status == DisclosureStatus.Completed ? _status : DisclosureStatus.Failed;
+            if(_status == DisclosureStatus.Processing || _status == DisclosureStatus.Retrying)
+            {
+                return;
+            }
 
             await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
 

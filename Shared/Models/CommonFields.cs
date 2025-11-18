@@ -42,8 +42,8 @@
 
     public enum DisclosureStatus
     {
-        Completed,
         Failed,
+        Completed,
         Processing,
         Pending,
         Retrying,
