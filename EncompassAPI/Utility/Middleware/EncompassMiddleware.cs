@@ -22,7 +22,9 @@ namespace EncompassAPI.Utility.Middleware
             // This gets the token from the initial api call and stores it in the context for later use
             string xEToken;
 
-            if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve") || context.Request.Path.Value.ToLower().Contains("api/disclosureaudit"))
+            if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve") || 
+                context.Request.Path.Value.ToLower().Contains("api/disclosureaudit") ||
+                context.Request.Path.Value.ToLower().Contains("api/documentmapping/upsert"))
             {
                 xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
 
