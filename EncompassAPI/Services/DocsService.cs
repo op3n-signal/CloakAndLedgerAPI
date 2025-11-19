@@ -436,7 +436,7 @@ namespace EncompassAPI.Services
 
                 return new ProcessResult<List<string>>(true)
                 {
-                    Result = efolderDocuments.Select(doc => doc.name).ToList()
+                    Result = efolderDocuments.Where(doc => doc.documentType == "EDisclosures").Select(doc => doc.name).ToList()
                 };
             }
             catch (Exception ex)
