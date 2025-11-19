@@ -62,7 +62,30 @@ namespace EncompassAPI.AppLayer
                 return;
             }
 
-            foreach(var doc in prDocuments.Result)
+            // Retrieve efolder docs
+            ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetAllEFolderDocuments(request.OrgId, request.LoanId, token);
+
+            if (!prEFolderDocumentNames.Success)
+            {
+                return;
+            }
+
+            // Add to list
+            ProcessResult<string> prJobId = await _docsService.AddToDocSet(request.OrgId, request.LoanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, token, stage);
+
+            if (!prJobId.Success)
+            {
+                return;
+            }
+
+            prDocuments = await _docsService.GetDocSet(request.OrgId, request.LoanId, prOrderId.Result, prJobId.Result, token, stage);
+
+            if (!prDocuments.Success)
+            {
+                return;
+            }
+
+            foreach (var doc in prDocuments.Result)
             {
                 // Map to DocumentMapping model
                 DocumentMapping mapping = _mapper.Map<DocumentMapping>(doc);

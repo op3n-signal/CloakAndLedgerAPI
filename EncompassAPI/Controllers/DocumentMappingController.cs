@@ -27,6 +27,9 @@ namespace EncompassAPI.Controllers
         [HttpPost("upsert")]
         public async Task UpsertDocumentMapping(MapRequest request)
         {
+            // Since this is a document upsert and we are reaching into a specific loan make sure to get a token for the specific org in encompass
+            // To get specific document data you must change the loan data in encompass 
+            // If there is ever an error where a document is not found in document mappings, you must run this api endpoint against that specific loan
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
 
             await _mappingAppService.RunAsync(request, token);

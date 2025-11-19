@@ -9,5 +9,7 @@ namespace EncompassAPI.Models
         public string OrgId { get; set; }
 
         public string DisclosureStage { get; set; }
+
+        public bool includeEFolder { get; set; }
     }
 }

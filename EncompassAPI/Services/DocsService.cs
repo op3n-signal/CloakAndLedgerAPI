@@ -413,6 +413,39 @@ namespace EncompassAPI.Services
             }
         }
 
+        public async Task<ProcessResult<List<string>>> GetAllEFolderDocuments(string orgId, string loanId, string token)
+        {
+            try
+            {
+                // Get loan audit result
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.GetEFolderDocsEndpoint}";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                EFolderDocument[] efolderDocuments = await _http.GetAsync<EFolderDocument[]>(url, headers);
+
+                if (efolderDocuments == null || efolderDocuments.Length == 0)
+                {
+                    _logger.Base.LogError("No docs found"); //todo
+                    return new ProcessResult<List<string>>(false, "No docs found");
+                }
+
+                return new ProcessResult<List<string>>(true)
+                {
+                    Result = efolderDocuments.Select(doc => doc.name).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve document from e-folder for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<List<string>>(false, $"Failed to retrieve document from e-folder for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public async Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage)
         {
             _logger.Base.LogInformation($"Entering {nameof(AddToDocSet)}");
@@ -918,6 +951,8 @@ namespace EncompassAPI.Services
         Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token, DisclosureStage stage);
 
         Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token);
+
+        Task<ProcessResult<List<string>>> GetAllEFolderDocuments(string orgId, string loanId, string token);
 
         Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage);
 
