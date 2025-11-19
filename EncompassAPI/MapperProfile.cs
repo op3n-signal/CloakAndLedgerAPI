@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Docusign;
+using EncompassAPI.Services;
 
 namespace EncompassAPI
 {
@@ -12,6 +13,7 @@ namespace EncompassAPI
                 .ForMember(dest => dest.OrganizationId, opt => opt.MapFrom(src => src.OrgId))
                 .ForMember(dest => dest.S3Path, opt => opt.MapFrom(src => src.Path));
             CreateMap<Models.Recipient, Models.Docusign.Recipient>();
+            CreateMap<Models.Encompass.Document, DocumentMapping>();
         }
     }
 }

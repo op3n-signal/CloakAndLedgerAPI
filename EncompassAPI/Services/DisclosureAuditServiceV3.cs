@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace EncompassAPI.Services
 {
-    public class DisclosureAuditServiceV3 : IDisclosureAuditServiceV2
+    public class DisclosureAuditServiceV3 : IDisclosureAuditServiceV3
     {
         private const string ReceivedMethod = "eDisclosure";
 
@@ -333,7 +333,7 @@ namespace EncompassAPI.Services
         }
     }
 
-    public interface IDisclosureAuditServiceV2
+    public interface IDisclosureAuditServiceV3
     {
         Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token);
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);

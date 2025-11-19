@@ -23,7 +23,7 @@ namespace EncompassAPI.AppLayer
         private readonly ISalesforceService _sfService;
         private readonly IEncompassService _docsService;
         private readonly IDocusignService _docusignService;
-        private readonly IDisclosureAuditServiceV2 _disclosureAuditService;
+        private readonly IDisclosureAuditServiceV3 _disclosureAuditService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
 
         private string _orgId;
@@ -33,7 +33,7 @@ namespace EncompassAPI.AppLayer
         private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresServiceV3(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV2 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
+        public DisclosuresServiceV3(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;

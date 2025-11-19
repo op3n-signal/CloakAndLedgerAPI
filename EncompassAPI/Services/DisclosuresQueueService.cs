@@ -16,13 +16,11 @@ namespace EncompassAPI.Services
         private readonly IDynamoDBContext _dbContext;
         private readonly IAmazonDynamoDB _dynamoClient;
         private readonly LoggerService<DisclosuresQueueService> _logger;    
-        private readonly IMapper _mapper;
 
-        public DisclosuresQueueService(IDynamoDBContext dbContext, IAmazonDynamoDB dynamoClient, IMapper mapper, LoggerService<DisclosuresQueueService> logger)
+        public DisclosuresQueueService(IDynamoDBContext dbContext, IAmazonDynamoDB dynamoClient, LoggerService<DisclosuresQueueService> logger)
         {
             _dbContext = dbContext;
             _dynamoClient = dynamoClient;
-            _mapper = mapper;
             _logger = logger;
         }
 
