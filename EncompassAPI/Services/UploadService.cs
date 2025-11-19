@@ -45,7 +45,7 @@ namespace EncompassAPI.Services
                         stream.Position = 0;
                         var partResponse = await _s3Service.UploadPartAsync(bucket, key, uploadId, partNumber, stream, true);
 
-                        partETags.Add(new PartETag(partResponse.PartNumber ?? 0, partResponse.ETag));
+                        partETags.Add(new PartETag(partResponse.PartNumber, partResponse.ETag));
 
                         partNumber++;
                     }

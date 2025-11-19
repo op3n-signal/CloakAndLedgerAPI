@@ -57,10 +57,11 @@ namespace EncompassAPI.Services
         {
             try
             {
-                var config = new QueryConfig
+                var config = new DynamoDBOperationConfig
                 {
                     IndexName = "Date_GSI",
-                    BackwardQuery = false
+                    BackwardQuery = false, // oldest first
+                    ConsistentRead = false
                 };
 
                 var query = _dbContext.QueryAsync<DisclosureQueueItem>("GLOBAL_DISCLOSURES", config);
