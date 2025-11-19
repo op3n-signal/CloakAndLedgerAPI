@@ -430,13 +430,13 @@ namespace EncompassAPI.Services
 
                 if (efolderDocuments == null || efolderDocuments.Length == 0)
                 {
-                    _logger.Base.LogError("No docs found"); //todo
+                    _logger.Base.LogError("No docs found");
                     return new ProcessResult<List<string>>(false, "No docs found");
                 }
 
                 return new ProcessResult<List<string>>(true)
                 {
-                    Result = efolderDocuments.Where(doc => doc.documentType == "EDisclosures").Select(doc => doc.name).ToList()
+                    Result = efolderDocuments.Where(doc => doc.signatureType == "ESignable").Select(doc => doc.name).ToList()
                 };
             }
             catch (Exception ex)
