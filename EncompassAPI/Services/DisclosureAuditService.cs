@@ -38,7 +38,8 @@ namespace EncompassAPI.Services
                     date = currentDate,
                     receivedMethod = "Other",
                     receivedMethodOther = "Candid",
-                    receivedBy = new {
+                    receivedBy = new
+                    {
                         useUserValue = false
                     }
                 };
@@ -246,7 +247,8 @@ namespace EncompassAPI.Services
                 dynamic payload = new System.Dynamic.ExpandoObject();
                 payload.includedInTimeline = includeInTimeline;
 
-                if (isLatestLog) {
+                if (isLatestLog)
+                {
                     payload.disclosedMethod = CommonFields.DisclosedMethod;
                     payload.disclosedMethodDescription = status.ToString();
                 }

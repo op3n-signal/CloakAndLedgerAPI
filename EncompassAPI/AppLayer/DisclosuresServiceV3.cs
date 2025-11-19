@@ -2,6 +2,7 @@
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
+using EncompassAPI.Models.Dynamo;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
@@ -13,7 +14,7 @@ using System.Security.Cryptography;
 
 namespace EncompassAPI.AppLayer
 {
-    public class DisclosuresV3Service : IDisclosuresServiceV3, IAsyncDisposable
+    public class DisclosuresServiceV3 : IDisclosuresServiceV3, IAsyncDisposable
     {
         private readonly IFileService _fileService;
         private readonly IeFolderService _eFolderService;
@@ -22,16 +23,17 @@ namespace EncompassAPI.AppLayer
         private readonly ISalesforceService _sfService;
         private readonly IEncompassService _docsService;
         private readonly IDocusignService _docusignService;
-        private readonly IDisclosureAuditService _disclosureAuditService;
+        private readonly IDisclosureAuditServiceV2 _disclosureAuditService;
+        private readonly IDisclosuresQueueService _disclosuresQueueService;
 
         private string _orgId;
         private string _loanId;
         private string _token;
         private string _latestLogId;
-        private DisclosureMethodDescription _status;
+        private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresV3Service(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditService disclosureAuditService)
+        public DisclosuresServiceV3(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV2 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;
@@ -41,6 +43,7 @@ namespace EncompassAPI.AppLayer
             _docsService = docsService;
             _docusignService = docusignService;
             _disclosureAuditService = disclosureAuditService;
+            _disclosuresQueueService = disclosuresQueueService;
         }
 
         public void Init(string token)
@@ -50,8 +53,7 @@ namespace EncompassAPI.AppLayer
 
         public async Task Retrieve(CandidIncomingRequest request)
         {
-            
-            /*try
+            try
             {
                 _orgId = request.OrgId;
                 _loanId = request.LoanId;
@@ -61,6 +63,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosureLogs.Success)
                 {
+                    _status = DisclosureStatus.None;
                     return;
                 }
 
@@ -69,18 +72,53 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosureTrackingLog.Success)
                 {
+                    _status = DisclosureStatus.None;
                     return;
                 }
 
                 _latestLogId = prDisclosureTrackingLog.Result.id;
+
+                // Check if there is a disclosure queue item for this disclosure log id
+                ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
+
+                if (prDisclosureQueue.Success)
+                {
+                    Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
+
+                    if (status == DisclosureStatus.Processing)
+                    {
+                        // Exit if we are already processing
+                        _status = DisclosureStatus.Processing;
+                        return;
+                    }
+                    else if (status == DisclosureStatus.Retrying)
+                    {
+                        // Exit if we are retrying
+                        _status = DisclosureStatus.Retrying;
+                        return;
+                    }
+                    else if (status == DisclosureStatus.Completed)
+                    {
+                        // Exit if we are already completed
+                        _status = DisclosureStatus.Completed;
+                        return;
+                    }
+
+                    // Set status to retrying
+                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying);
+                }
+                else
+                {
+                    // Set status to processing
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, request, DisclosureStatus.Processing);
+                }
 
                 // Get the resource lock id from loan
                 ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(_orgId, request.LoanId, _token);
 
                 if (prRetrievedLockId.Success)
                 {
-                    // Since we don't have access to remove a lock. We will just wait for the lock to be released
-                    //todo set up a queue ---->?
+                    _status = DisclosureStatus.Locked;
                     return;
                 }
 
@@ -100,20 +138,50 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _status = DisclosureMethodDescription.Running;
-
-                // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, prDisclosureLogs.Result, _latestLogId, _status, false, _token);
-
-                if (!prLogUpdated.Success)
-                {
-                    return;
-                }
+                _status = DisclosureStatus.Processing;
 
                 // Make list of documents we have to find
                 Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).ToDictionary(name => name, name => false);
 
-                //todo get docs from dynamodb
+                // Get application id from loan because we need this for the audit
+                ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(_orgId, _loanId, _token);
+
+                if (!prApplicationId.Success)
+                {
+                    ;
+                    return;
+                }
+
+                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOrder(_orgId, _loanId, prApplicationId.Result, _token, prDisclosureStage.Result);
+
+                if (!prAuditId.Success)
+                {
+                    return;
+                }
+
+                //todo maybe return response of what failed in the audit // send back in response to candid
+                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOrder(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
+
+                if (!prAuditSuccess.Success)
+                {
+                    return;
+                }
+
+                // Get documents with signature coordinates
+                ProcessResult<string> prOrderId = await _docsService.GenerateDocSet(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
+
+                if (!prOrderId.Success)
+                {
+                    return;
+                }
+
+                // This only returns a select amount of documents
+                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_orgId, _loanId, prOrderId.Result, _token, prDisclosureStage.Result);
+
+                if (!prDocuments.Success)
+                {
+                    return;
+                }
 
                 // Removes documents that are not needed from the doc set api
                 List<Models.Encompass.Document> docSetDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, prDocuments.Result);
@@ -128,6 +196,21 @@ namespace EncompassAPI.AppLayer
                     ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(_orgId, _loanId, dictAttachmentNamesToFind, _token);
 
                     if (!prEFolderDocumentNames.Success)
+                    {
+                        return;
+                    }
+
+                    // Add to list
+                    ProcessResult<string> prJobId = await _docsService.AddToDocSet(_orgId, _loanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token, prDisclosureStage.Result);
+
+                    if (!prJobId.Success)
+                    {
+                        return;
+                    }
+
+                    prDocuments = await _docsService.GetDocSet(_orgId, _loanId, prOrderId.Result, prJobId.Result, _token, prDisclosureStage.Result);
+
+                    if (!prDocuments.Success)
                     {
                         return;
                     }
@@ -232,7 +315,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _status = DisclosureMethodDescription.Candid;
+                _status = DisclosureStatus.Completed;
 
                 ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_orgId, _loanId, prDisclosureTrackingLog.Result, _token);
 
@@ -244,12 +327,17 @@ namespace EncompassAPI.AppLayer
             catch (Exception ex)
             {
                 return;
-            }*/
+            }
         }
 
         public async ValueTask DisposeAsync()
         {
-            _status = _status == DisclosureMethodDescription.Candid ? _status : DisclosureMethodDescription.Error;
+            if(_status == DisclosureStatus.Processing || _status == DisclosureStatus.Retrying || _status == DisclosureStatus.None)
+            {
+                return;
+            }
+
+            await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
 
             // We need to update the log to be included in the timeline now that we are done
             ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, _status, true, _token);

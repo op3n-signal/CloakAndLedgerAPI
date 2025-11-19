@@ -46,4 +46,15 @@
         Error,
         Running
     }
+
+    public enum DisclosureStatus
+    {
+        None,
+        Failed,
+        Completed,
+        Processing,
+        Pending,
+        Retrying,
+        Locked
+    }
 }
