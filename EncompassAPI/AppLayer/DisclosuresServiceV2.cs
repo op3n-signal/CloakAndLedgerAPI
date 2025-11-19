@@ -105,7 +105,7 @@ namespace EncompassAPI.AppLayer
                     }
 
                     // Set status to retrying
-                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying, prDisclosureQueue.Result.retryCount);
+                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying);
                 }
                 else
                 {

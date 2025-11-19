@@ -131,7 +131,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status, int retryCount = 0)
+        public async Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status)
         {
             try
             {
@@ -144,23 +144,25 @@ namespace EncompassAPI.Services
                     {
                         ["id"] = new AttributeValue { S = disclosureLogId }
                     },
-                    UpdateExpression = "SET #s = :s, modified_date = :m",
                     ExpressionAttributeNames = new Dictionary<string, string>
                     {
-                        ["#s"] = "status"
+                        ["#s"] = "status",
+                        ["#m"] = "modified_date",
+                        ["#r"] = "retryCount"
                     },
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
                         [":s"] = new AttributeValue { S = status.ToString() },
-                        [":m"] = new AttributeValue { N = now.ToString() }
-                    }
+                        [":m"] = new AttributeValue { N = now.ToString() },
+                        [":inc"] = new AttributeValue { N = "1" } // increment by 1
+                    },
+                    UpdateExpression = "SET #s = :s, #m = :m"
                 };
 
                 if (status == DisclosureStatus.Retrying)
                 {
-                    request.UpdateExpression += ", retryCount = :r";
-                    request.ExpressionAttributeValues[":r"] =
-                        new AttributeValue { N = retryCount.ToString() };
+                    // Increment the existing retryCount
+                    request.UpdateExpression += " ADD #r :inc";
                 }
 
                 await _dynamoClient.UpdateItemAsync(request);
@@ -181,6 +183,6 @@ namespace EncompassAPI.Services
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);
-        Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status, int retryCount = 0);
+        Task<ProcessResult> UpdateStatus(string disclosureLogId, DisclosureStatus status);
     }
 }
