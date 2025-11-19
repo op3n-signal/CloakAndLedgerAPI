@@ -16,6 +16,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /out ./
 
+# Create the .aws directory in the container
+RUN mkdir -p /root/.aws \
+    && chmod 777 /root/.aws
+
 EXPOSE 80
 
 ENTRYPOINT ["dotnet", "EncompassAPI.dll"]
