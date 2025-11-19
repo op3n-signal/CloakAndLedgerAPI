@@ -26,7 +26,7 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status)
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request, DisclosureStatus status)
         {
             try
             {
@@ -36,7 +36,6 @@ namespace EncompassAPI.Services
                 DisclosureQueueItem item = new DisclosureQueueItem()
                 {
                     id = disclosureLogId,
-                    token = token,
                     json_request = JsonSerializer.Serialize(request),
                     status = status.ToString(),
                     created_date = existing?.created_date ?? now,
@@ -178,7 +177,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosuresQueueService
     {
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, CandidIncomingRequest request, DisclosureStatus status);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);

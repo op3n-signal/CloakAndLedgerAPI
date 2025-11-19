@@ -12,9 +12,6 @@ namespace EncompassAPI.Models.Dynamo
         public string id { get; set; }
 
         [DynamoDBProperty]
-        public string token { get; set; }
-
-        [DynamoDBProperty]
         public string json_request { get; set; }
 
         [DynamoDBProperty]
