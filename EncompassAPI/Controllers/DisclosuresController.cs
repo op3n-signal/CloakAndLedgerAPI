@@ -35,7 +35,7 @@ namespace EncompassAPI.Controllers
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV2>();
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV3>();
 
                     disclosuresService.Init(token);
 
