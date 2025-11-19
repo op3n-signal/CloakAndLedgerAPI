@@ -11,15 +11,19 @@ namespace EncompassAPI.Models.Dynamo
         [DynamoDBHashKey]
         public string id { get; set; }
 
+        [DynamoDBProperty]
         public string json_request { get; set; }
 
+        [DynamoDBProperty]
         public int retryCount { get; set; }
 
+        [DynamoDBProperty]
         public string status { get; set; }
 
         [DynamoDBGlobalSecondaryIndexRangeKey("Date_GSI")]
         public long created_date { get; set; }
 
+        [DynamoDBProperty]
         public long modified_date { get; set; }
 
         [DynamoDBGlobalSecondaryIndexHashKey("Date_GSI")]

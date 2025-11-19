@@ -57,18 +57,14 @@ namespace EncompassAPI.Services
         {
             try
             {
-                var query = _dbContext.QueryAsync<DisclosureQueueItem>(
-                    "GLOBAL_DISCLOSURES", // partition key value
-                    QueryOperator.Equal,
-                    new[] { "GLOBAL_DISCLOSURES" },
-                    new DynamoDBOperationConfig
-                    {
-                        IndexName = "Date_GSI",
-                        BackwardQuery = false // ascending = oldest first
-                    }
-                );
+                var config = new QueryConfig
+                {
+                    IndexName = "Date_GSI",
+                    BackwardQuery = false
+                };
 
-                var items = await query.GetRemainingAsync();
+                var query = _dbContext.QueryAsync<DisclosureQueueItem>("GLOBAL_DISCLOSURES", config);
+                var items = await query.GetNextSetAsync();
 
                 if(!items.Any())
                 {
