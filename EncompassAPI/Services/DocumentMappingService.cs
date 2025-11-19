@@ -72,12 +72,10 @@ namespace EncompassAPI.Services
         Task<ProcessResult<List<DocumentMapping>>> GetDocMappingByName(string name);
     }
 
-    [DynamoDBTable("EncompassDisclosuresDocumentData")]
+    [DynamoDBTable("DisclosuresDocumentData")]
     public class DocumentMapping
     {
         [DynamoDBHashKey]
-        public string id { get; set; }
-        [DynamoDBGlobalSecondaryIndexHashKey("name")]
         public string name { get; set; }
         public Signer[] signers { get; set; }
     }
