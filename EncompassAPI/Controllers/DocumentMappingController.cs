@@ -39,5 +39,23 @@ namespace EncompassAPI.Controllers
 
             await _mappingAppService.RunAsync(request, token);
         }
+
+        [HttpGet("getAll")]
+        public async Task<IActionResult> GetDocumentMappings()
+        {
+            ProcessResult<List<DocumentMapping>> pr = await _mappingAppService.GetAllDocMappings();
+
+            if (pr.Success)
+            {
+                return Ok(pr.Result);
+            }
+            else
+            {
+                if(pr.Status == ResultStatus.InternalError)
+                    return BadRequest(pr.Message);
+
+                return Problem(pr.Message);
+            }
+        }
     }
 }

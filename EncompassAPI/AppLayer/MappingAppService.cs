@@ -94,10 +94,16 @@ namespace EncompassAPI.AppLayer
                 ProcessResult prUpsert = await _mappingService.UpsertDocMapping(mapping);
             }
         }
+
+        public async Task<ProcessResult<List<DocumentMapping>>> GetAllDocMappings()
+        {
+            return await _mappingService.GetDocMappings();
+        }
     }
 
     public interface IMappingAppService
     {
         Task RunAsync(MapRequest request, string token);
+        Task<ProcessResult<List<DocumentMapping>>> GetAllDocMappings();
     }
 }

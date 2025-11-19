@@ -2,7 +2,9 @@
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.Model;
 using EncompassAPI.Models;
+using EncompassAPI.Models.Dynamo;
 using EncompassAPI.Models.Encompass;
+using System.Collections.Generic;
 
 namespace EncompassAPI.Services
 {
@@ -29,6 +31,34 @@ namespace EncompassAPI.Services
             {
                 _logger.Base.LogError($"Failed to insert or document mapping for {mapping.name}. Exception: {ex.Message}");
                 return new ProcessResult(false, "Failed to insert or update document mapping");
+            }
+        }
+
+        public async Task<ProcessResult<List<DocumentMapping>>> GetDocMappings()
+        {
+            try
+            {
+                var config = new DynamoDBOperationConfig
+                {
+                    IndexName = "All_GSI",
+                    ConsistentRead = false
+                };
+
+                var query = _dbContext.QueryAsync<DocumentMapping>("ALL_DISCLOSURES", config);
+                var items = await query.GetNextSetAsync();
+
+                if (!items.Any())
+                {
+                    _logger.Base.LogError("No disclosure queue items.");
+                    return new ProcessResult<List<DocumentMapping>>(true) { Result = null };
+                }
+
+                return new ProcessResult<List<DocumentMapping>>(true, items.ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to get disclosure queue items: {ex.Message}");
+                return new ProcessResult<List<DocumentMapping>>(false, ResultStatus.InternalError, "Failed to get disclosure queue items.");
             }
         }
 
@@ -70,6 +100,7 @@ namespace EncompassAPI.Services
     {
         Task<ProcessResult> UpsertDocMapping(DocumentMapping mapping);
         Task<ProcessResult<List<DocumentMapping>>> GetDocMappingByName(string name);
+        Task<ProcessResult<List<DocumentMapping>>> GetDocMappings();
     }
 
     [DynamoDBTable("DisclosuresDocumentData")]
@@ -78,5 +109,7 @@ namespace EncompassAPI.Services
         [DynamoDBHashKey]
         public string name { get; set; }
         public Signer[] signers { get; set; }
+        [DynamoDBGlobalSecondaryIndexHashKey("All_GSI")]
+        public string GSI_PK { get; set; } = "ALL_DISCLOSURES";
     }
 }
