@@ -2,6 +2,7 @@
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
+using Amazon.Runtime.Internal.Transform;
 using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Dynamo;
@@ -147,20 +148,20 @@ namespace EncompassAPI.Services
                     ExpressionAttributeNames = new Dictionary<string, string>
                     {
                         ["#s"] = "status",
-                        ["#m"] = "modified_date",
-                        ["#r"] = "retryCount"
+                        ["#m"] = "modified_date"
                     },
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
                         [":s"] = new AttributeValue { S = status.ToString() },
-                        [":m"] = new AttributeValue { N = now.ToString() },
-                        [":inc"] = new AttributeValue { N = "1" } // increment by 1
+                        [":m"] = new AttributeValue { N = now.ToString() }
                     },
                     UpdateExpression = "SET #s = :s, #m = :m"
                 };
 
                 if (status == DisclosureStatus.Retrying)
                 {
+                    request.ExpressionAttributeNames.Add("#r", "retryCount");
+                    request.ExpressionAttributeValues.Add(":inc", new AttributeValue { N = "1" }); // increment by 1
                     // Increment the existing retryCount
                     request.UpdateExpression += " ADD #r :inc";
                 }
