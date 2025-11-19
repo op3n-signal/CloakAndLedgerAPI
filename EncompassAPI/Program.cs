@@ -46,6 +46,7 @@ builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
 });
 
 builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
+builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
@@ -60,6 +61,7 @@ builder.Services.AddScoped<ICandidDataService, CandidDataService>();
 builder.Services.AddScoped<IEncompassService, DocsService>();
 builder.Services.AddScoped<IDocusignService, DocusignService>();
 builder.Services.AddTransient<IDisclosureAuditService, DisclosureAuditService>();
+builder.Services.AddTransient<IDisclosureAuditServiceV2, DisclosureAuditServiceV3>();
 builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
 builder.Services.AddTransient<IDisclosuresQueueService, DisclosuresQueueService>();
 
