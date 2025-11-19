@@ -140,14 +140,6 @@ namespace EncompassAPI.AppLayer
 
                 _status = DisclosureStatus.Processing;
 
-                // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, prDisclosureLogs.Result, _latestLogId, _status, false, _token);
-
-                if (!prLogUpdated.Success)
-                {
-                    return;
-                }
-
                 // Make list of documents we have to find
                 Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).ToDictionary(name => name, name => false);
 
