@@ -118,15 +118,16 @@ namespace EncompassAPI.AppLayer
                 Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).ToDictionary(name => name, name => false);
 
                 // Get application id from loan because we need this for the audit
-                ProcessResult<string> prApplicationId = await _docsService.GetApplicationIdFromLoan(_orgId, _loanId, _token);
+                ProcessResult<LoanInfo> prLoanInfo = await _docsService.GetLoanInfo(_orgId, _loanId, _token);
 
-                if (!prApplicationId.Success)
+                if (!prLoanInfo.Success)
                 {
-                    ;
                     return;
                 }
 
-                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOrder(_orgId, _loanId, prApplicationId.Result, _token, prDisclosureStage.Result);
+                string applicationId = prLoanInfo.Result.applications[0].id;
+
+                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOrder(_orgId, _loanId, applicationId, _token, prDisclosureStage.Result);
 
                 if (!prAuditId.Success)
                 {
@@ -175,7 +176,7 @@ namespace EncompassAPI.AppLayer
                     }
 
                     // Add to list
-                    ProcessResult<string> prJobId = await _docsService.AddToDocSet(_orgId, _loanId, prOrderId.Result, prApplicationId.Result, prEFolderDocumentNames.Result, _token, prDisclosureStage.Result);
+                    ProcessResult<string> prJobId = await _docsService.AddToDocSet(_orgId, _loanId, prOrderId.Result, applicationId, prEFolderDocumentNames.Result, _token, prDisclosureStage.Result);
 
                     if (!prJobId.Success)
                     {

@@ -27,7 +27,7 @@ namespace EncompassAPI.Repos
             return await _connection.QuerySingleAsync<T>(sql, objParams, commandType: commandType, commandTimeout: commandTimeout);
         }
 
-        public async Task<int> Insert(string sql, object objParams, CommandType commandType = CommandType.Text)
+        public async Task<int> Execute(string sql, object objParams, CommandType commandType = CommandType.Text)
         {
             return await _connection.ExecuteAsync(sql, objParams, commandType: commandType);
         }
@@ -48,7 +48,7 @@ namespace EncompassAPI.Repos
         Task<IEnumerable<T>> Select<T>(string sql);
         Task<IEnumerable<T>> Select<T>(string sql, object objParams, CommandType commandType = CommandType.Text, int commandTimeout = 30);
         Task<T> SelectSingle<T>(string sql, object objParams, CommandType commandType = CommandType.Text, int commandTimeout = 30);
-        Task<int> Insert(string sql, object objParams, CommandType commandType = CommandType.Text);
+        Task<int> Execute(string sql, object objParams, CommandType commandType = CommandType.Text);
         Task<int> Delete(string sql);
     }
 }

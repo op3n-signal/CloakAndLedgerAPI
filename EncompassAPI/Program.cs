@@ -45,6 +45,9 @@ builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
     return new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 });
 
+builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
+builder.Services.AddScoped<IDisclosureDataRepo, DisclosureDataRepo>();
+
 builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
 builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();
 builder.Services.AddScoped<IFileService, FileService>();
@@ -55,7 +58,6 @@ builder.Services.AddScoped(typeof(AWSSecretService));
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddScoped<StorageService>();
 builder.Services.AddScoped<ISalesforceService, SalesforceService>();
-builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<ICandidDataService, CandidDataService>();
 builder.Services.AddScoped<IEncompassService, DocsService>();
@@ -65,7 +67,7 @@ builder.Services.AddTransient<IDisclosureAuditServiceV3, DisclosureAuditServiceV
 builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
 builder.Services.AddTransient<IDisclosuresQueueService, DisclosuresQueueService>();
 builder.Services.AddTransient<IMappingAppService, MappingAppService>();
-builder.Services.AddTransient<IDocumentMappingService, DocumentMappingService>();
+builder.Services.AddTransient<IDocumentSignerMappingService, DocumentSignerMappingService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
