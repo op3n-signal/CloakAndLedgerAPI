@@ -4,6 +4,7 @@ using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
 using EncompassAPI.Models.Dynamo;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Encompass.LoanInfo;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
 using Microsoft.Extensions.Options;
@@ -79,7 +80,6 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                bool isJointApplication = prDisclosureTrackingLog.Result.disclosureRecipients.Any(rec => rec.recipientType.ToLower() == "coborrower");
                 _latestLogId = prDisclosureTrackingLog.Result.id;
 
                 // Check if there is a disclosure queue item for this disclosure log id
@@ -205,7 +205,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Merge files here and this file is what I send back to candid... 
-                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(isJointApplication, prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
+                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(borrowerCount == 2, prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
 
                 if (!prFilePageCounts.Success)
                 {

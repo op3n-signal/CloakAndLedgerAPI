@@ -16,8 +16,8 @@ namespace EncompassAPI.Repos
 
         public async Task<bool> InsertDisclosureSignerMapping(DocumentSignerMapping documentSignerMapping)
         {
-            string sql = @"INSERT INTO disclosure_signer_mappings (Id, DocumentName, LoanType, State, BorrowerCount, Signers, CreatedAt, ModifiedAt)
-            Values(@Id, @DocumentName, @LoanType, @State, @BorrowerCount, @Signers, @CreatedAt, @ModifiedAt) ";
+            string sql = @"INSERT INTO disclosure_signer_mappings (Id, DocumentName, LoanType, State, BorrowerCount, LoanPurpose, AmortizationType, Signers, CreatedAt)
+            Values(@Id, @DocumentName, @LoanType, @State, @BorrowerCount, @LoanPurpose, @AmortizationType, @Signers, @CreatedAt) ";
 
             object objParams = new
             {
@@ -26,6 +26,8 @@ namespace EncompassAPI.Repos
                 @LoanType = documentSignerMapping.LoanType,
                 @State = documentSignerMapping.State,
                 @BorrowerCount = documentSignerMapping.BorrowerCount,
+                @LoanPurpose = documentSignerMapping.LoanPurpose,
+                @AmortizationType = documentSignerMapping.AmortizationType,
                 @Signers = JsonSerializer.Serialize(documentSignerMapping.Signers),
                 @CreatedAt = documentSignerMapping.CreatedAt
             };
@@ -38,8 +40,14 @@ namespace EncompassAPI.Repos
         public async Task<bool> UpdateDisclosureSignerMapping(DocumentSignerMapping documentSignerMapping)
         {
             string sql = @"UPDATE disclosure_signer_mappings
-            SET DocumentName = @DocumentName, LoanType = @LoanType,
-            State = @State, BorrowerCount = @BorrowerCount, Signers = @Signers, ModifiedAt = @ModifiedAt 
+            SET DocumentName = @DocumentName, 
+                LoanType = @LoanType,
+                State = @State, 
+                BorrowerCount = @BorrowerCount, 
+                LoanPurpose = @LoanPurpose, 
+                AmortizationType = @AmortizationType, 
+                Signers = @Signers, 
+                ModifiedAt = @ModifiedAt 
             WHERE Id = @Id";
 
             object objParams = new
@@ -49,6 +57,8 @@ namespace EncompassAPI.Repos
                 @LoanType = documentSignerMapping.LoanType,
                 @State = documentSignerMapping.State,
                 @BorrowerCount = documentSignerMapping.BorrowerCount,
+                @LoanPurpose = documentSignerMapping.LoanPurpose,
+                @AmortizationType = documentSignerMapping.AmortizationType,
                 @Signers = JsonSerializer.Serialize(documentSignerMapping.Signers),
                 @ModifiedAt = documentSignerMapping.ModifiedAt
             };

@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Encompass.LoanInfo;
 using EncompassAPI.Services;
-using Newtonsoft.Json.Linq;
-using System.Text.Json;
 
 namespace EncompassAPI.AppLayer
 {
@@ -102,6 +101,8 @@ namespace EncompassAPI.AppLayer
                 mapping.DocumentName = doc.name;
                 mapping.Signers = doc.signers;
                 mapping.LoanType = loanType;
+                mapping.AmortizationType = prLoanInfo.Result.loanAmortizationType;
+                mapping.LoanPurpose = prLoanInfo.Result.property.loanPurposeType;
                 mapping.State = state;
                 mapping.BorrowerCount = borrowerCount;
 

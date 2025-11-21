@@ -9,6 +9,8 @@ namespace EncompassAPI.Models
         public string LoanType { get; set; }
         public string State { get; set; }
         public int BorrowerCount { get; set; }
+        public string LoanPurpose { get; set; }
+        public string AmortizationType { get; set; }
         public Signer[] Signers { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime ModifiedAt { get; set; }

@@ -35,7 +35,7 @@ namespace EncompassAPI.Services
                 }
                 catch(Exception ex)
                 {
-                    _logger.Base.LogInformation($"No records found by variant key for {mapping.DocumentName}... proceeding to insert...");
+                    _logger.Base.LogInformation($"No existing record found by for {mapping.DocumentName} with search criteria... proceeding to insert...");
                 }
 
                 bool upserted;

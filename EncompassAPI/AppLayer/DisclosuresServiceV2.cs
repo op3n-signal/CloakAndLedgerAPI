@@ -3,6 +3,7 @@ using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Encompass.LoanInfo;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
 using Microsoft.Extensions.Options;
