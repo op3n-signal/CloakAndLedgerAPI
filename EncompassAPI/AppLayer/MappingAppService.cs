@@ -105,6 +105,7 @@ namespace EncompassAPI.AppLayer
                 mapping.LoanPurpose = prLoanInfo.Result.property.loanPurposeType;
                 mapping.State = state;
                 mapping.BorrowerCount = borrowerCount;
+                mapping.UrlaAdditionalBorrowerPage = prLoanInfo.Result.applications[0].coborrower.printOnAdditionalBorrowerPage;
 
                 // Check if there are any signers on this document
                 if (mapping.Signers == null || mapping.Signers.Length == 0)
@@ -158,15 +159,15 @@ namespace EncompassAPI.AppLayer
             return new ProcessResult(true);
         }
 
-        public async Task<ProcessResult<List<DocumentSignerMapping>>> GetAllDocMappings(string loanType, string state, int borrowerCount)
+        public async Task<ProcessResult<List<DocumentSignerMapping>>> GetAllDocMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage)
         {
-            return await _mappingService.GetDisclosureMappings(loanType, state, borrowerCount);
+            return await _mappingService.GetDisclosureMappings(loanType, state, borrowerCount, loanPurpose, amortizationType, urlaAdditionalBorrowerPage);
         }
     }
 
     public interface IMappingAppService
     {
         Task<ProcessResult> RunAsync(MapRequest request, string token);
-        Task<ProcessResult<List<DocumentSignerMapping>>> GetAllDocMappings(string loanType, string state, int borrowerCount);
+        Task<ProcessResult<List<DocumentSignerMapping>>> GetAllDocMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage);
     }
 }

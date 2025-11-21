@@ -1558,6 +1558,7 @@
         public bool undisclosedComakerOfNoteIndicator { get; set; }
         public bool undisclosedMortgageApplicationIndicator { get; set; }
         public string urla2020CitizenshipResidencyType { get; set; }
+        public bool printOnAdditionalBorrowerPage {  get; set; }
     }
 
     public class Employment1

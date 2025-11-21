@@ -9,5 +9,7 @@
         public string linkForEditorEndpoint { get; set; }
 
         public string requestDraftForEditingEndpoint { get; set; }
+
+        public string requestDraftForEditingEndpointV4 { get; set; }
     }
 }

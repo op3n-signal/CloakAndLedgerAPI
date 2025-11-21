@@ -16,8 +16,8 @@ namespace EncompassAPI.Repos
 
         public async Task<bool> InsertDisclosureSignerMapping(DocumentSignerMapping documentSignerMapping)
         {
-            string sql = @"INSERT INTO disclosure_signer_mappings (Id, DocumentName, LoanType, State, BorrowerCount, LoanPurpose, AmortizationType, Signers, CreatedAt)
-            Values(@Id, @DocumentName, @LoanType, @State, @BorrowerCount, @LoanPurpose, @AmortizationType, @Signers, @CreatedAt) ";
+            string sql = @"INSERT INTO disclosure_signer_mappings (Id, DocumentName, LoanType, State, BorrowerCount, LoanPurpose, AmortizationType, UrlaAdditionalBorrowerPage, Signers, CreatedAt)
+            Values(@Id, @DocumentName, @LoanType, @State, @BorrowerCount, @LoanPurpose, @AmortizationType, @UrlaAdditionalBorrowerPage, @Signers, @CreatedAt) ";
 
             object objParams = new
             {
@@ -28,6 +28,7 @@ namespace EncompassAPI.Repos
                 @BorrowerCount = documentSignerMapping.BorrowerCount,
                 @LoanPurpose = documentSignerMapping.LoanPurpose,
                 @AmortizationType = documentSignerMapping.AmortizationType,
+                @UrlaAdditionalBorrowerPage = documentSignerMapping.UrlaAdditionalBorrowerPage,
                 @Signers = JsonSerializer.Serialize(documentSignerMapping.Signers),
                 @CreatedAt = documentSignerMapping.CreatedAt
             };
@@ -46,6 +47,7 @@ namespace EncompassAPI.Repos
                 BorrowerCount = @BorrowerCount, 
                 LoanPurpose = @LoanPurpose, 
                 AmortizationType = @AmortizationType, 
+                UrlaAdditionalBorrowerPage = @UrlaAdditionalBorrowerPage,
                 Signers = @Signers, 
                 ModifiedAt = @ModifiedAt 
             WHERE Id = @Id";
@@ -59,6 +61,7 @@ namespace EncompassAPI.Repos
                 @BorrowerCount = documentSignerMapping.BorrowerCount,
                 @LoanPurpose = documentSignerMapping.LoanPurpose,
                 @AmortizationType = documentSignerMapping.AmortizationType,
+                @UrlaAdditionalBorrowerPage = documentSignerMapping.UrlaAdditionalBorrowerPage,
                 @Signers = JsonSerializer.Serialize(documentSignerMapping.Signers),
                 @ModifiedAt = documentSignerMapping.ModifiedAt
             };
@@ -75,14 +78,20 @@ namespace EncompassAPI.Repos
             WHERE DocumentName = @documentName
             AND LoanType = @loanType 
             AND State = @state 
-            AND BorrowerCount = @borrowerCount ";
+            AND BorrowerCount = @borrowerCount
+            AND LoanPurpose = @loanPurpose
+            AND AmortizationType = @amortizationType 
+            AND UrlaAdditionalBorrowerPage = @urlaAdditionalBorrowerPage ";
 
             object objParams = new
             {
                 @documentName = mapping.DocumentName,
                 @loanType = mapping.LoanType,
                 @state = mapping.State,
-                @borrowerCount = mapping.BorrowerCount
+                @borrowerCount = mapping.BorrowerCount,
+                @loanPurpose = mapping.LoanPurpose,
+                @amortizationType = mapping.AmortizationType,
+                @urlaAdditionalBorrowerPage = mapping.UrlaAdditionalBorrowerPage
             };
 
             var result = await _dataRepo.SelectSingle<string>(sql, objParams);
@@ -90,19 +99,25 @@ namespace EncompassAPI.Repos
             return result;
         }
 
-        public async Task<List<DocumentSignerMappingEntity>> GetDisclosureSignerMappings(string loanType, string state, int borrowerCount)
+        public async Task<List<DocumentSignerMappingEntity>> GetDisclosureSignerMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage)
         {
             string sql = @"SELECT DocumentName, Signers
             FROM disclosure_signer_mappings
             WHERE LoanType = @loanType
-            AND State @state 
-            AND BorrowerCount = @borrowerCount ";
+            AND State = @state 
+            AND BorrowerCount = @borrowerCount
+            AND LoanPurpose = @loanPurpose 
+            AND AmortizationType = @amortizationType
+            AND UrlaAdditionalBorrowerPage = @urlaAdditionalBorrowerPage ";
 
             object objParams = new
             {
                 @loanType = loanType,
                 @state = state,
-                @borrowerCount = borrowerCount
+                @borrowerCount = borrowerCount,
+                @loanPurpose = loanPurpose,
+                @amortizationType = amortizationType,
+                @urlaAdditionalBorrowerPage = urlaAdditionalBorrowerPage
             };
 
             var result = await _dataRepo.Select<DocumentSignerMappingEntity>(sql, objParams);
@@ -115,6 +130,6 @@ namespace EncompassAPI.Repos
         Task<bool> InsertDisclosureSignerMapping(DocumentSignerMapping documentSignerMapping);
         Task<bool> UpdateDisclosureSignerMapping(DocumentSignerMapping documentSignerMapping);
         Task<string> GetDisclosureSignerMappingId(DocumentSignerMapping mapping);
-        Task<List<DocumentSignerMappingEntity>> GetDisclosureSignerMappings(string loanType, string state, int borrowerCount);
+        Task<List<DocumentSignerMappingEntity>> GetDisclosureSignerMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage);
     }
 }

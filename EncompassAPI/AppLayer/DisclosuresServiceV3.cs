@@ -132,6 +132,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosureStage.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -139,6 +140,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDisclosuresName.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -151,19 +153,24 @@ namespace EncompassAPI.AppLayer
 
                 if (!prLoanInfo.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
                 string loanType = prLoanInfo.Result.hmda.loanType;
                 string state = prLoanInfo.Result.property.state;
                 int borrowerCount = prLoanInfo.Result.expectedBorrowerCount;
+                string loanPurpose = prLoanInfo.Result.property.loanPurposeType;
+                string amortizationType = prLoanInfo.Result.loanAmortizationType;
+                bool urlaAdditionalBorrowerPage = prLoanInfo.Result.applications[0].coborrower.printOnAdditionalBorrowerPage;
 
                 // Get document mapping data. 
                 // ... such as signature coordinates...
-                ProcessResult<List<DocumentSignerMapping>> prDocMappings = await _documentMappingService.GetDisclosureMappings(loanType, state, borrowerCount);
+                ProcessResult<List<DocumentSignerMapping>> prDocMappings = await _documentMappingService.GetDisclosureMappings(loanType, state, borrowerCount, loanPurpose, amortizationType, urlaAdditionalBorrowerPage);
 
                 if (!prDocMappings.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -173,6 +180,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!ieEFolderDocuments.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -184,6 +192,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prAttachments.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -192,6 +201,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prAttachmentDownloadUrls.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -201,6 +211,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prFileDownload.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -209,6 +220,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prFilePageCounts.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -217,6 +229,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDraftEditRequest.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -225,6 +238,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prOrgInfo.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -233,6 +247,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prOrgRequestInfo.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -241,6 +256,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prAWSSettings.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -253,6 +269,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prUpload.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -261,6 +278,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDocumentId.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -271,6 +289,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prEnvelopeId.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -278,6 +297,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prPushDocument.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 

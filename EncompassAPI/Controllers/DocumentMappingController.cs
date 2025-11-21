@@ -51,17 +51,17 @@ namespace EncompassAPI.Controllers
         }
 
         /// <summary>
-        /// Gets all document mappings
+        /// Gets all document mappings that match criteria
         /// If there are no document mappings for a document you are looking for then either: 
         /// 1) the document does not have signers
         /// 2) the document is not of signature type 'esignable' and might be a wet sign type
         /// 3) the document has not been put into the system yet. if so, run UpsertDocumentMapping against the loan that contains the document
         /// </summary>
         /// <returns></returns>
-        [HttpGet("get/loanType/{loanType}/state/{state}/borrowerCount/{borrowerCount}")]
-        public async Task<IActionResult> GetDocumentMappings(string loanType, string state, int borrowerCount)
+        [HttpGet("loanType/{loanType}/state/{state}/borrowerCount/{borrowerCount}/loanPurpose/{loanPurpose}/amrType/{amrType}/urlaAdditionalBorrowerPage/{urlaAdditionalBorrowerPage}")]
+        public async Task<IActionResult> GetDocumentMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amrType, bool urlaAdditionalBorrowerPage)
         {
-            ProcessResult<List<DocumentSignerMapping>> pr = await _mappingAppService.GetAllDocMappings(loanType, state, borrowerCount);
+            ProcessResult<List<DocumentSignerMapping>> pr = await _mappingAppService.GetAllDocMappings(loanType, state, borrowerCount, loanPurpose, amrType, urlaAdditionalBorrowerPage);
 
             if (pr.Success)
             {

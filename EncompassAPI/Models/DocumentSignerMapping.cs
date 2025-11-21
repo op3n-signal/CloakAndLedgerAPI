@@ -11,6 +11,7 @@ namespace EncompassAPI.Models
         public int BorrowerCount { get; set; }
         public string LoanPurpose { get; set; }
         public string AmortizationType { get; set; }
+        public bool UrlaAdditionalBorrowerPage { get; set; }
         public Signer[] Signers { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime ModifiedAt { get; set; }

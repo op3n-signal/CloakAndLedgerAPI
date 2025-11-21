@@ -67,11 +67,11 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<List<DocumentSignerMapping>>> GetDisclosureMappings(string loanType, string state, int borrowerCount)
+        public async Task<ProcessResult<List<DocumentSignerMapping>>> GetDisclosureMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage)
         {
             try
             {
-                List<DocumentSignerMappingEntity> documentSignerMappingEntities = await _disclosureDataRepo.GetDisclosureSignerMappings(loanType, state, borrowerCount);
+                List<DocumentSignerMappingEntity> documentSignerMappingEntities = await _disclosureDataRepo.GetDisclosureSignerMappings(loanType, state, borrowerCount, loanPurpose, amortizationType, urlaAdditionalBorrowerPage);
 
                 if (documentSignerMappingEntities == null || documentSignerMappingEntities.Count == 0)
                 {
@@ -102,6 +102,6 @@ namespace EncompassAPI.Services
     public interface IDocumentSignerMappingService
     {
         Task<ProcessResult> UpsertDocMapping(DocumentSignerMapping mapping);
-        Task<ProcessResult<List<DocumentSignerMapping>>> GetDisclosureMappings(string loanType, string state, int borrowerCount);
+        Task<ProcessResult<List<DocumentSignerMapping>>> GetDisclosureMappings(string loanType, string state, int borrowerCount, string loanPurpose, string amortizationType, bool urlaAdditionalBorrowerPage);
     }
 }
