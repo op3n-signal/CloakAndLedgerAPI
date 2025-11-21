@@ -5,13 +5,13 @@ namespace EncompassAPI.Models.Salesforce
 {
     public class GoogleDriveClone
     {
-        [JsonPropertyName("AWS_Access_Key_Id__c")]
+        [JsonPropertyName("CANDIDOEM__AWS_Access_Key_Id__c")]
         public string AWS_Access_Key_Id__c { get; set; }
 
-        [JsonPropertyName("AWS_Secret_Access_Key__c")]
+        [JsonPropertyName("CANDIDOEM__AWS_Secret_Access_Key__c")]
         public string AWS_Secret_Access_Key__c { get; set; }
 
-        [JsonPropertyName("Root_Folder_Name__c")]
+        [JsonPropertyName("CANDIDOEM__Root_Folder_Name__c")]
         public string Root_Folder_Name__c { get; set; }
     }
 }

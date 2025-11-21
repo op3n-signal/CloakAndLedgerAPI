@@ -1,10 +1,14 @@
 ﻿using Amazon.CloudWatchLogs;
+using Amazon.Runtime.Internal;
 using Amazon.S3.Model;
 using AutoMapper;
+using EncompassAPI.AppLayer;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
+using EncompassAPI.Models.Docusign.AnchorTags;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Encompass.LoanInfo;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -38,7 +42,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<DisclosureStage>> GetDisclosureStage(string orgId, string loanId, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetDisclosureStage)}");
+            _logger.Base.LogInformation(nameof(GetDisclosureStage));
 
             try
             {
@@ -153,9 +157,9 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token)
+        public async Task<ProcessResult<LoanInfo>> GetLoanInfo(string orgId, string loanId, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetApplicationIdFromLoan)}");
+            _logger.Base.LogInformation(nameof(GetLoanInfo));
 
             try
             {
@@ -173,24 +177,24 @@ namespace EncompassAPI.Services
                 if (loanInfo == null || loanInfo.applications == null || loanInfo.applications.Length == 0)
                 {
                     _logger.Base.LogError("Application id not found");
-                    return new ProcessResult<string>(false, "Application id not found");
+                    return new ProcessResult<LoanInfo>(false, "Application id not found");
                 }
 
-                return new ProcessResult<string>(true)
+                return new ProcessResult<LoanInfo>(true)
                 {
-                    Result = loanInfo.applications[0].id
+                    Result = loanInfo
                 };
             }
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Failed to retrieve application id for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<string>(false, $"Failed to retrieve application id for loan {loanId} in org {orgId}.");
+                return new ProcessResult<LoanInfo>(false, $"Failed to retrieve application id for loan {loanId} in org {orgId}.");
             }
         }
 
         public async Task<ProcessResult<string>> CreateLoanAuditForOrder(string orgId, string loanId, string applicationId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(CreateLoanAuditForOrder)}");
+            _logger.Base.LogInformation(nameof(CreateLoanAuditForOrder));
             try
             {
                 // Run loan audit
@@ -241,7 +245,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> GetDocumentAuditForOrder(string orgId, string loanId, string auditId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetDocumentAuditForOrder)}");
+            _logger.Base.LogInformation(nameof(GetDocumentAuditForOrder));
 
             try
             {
@@ -282,7 +286,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> GenerateDocSet(string orgId, string loanId, string auditId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GenerateDocSet)}");
+            _logger.Base.LogInformation(nameof(GenerateDocSet));
 
             try
             {
@@ -326,7 +330,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<List<Document>>> GetOrderStatus(string orgId, string loanId, string orderId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetOrderStatus)}");
+            _logger.Base.LogInformation(nameof(GetOrderStatus));
 
             try
             {
@@ -404,6 +408,39 @@ namespace EncompassAPI.Services
                 return new ProcessResult<List<string>>(true)
                 {
                     Result = efolderDocumentNames
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve document from e-folder for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<List<string>>(false, $"Failed to retrieve document from e-folder for loan {loanId} in org {orgId}.");
+            }
+        }
+
+        public async Task<ProcessResult<List<string>>> GetAllEFolderDocuments(string orgId, string loanId, string token)
+        {
+            try
+            {
+                // Get loan audit result
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.GetEFolderDocsEndpoint}";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                EFolderDocument[] efolderDocuments = await _http.GetAsync<EFolderDocument[]>(url, headers);
+
+                if (efolderDocuments == null || efolderDocuments.Length == 0)
+                {
+                    _logger.Base.LogError("No docs found");
+                    return new ProcessResult<List<string>>(false, "No docs found");
+                }
+
+                return new ProcessResult<List<string>>(true)
+                {
+                    Result = efolderDocuments.Where(doc => doc.signatureType == "ESignable").Select(doc => doc.name).ToList()
                 };
             }
             catch (Exception ex)
@@ -498,6 +535,8 @@ namespace EncompassAPI.Services
                     return new ProcessResult<List<Document>>(false, "The document orders response has errors");
                 }
 
+                _logger.LogVerbose($"Document orders retrieved: {JsonSerializer.Serialize(documentOrders.documents)}");
+
                 return new ProcessResult<List<Document>>(true)
                 {
                     Result = documentOrders.documents
@@ -563,6 +602,35 @@ namespace EncompassAPI.Services
             return neededDocuments;
         }
 
+        public List<EncompassDocument> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<EncompassDocument> documents)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(RemoveUnneededDocuments)}");
+
+            List<EncompassDocument> neededDocuments = new List<EncompassDocument>();
+
+            foreach (var document in documents)
+            {
+                //Let's not remove wet sign only documents for now
+                /* if (document.signatureType == "Wet Sign Only")
+                 {
+                     _logger.Base.LogInformation($"Removing {document.name} since it is wet sign only");
+                     continue;
+                 }*/
+
+                bool exists = dictAttachmentNamesToFind.ContainsKey(document.title);
+
+                if (exists)
+                {
+                    neededDocuments.Add(document);
+                    continue;
+                }
+
+                _logger.Base.LogInformation($"Removing {document.title}");
+            }
+
+            return neededDocuments;
+        }
+
         public ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts)
         {
             try
@@ -607,7 +675,7 @@ namespace EncompassAPI.Services
                         tabLabelSignature2 = "Co-Applicant Signature";
                     }
 
-                    foreach (Signer signer in doc.signers ?? Array.Empty<Signer>())
+                    foreach (Models.Encompass.Signer signer in doc.signers ?? Array.Empty<Models.Encompass.Signer>())
                     {
                         _logger.LogVerbose($"Mapping signer: {signer.partyId}");
 
@@ -647,11 +715,11 @@ namespace EncompassAPI.Services
                         // Initialize tabs if null
                         if (recipient.Tabs == null)
                         {
-                            recipient.Tabs = new Tabs()
+                            recipient.Tabs = new Models.Docusign.Tabs()
                             {
-                                SignHereTabs = new List<SignHere>(),
-                                InitialHereTabs = new List<InitialHere>(),
-                                DateSignedTabs = new List<DateSigned>()
+                                SignHereTabs = new List<Models.Docusign.SignHere>(),
+                                InitialHereTabs = new List<Models.Docusign.InitialHere>(),
+                                DateSignedTabs = new List<Models.Docusign.DateSigned>()
                             };
                         }
 
@@ -663,7 +731,7 @@ namespace EncompassAPI.Services
                             switch (field.type.ToLower())
                             {
                                 case "signature":
-                                    recipient.Tabs.SignHereTabs.Add(new SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -677,7 +745,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "initials":
-                                    recipient.Tabs.InitialHereTabs.Add(new InitialHere
+                                    recipient.Tabs.InitialHereTabs.Add(new Models.Docusign.InitialHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -691,7 +759,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "signeddate":
-                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -717,7 +785,7 @@ namespace EncompassAPI.Services
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
 
-                                    recipient.Tabs.SignHereTabs.Add(new SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -729,7 +797,7 @@ namespace EncompassAPI.Services
                                         Width = ((int)Math.Round(width)).ToString(),
                                         Height = ((int)Math.Round(field.bottom - field.top)).ToString()
                                     });
-                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -763,7 +831,556 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
+        public ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts)
+        {
+            try
+            {
+                const string documentId = "3";
+                DraftEditRequest draftEditRequest = _mapper.Map<DraftEditRequest>(request);
+                bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
+                int totalPageCount = filePageCounts.Last().Value;
+                List<string> keys = filePageCounts.Keys.ToList();
+
+                _logger.LogVerbose("Page counts: ");
+                _logger.LogVerbose(JsonSerializer.Serialize(filePageCounts));
+
+                foreach (DocumentSignerMapping docMapping in docMappings)
+                {
+                    _logger.LogVerbose($"Entering document mapping item: {docMapping.DocumentName}");
+
+                    bool docMappingNeeded = keys.Any(key =>
+                    {
+                        string filename = key.Replace(".pdf", "");
+
+                        string docMappingName = docMapping.DocumentName.Replace("/", "_");
+
+                        return filename == docMappingName;
+                    });
+
+                    // Continue over any docMappings we don't need
+                    if (docMappingNeeded == false)
+                    {
+                        _logger.LogVerbose($"Skipping over document mapping item: {docMapping.DocumentName}");
+                        continue;
+                    }
+
+                    _logger.LogVerbose($"Mapping document: {docMapping.DocumentName}");
+
+                    // Get current item in page count dictionary
+                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == docMapping.DocumentName.Replace("/", "_"));
+                    _logger.LogVerbose($"current item: {JsonSerializer.Serialize(currentItem)}");
+                    int indexOfCurrentItem = keys.ToList().IndexOf(currentItem.Key);
+                    _logger.LogVerbose($"indexOfCurrentItem: {JsonSerializer.Serialize(currentItem)}");
+                    // This page number is what page the current document starts from
+                    int beginningPageNumber = 0;
+
+                    if (indexOfCurrentItem == 0)
+                    {
+                        beginningPageNumber = 0;
+                    }
+                    else
+                    {
+                        beginningPageNumber = filePageCounts.ElementAt(indexOfCurrentItem - 1).Value;
+                    }
+
+                    _logger.LogVerbose($"Beginning page number for {docMapping.DocumentName} is {beginningPageNumber}");
+
+                    string tabLabelSignature1 = "";
+                    string tabLabelSignature2 = "";
+                    bool alreadySignedFirstHalf = false;
+
+                    if (docMapping.DocumentName == "Loan Estimate")
+                    {
+                        tabLabelSignature1 = "Applicant Signature";
+                        tabLabelSignature2 = "Co-Applicant Signature";
+                    }
+
+                    //todo still have to map to signer1 and signer2. This will break currently
+                    foreach (Models.Encompass.Signer signer in docMapping.Signers)
+                    {
+                        _logger.LogVerbose($"Mapping signer: {signer.partyId}");
+
+                        // Find recipient by the partyId
+                        Models.Docusign.Recipient recipient = signer.partyId == "signer1" ? draftEditRequest.Recipients[0] : signer.partyId == "signer2" ?draftEditRequest.Recipients[1] : null;
+
+                        if (signer.partyId.ToLower().Contains("originator"))
+                        {
+                            // Skip originator
+                            _logger.LogVerbose("Skipping originator");
+                            continue;
+                        }
+
+                        if (recipient == null)
+                        {
+                            _logger.Base.LogError($@"Cannot find recipient {signer.partyId} in the request.{Environment.NewLine}
+                                Logic is not implemented for signer: {signer.partyId}");
+                            return new ProcessResult<DraftEditRequest>(false, $"Cannot find recipient {signer.partyId} in the request.");
+                        }
+
+                        _logger.LogVerbose($"Found recipient for signer {signer.partyId}: {recipient.RecipientName}");
+
+                        // Initialize tabs if null
+                        if (recipient.Tabs == null)
+                        {
+                            recipient.Tabs = new Models.Docusign.Tabs()
+                            {
+                                SignHereTabs = new List<Models.Docusign.SignHere>(),
+                                InitialHereTabs = new List<Models.Docusign.InitialHere>(),
+                                DateSignedTabs = new List<Models.Docusign.DateSigned>()
+                            };
+                        }
+
+                        _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+
+                        // Map fields into recipient tabs
+                        foreach (Field field in signer.fields ?? Array.Empty<Field>())
+                        {
+                            switch (field.type.ToLower())
+                            {
+                                case "signature":
+                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    {
+                                        DocumentId = documentId,
+                                        PageNumber = (beginningPageNumber + field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
+
+                                case "initials":
+                                    recipient.Tabs.InitialHereTabs.Add(new Models.Docusign.InitialHere
+                                    {
+                                        DocumentId = documentId,
+                                        PageNumber = (beginningPageNumber + field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
+
+                                case "signeddate":
+                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    {
+                                        DocumentId = documentId,
+                                        PageNumber = (beginningPageNumber + field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
+                                case "signanddate":
+
+                                    float width = field.right - field.left;
+                                    float leftPosition = field.left;
+
+                                    if (docMapping.DocumentName == "Loan Estimate")
+                                    {
+                                        width = width / 2;
+
+                                        leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
+                                    }
+
+                                    _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
+
+                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    {
+                                        DocumentId = documentId,
+                                        PageNumber = (beginningPageNumber + field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        TabLabel = alreadySignedFirstHalf == false ? tabLabelSignature1 : tabLabelSignature2,
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(width)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    {
+                                        DocumentId = documentId,
+                                        PageNumber = (beginningPageNumber + field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(612 - leftPosition)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(width)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+
+                                    alreadySignedFirstHalf = true;
+                                    break;
+                                default:
+                                    // handle other types if needed
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                return new ProcessResult<DraftEditRequest>(true)
+                {
+                    Result = draftEditRequest
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DraftEditRequest>(false, $"Failed to map to draft edit request.");
+            }
+        }
+
+        public ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(bool urlaAdditionalBorrowerPage, CandidIncomingRequest request, Dictionary<string, int> filePageCounts)
+        {
+            try
+            {
+                const string documentId = "3";
+                DraftEditRequestV4 draftEditRequest = _mapper.Map<DraftEditRequestV4>(request);
+                bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
+                int totalPageCount = filePageCounts.Last().Value;
+                List<string> keys = filePageCounts.Keys.ToList();
+
+                _logger.LogVerbose("Page counts: ");
+                _logger.LogVerbose(JsonSerializer.Serialize(filePageCounts));
+
+                foreach (string documentName in keys)
+                {
+                    _logger.LogVerbose($"Mapping document: {documentName}");
+
+                    // Get current item in page count dictionary
+                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key == documentName);
+
+                    _logger.LogVerbose($"current item: {JsonSerializer.Serialize(currentItem)}");
+
+                    int indexOfCurrentItem = keys.ToList().IndexOf(currentItem.Key);
+
+                    _logger.LogVerbose($"indexOfCurrentItem: {JsonSerializer.Serialize(currentItem)}");
+
+                    // This page number is what page the current document starts from
+                    int beginningPageNumber = 0;
+
+                    if (indexOfCurrentItem == 0)
+                    {
+                        beginningPageNumber = 0;
+                    }
+                    else
+                    {
+                        beginningPageNumber = filePageCounts.ElementAt(indexOfCurrentItem - 1).Value;
+                    }
+
+                    string tabLabelSignature1 = "";
+                    string tabLabelSignature2 = "";
+                    bool alreadySignedFirstHalf = false;
+
+                    if (documentName == "Loan Estimate")
+                    {
+                        tabLabelSignature1 = "Applicant Signature";
+                        tabLabelSignature2 = "Co-Applicant Signature";
+                    }
+
+                    _logger.LogVerbose($"Beginning page number for {documentName} is {beginningPageNumber}");
+
+
+                    if (documentName == "1003 - URLA" && !urlaAdditionalBorrowerPage)
+                    {
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 16",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-445",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 16",
+                            AnchorXOffset = "-180",
+                            AnchorYOffset = "-90",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 16",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-95",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        if (draftEditRequest.Recipients.Count == 2)
+                        {
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "9 of 16",
+                                AnchorXOffset = "-45",
+                                AnchorYOffset = "-445",
+                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 16",
+                                AnchorXOffset = "-130",
+                                AnchorYOffset = "-90",
+                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 16",
+                                AnchorXOffset = "175",
+                                AnchorYOffset = "-95",
+                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+                        }
+                    }
+                    else if (documentName == "1003 - URLA" && urlaAdditionalBorrowerPage)
+                    {
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 12",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-445",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 12",
+                            AnchorXOffset = "-100",
+                            AnchorYOffset = "-90",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        if (draftEditRequest.Recipients.Count == 2)
+                        {
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "9 of 12",
+                                AnchorXOffset = "-45",
+                                AnchorYOffset = "-445",
+                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "6 of 12",
+                                AnchorXOffset = "-25",
+                                AnchorYOffset = "-100",
+                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+                        }
+
+                        draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                            AnchorString = "6 of 12",
+                            AnchorXOffset = "-25",
+                            AnchorYOffset = "-40",
+                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+                    }
+                    else if (documentName == "Loan Estimate")
+                    {
+                        // Sign and date tabs with the anchor string as Applicant Signature 
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            DocumentId = documentId,
+                            PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            XPosition = "42",
+                            YPosition = "705",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            DocumentId = documentId,
+                            PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            XPosition = "195",
+                            YPosition = "715",
+                            ScaleValue = "0.75"
+                        });
+
+                        if (draftEditRequest.Recipients.Count == 2)
+                        {
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                DocumentId = documentId,
+                                PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                XPosition = "310",
+                                YPosition = "705",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                DocumentId = documentId,
+                                PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                XPosition = "445",
+                                YPosition = "715",
+                                ScaleValue = "0.75"
+                            });
+                        }
+                    }
+                    else if(documentName == "Privacy Policy")
+                    {
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            DocumentId = documentId,
+                            PageNumber = (beginningPageNumber + 1).ToString(), 
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            XPosition = "72",
+                            YPosition = "665",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            DocumentId = documentId,
+                            PageNumber = (beginningPageNumber + 1).ToString(), 
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            XPosition = "225",
+                            YPosition = "685",
+                            ScaleValue = "0.75"
+                        });
+
+                        if (draftEditRequest.Recipients.Count == 2)
+                        {
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                DocumentId = documentId,
+                                PageNumber = (beginningPageNumber + 1).ToString(), 
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                XPosition = "325",
+                                YPosition = "665",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                DocumentId = documentId,
+                                PageNumber = (beginningPageNumber + 1).ToString(), 
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                XPosition = "475",
+                                YPosition = "685",
+                                ScaleValue = "0.75"
+                            });
+                        }
+                    }
+                }
+
+                // Find recipient by the partyId
+                foreach (Models.Docusign.AnchorTags.Recipient recipient in draftEditRequest.Recipients)
+                {
+                    _logger.LogVerbose($"Mapping tabs for recipient: {recipient.RecipientName}");
+
+                    // Sign and date tabs with the borrow name capitalized
+                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                    {
+                        RecipientId = recipient.RecipientId.ToString(),
+                        AnchorString = recipient.RecipientName.ToUpper(), // capitalized
+                        AnchorXOffset = "4",
+                        AnchorYOffset = "-6",
+                        AnchorIgnoreIfNotPresent = "true",
+                        AnchorUnits = "pixels",
+                        AnchorCaseSensitive = "true",
+                        AnchorMatchWholeWord = "true",
+                        ScaleValue = "0.75"
+                    });
+
+                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                    {
+                        RecipientId = recipient.RecipientId.ToString(),
+                        AnchorString = recipient.RecipientName.ToUpper(), // capitalized
+                        AnchorXOffset = "390",
+                        AnchorYOffset = "-12",
+                        AnchorIgnoreIfNotPresent = "false",
+                        AnchorUnits = "pixels",
+                        AnchorCaseSensitive = "true",
+                        AnchorMatchWholeWord = "true",
+                        ScaleValue = "0.75"
+                    });
+                }
+
+                return new ProcessResult<DraftEditRequestV4>(true)
+                {
+                    Result = draftEditRequest
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DraftEditRequestV4>(false, $"Failed to map to draft edit request.");
+            }
+        }
+
+        public ProcessResult<Dictionary<string, int>> MergePdfs(bool isJointApplication, string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
         {
             try
             {
@@ -801,7 +1418,139 @@ namespace EncompassAPI.Services
                             // Add the page count as the total page count so far
                             currentPageCount += inputDocument.PageCount;
 
-                            filePageCounts.Add(Path.GetFileName(file), currentPageCount);
+                            string fileName = Path.GetFileName(file);
+
+                            filePageCounts.Add(fileName, currentPageCount);
+
+                            foreach (PdfPage page in inputDocument.Pages)
+                            {
+                                outputDocument.AddPage(page);
+                            }
+                        }
+                    }
+
+                    // Save the merged document
+                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
+                }
+
+                return new ProcessResult<Dictionary<string, int>>(true)
+                {
+                    Result = filePageCounts
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
+            }
+        }
+
+        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
+        {
+            try
+            {
+                Dictionary<string, int> filePageCounts = new Dictionary<string, int>();
+
+                int currentPageCount = 0;
+
+                // Get all PDF files with path in the folder
+                string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
+
+                // Order the files based on how they were ordered
+                var sortedFiles = attachmentNames
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .ToArray();
+
+                _logger.LogVerbose("Sorted files: ");
+
+                _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
+
+                using (PdfDocument outputDocument = new PdfDocument())
+                {
+                    foreach (string file in sortedFiles)
+                    {
+                        _logger.LogVerbose($"Merging file: {file}");
+
+                        if (string.IsNullOrEmpty(file))
+                        {
+
+                            _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
+                            continue;
+                        }
+
+                        using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
+                        {
+                            // Add the page count as the total page count so far
+                            currentPageCount += inputDocument.PageCount;
+
+                            string fileName = Path.GetFileName(file);
+
+                            filePageCounts.Add(fileName, currentPageCount);
+
+                            foreach (PdfPage page in inputDocument.Pages)
+                            {
+                                outputDocument.AddPage(page);
+                            }
+                        }
+                    }
+
+                    // Save the merged document
+                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
+                }
+
+                return new ProcessResult<Dictionary<string, int>>(true)
+                {
+                    Result = filePageCounts
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
+            }
+        }
+
+        public ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
+        {
+            try
+            {
+                Dictionary<string, int> filePageCounts = new Dictionary<string, int>();
+
+                int currentPageCount = 0;
+
+                // Get all PDF files with path in the folder
+                string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
+
+                // Order the files based on how they were ordered
+                var sortedFiles = attachmentNames
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .ToArray();
+
+                _logger.LogVerbose("Sorted files: ");
+
+                _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
+
+                using (PdfDocument outputDocument = new PdfDocument())
+                {
+                    foreach (string file in sortedFiles)
+                    {
+                        _logger.LogVerbose($"Merging file: {file}");
+
+                        if (string.IsNullOrEmpty(file))
+                        {
+
+                            _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
+                            continue;
+                        }
+
+                        using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
+                        {
+                            // Add the page count as the total page count so far
+                            currentPageCount += inputDocument.PageCount;
+
+                            string fileName = Path.GetFileName(file).Replace(".pdf", "");
+
+                            filePageCounts.Add(fileName, currentPageCount);
 
                             foreach (PdfPage page in inputDocument.Pages)
                             {
@@ -882,7 +1631,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult<DisclosureStage>> GetDisclosureStage(string orgId, string loanId, string token);
         Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token);
         Task<ProcessResult> RemoveResourceLock(string orgId, string loanId, string lockId, string token);
-        Task<ProcessResult<string>> GetApplicationIdFromLoan(string orgId, string loanId, string token);
+        Task<ProcessResult<LoanInfo>> GetLoanInfo(string orgId, string loanId, string token);
 
         /// <summary>
         /// Creates the initial audit job for an order, which is typical for initial disclosures. 
@@ -919,6 +1668,8 @@ namespace EncompassAPI.Services
 
         Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token);
 
+        Task<ProcessResult<List<string>>> GetAllEFolderDocuments(string orgId, string loanId, string token);
+
         Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage);
 
         Task<ProcessResult<List<Document>>> GetDocSet(string orgId, string loanId, string orderId, string jobId, string token, DisclosureStage stage);
@@ -926,10 +1677,16 @@ namespace EncompassAPI.Services
         ProcessResult CheckIfAllDocumentsExist(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
 
         ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts);
+        ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts);
+        ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(bool urlaAdditionalBorrowerPage, CandidIncomingRequest request, Dictionary<string, int> filePageCounts);
 
         ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
+        ProcessResult<Dictionary<string, int>> MergePdfs(bool isJointApplication, string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
+        ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
+        List<EncompassDocument> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<EncompassDocument> documents);
+
         ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision);
     }
 }

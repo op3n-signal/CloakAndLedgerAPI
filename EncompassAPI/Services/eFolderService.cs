@@ -59,7 +59,7 @@ namespace EncompassAPI.Services
             return new ProcessResult(true);
         }
 
-        public async Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
+        public async Task<ProcessResult<List<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(GetListOfDocuments)}");
 
@@ -78,19 +78,19 @@ namespace EncompassAPI.Services
 
                 ieEncompassDocuments = ieEncompassDocuments.Where(doc => doc.documentTypes.Contains("EDisclosures")).DistinctBy(e => e.title);
 
-                return new ProcessResult<IEnumerable<EncompassDocument>>(true)
+                return new ProcessResult<List<EncompassDocument>>(true)
                 {
-                    Result = ieEncompassDocuments
+                    Result = ieEncompassDocuments.ToList()
                 };
             }
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<IEnumerable<EncompassDocument>>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+                return new ProcessResult<List<EncompassDocument>>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
             }
         }
 
-        public async Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, IEnumerable<EncompassDocument> documents)
+        public async Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, List<EncompassDocument> documents)
         {
             _logger.Base.LogInformation($"Entering {nameof(GetAttachments)}");
 
@@ -176,7 +176,7 @@ namespace EncompassAPI.Services
         /// <param name="orgId"></param>
         /// <param name="loanId"></param>
         /// <returns></returns>
-        Task<ProcessResult<IEnumerable<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token);
+        Task<ProcessResult<List<EncompassDocument>>> GetListOfDocuments(string orgId, string loanId, string token);
 
         /// <summary>
         /// Filters the documents by document type and retrieves all attachments for those documents.
@@ -186,7 +186,7 @@ namespace EncompassAPI.Services
         /// <param name="documentType"></param>
         /// <param name="documents"></param>
         /// <returns></returns>
-        Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, IEnumerable<EncompassDocument> documents);
+        Task<ProcessResult<Attachment[]>> GetAttachments(string orgId, string loanId, List<EncompassDocument> documents);
 
         /// <summary>
         /// Retrieves the download URLs for a given list of attachments.

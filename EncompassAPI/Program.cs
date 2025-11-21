@@ -1,4 +1,8 @@
+using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.S3;
+using AutoMapper;
 using EncompassAPI;
 using EncompassAPI.AppLayer;
 using EncompassAPI.Models.Configs;
@@ -10,7 +14,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TokenGenerator;
-using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +38,19 @@ builder.Services.Configure<EncompassConfig>(options => builder.Configuration.Get
 builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.GetSection(nameof(SalesforceConfig)).Bind(options));
 builder.Services.Configure<DocusignConfig>(options => builder.Configuration.GetSection(nameof(DocusignConfig)).Bind(options));
 
+builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
+builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
+{
+    return new AmazonDynamoDBClient(RegionEndpoint.USEast1);
+});
+
+builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
+builder.Services.AddScoped<IDisclosureDataRepo, DisclosureDataRepo>();
+
 builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
+builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();
+builder.Services.AddScoped<IDisclosuresServiceV4, DisclosuresServiceV4>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
@@ -44,13 +59,16 @@ builder.Services.AddScoped(typeof(AWSSecretService));
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddScoped<StorageService>();
 builder.Services.AddScoped<ISalesforceService, SalesforceService>();
-builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<ICandidDataService, CandidDataService>();
 builder.Services.AddScoped<IEncompassService, DocsService>();
 builder.Services.AddScoped<IDocusignService, DocusignService>();
 builder.Services.AddTransient<IDisclosureAuditService, DisclosureAuditService>();
+builder.Services.AddTransient<IDisclosureAuditServiceV3, DisclosureAuditServiceV3>();
 builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppService>();
+builder.Services.AddTransient<IDisclosuresQueueService, DisclosuresQueueService>();
+builder.Services.AddTransient<IMappingAppService, MappingAppService>();
+builder.Services.AddTransient<IDocumentSignerMappingService, DocumentSignerMappingService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
