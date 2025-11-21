@@ -197,7 +197,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Merge files here and this file is what I send back to candid... 
-                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfsV4(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
+                ProcessResult<Dictionary<string, int>> prFilePageCounts = _fileService.MergePdfsV4(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
 
                 if (!prFilePageCounts.Success)
                 {
@@ -281,6 +281,8 @@ namespace EncompassAPI.AppLayer
                     _status = DisclosureStatus.Failed;
                     return;
                 }
+
+                _fileService.RemoveFolder(request.ProspectId);
 
                 _status = DisclosureStatus.Completed;
             }
