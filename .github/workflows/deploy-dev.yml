@@ -5,6 +5,7 @@ on:
     branches-ignore:
       - main
       - master   
+      - FB_AddDocMapping #temp for source control
   workflow_dispatch:  # Enable manual triggering via GitHub UI
 
 env:
