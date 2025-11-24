@@ -1325,6 +1325,19 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 14",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-445",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
                         draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
@@ -1590,19 +1603,6 @@ namespace EncompassAPI.Services
                         AnchorString = recipient.RecipientName.ToUpper(), // capitalized
                         AnchorXOffset = "390",
                         AnchorYOffset = "-12",
-                        AnchorIgnoreIfNotPresent = "true",
-                        AnchorUnits = "pixels",
-                        AnchorCaseSensitive = "true",
-                        AnchorMatchWholeWord = "true",
-                        ScaleValue = "0.75"
-                    });
-
-                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
-                    {
-                        RecipientId = recipient.RecipientId.ToString(),
-                        AnchorString = "Borrower Signature", // capitalized
-                        AnchorXOffset = "4",
-                        AnchorYOffset = "-6",
                         AnchorIgnoreIfNotPresent = "true",
                         AnchorUnits = "pixels",
                         AnchorCaseSensitive = "true",
