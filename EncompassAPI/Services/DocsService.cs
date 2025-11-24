@@ -1444,7 +1444,7 @@ namespace EncompassAPI.Services
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "9 of 14",
                                 AnchorXOffset = "-45",
-                                AnchorYOffset = "-445",
+                                AnchorYOffset = "-455",
                                 AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
