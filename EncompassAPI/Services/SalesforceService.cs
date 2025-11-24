@@ -92,6 +92,7 @@ namespace EncompassAPI.Services
                     borrowerNames = new string[] { }
                 };
 
+                _logger.LogVerbose(JsonSerializer.Serialize(objParams));
 
                 ResponseData responseData = await _http.PostAsync<ResponseData>(endpoint, headers, JsonSerializer.Serialize(objParams));
 
