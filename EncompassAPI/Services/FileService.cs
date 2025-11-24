@@ -234,11 +234,6 @@ namespace EncompassAPI.Services
 
                     // Save the merged document
                     outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
-
-                    string mergedFilePath = Path.Combine(downloadPathPrefix, disclosuresName);
-
-                    // Delete all PDFs except the merged one
-                    RemoveFilesExceptOne(downloadPathPrefix, mergedFilePath);
                 }
 
                 return new ProcessResult<Dictionary<string, int>>(true)
