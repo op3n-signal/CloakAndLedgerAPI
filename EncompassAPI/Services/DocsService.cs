@@ -1338,6 +1338,59 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 14",
+                            AnchorXOffset = "-180",
+                            AnchorYOffset = "-90",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 14",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-95",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "14 of 14",
+                            AnchorXOffset = "-170",
+                            AnchorYOffset = "-630",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "14 of 14",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-635",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
                         if (draftEditRequest.Recipients.Count == 2)
                         {
                             draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1365,20 +1418,59 @@ namespace EncompassAPI.Services
                                 AnchorMatchWholeWord = "true",
                                 ScaleValue = "0.75"
                             });
-                        }
 
-                        draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
-                        {
-                            RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
-                            AnchorString = "6 of 12",
-                            AnchorXOffset = "-25",
-                            AnchorYOffset = "-40",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "true",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "6 of 14",
+                                AnchorXOffset = "-140",
+                                AnchorYOffset = "-50",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "6 of 14",
+                                AnchorXOffset = "180",
+                                AnchorYOffset = "-55",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 14",
+                                AnchorXOffset = "-130",
+                                AnchorYOffset = "-580",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 14",
+                                AnchorXOffset = "180",
+                                AnchorYOffset = "-585",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+                        }
                     }
                     else if (documentName == "Loan Estimate")
                     {
