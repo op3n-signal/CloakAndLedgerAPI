@@ -1590,7 +1590,20 @@ namespace EncompassAPI.Services
                         AnchorString = recipient.RecipientName.ToUpper(), // capitalized
                         AnchorXOffset = "390",
                         AnchorYOffset = "-12",
-                        AnchorIgnoreIfNotPresent = "false",
+                        AnchorIgnoreIfNotPresent = "true",
+                        AnchorUnits = "pixels",
+                        AnchorCaseSensitive = "true",
+                        AnchorMatchWholeWord = "true",
+                        ScaleValue = "0.75"
+                    });
+
+                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                    {
+                        RecipientId = recipient.RecipientId.ToString(),
+                        AnchorString = "Borrower Signature", // capitalized
+                        AnchorXOffset = "4",
+                        AnchorYOffset = "-6",
+                        AnchorIgnoreIfNotPresent = "true",
                         AnchorUnits = "pixels",
                         AnchorCaseSensitive = "true",
                         AnchorMatchWholeWord = "true",
