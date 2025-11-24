@@ -120,6 +120,10 @@ namespace EncompassAPI.Services
                     _logger.Base.LogError($"No resource locks found for loan: {loanId} in org: {orgId}");
                     return new ProcessResult<string>(false, $"No resource locks found for loan: {loanId} in org: {orgId}");
                 }
+                else
+                {
+                    _logger.Base.LogInformation($"Loan is locked for loan: {loanId} in org: {orgId}");
+                }
 
                 return new ProcessResult<string>(true)
                 {
@@ -1510,71 +1514,6 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
-        {
-            try
-            {
-                Dictionary<string, int> filePageCounts = new Dictionary<string, int>();
-
-                int currentPageCount = 0;
-
-                // Get all PDF files with path in the folder
-                string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
-
-                // Order the files based on how they were ordered
-                var sortedFiles = attachmentNames
-                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
-                .ToArray();
-
-                _logger.LogVerbose("Sorted files: ");
-
-                _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
-
-                using (PdfDocument outputDocument = new PdfDocument())
-                {
-                    foreach (string file in sortedFiles)
-                    {
-                        _logger.LogVerbose($"Merging file: {file}");
-
-                        if (string.IsNullOrEmpty(file))
-                        {
-
-                            _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
-                            continue;
-                        }
-
-                        using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
-                        {
-                            // Add the page count as the total page count so far
-                            currentPageCount += inputDocument.PageCount;
-
-                            string fileName = Path.GetFileName(file).Replace(".pdf", "");
-
-                            filePageCounts.Add(fileName, currentPageCount);
-
-                            foreach (PdfPage page in inputDocument.Pages)
-                            {
-                                outputDocument.AddPage(page);
-                            }
-                        }
-                    }
-
-                    // Save the merged document
-                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
-                }
-
-                return new ProcessResult<Dictionary<string, int>>(true)
-                {
-                    Result = filePageCounts
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
-            }
-        }
-
         public ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision)
         {
             try
@@ -1682,7 +1621,6 @@ namespace EncompassAPI.Services
 
         ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
         ProcessResult<Dictionary<string, int>> MergePdfs(bool isJointApplication, string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
-        ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
         List<EncompassDocument> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<EncompassDocument> documents);

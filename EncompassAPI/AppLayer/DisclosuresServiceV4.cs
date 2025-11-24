@@ -83,7 +83,7 @@ namespace EncompassAPI.AppLayer
                 // Check if there is a disclosure queue item for this disclosure log id
                 ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
 
-                if (prDisclosureQueue.Success)
+                if (prDisclosureQueue.Success && prDisclosureQueue.Result.status != "Dead")
                 {
                     Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
 
@@ -197,7 +197,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Merge files here and this file is what I send back to candid... 
-                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfsV4(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
+                ProcessResult<Dictionary<string, int>> prFilePageCounts = _fileService.MergePdfsV4(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
 
                 if (!prFilePageCounts.Success)
                 {
@@ -281,6 +281,8 @@ namespace EncompassAPI.AppLayer
                     _status = DisclosureStatus.Failed;
                     return;
                 }
+
+                _fileService.RemoveFolder(request.ProspectId);
 
                 _status = DisclosureStatus.Completed;
             }

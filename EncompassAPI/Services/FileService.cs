@@ -3,8 +3,11 @@ using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
 using Microsoft.Extensions.Options;
+using PdfSharpCore.Pdf;
+using PdfSharpCore.Pdf.IO;
 using Shared.Models;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace EncompassAPI.Services
@@ -180,6 +183,89 @@ namespace EncompassAPI.Services
             }
         }
 
+        public ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
+        {
+            try
+            {
+                Dictionary<string, int> filePageCounts = new Dictionary<string, int>();
+
+                int currentPageCount = 0;
+
+                // Get all PDF files with path in the folder
+                string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
+
+                // Order the files based on how they were ordered
+                var sortedFiles = attachmentNames
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .ToArray();
+
+                _logger.LogVerbose("Sorted files: ");
+
+                _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
+
+                using (PdfDocument outputDocument = new PdfDocument())
+                {
+                    foreach (string file in sortedFiles)
+                    {
+                        _logger.LogVerbose($"Merging file: {file}");
+
+                        if (string.IsNullOrEmpty(file))
+                        {
+
+                            _logger.Base.LogError("One of the files to merge is null or empty. Maybe this file could not be found.");
+                            continue;
+                        }
+
+                        using (PdfDocument inputDocument = PdfReader.Open(file, PdfDocumentOpenMode.Import))
+                        {
+                            // Add the page count as the total page count so far
+                            currentPageCount += inputDocument.PageCount;
+
+                            string fileName = Path.GetFileName(file).Replace(".pdf", "");
+
+                            filePageCounts.Add(fileName, currentPageCount);
+
+                            foreach (PdfPage page in inputDocument.Pages)
+                            {
+                                outputDocument.AddPage(page);
+                            }
+                        }
+                    }
+
+                    // Save the merged document
+                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
+                }
+
+                return new ProcessResult<Dictionary<string, int>>(true)
+                {
+                    Result = filePageCounts
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
+            }
+        }
+
+        public void RemoveFolder(string prospectId)
+        {
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
+
+            try
+            {
+                if (Directory.Exists(prefixDownloadPath))
+                {
+                    Directory.Delete(prefixDownloadPath, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to delete directory {prefixDownloadPath}. Exception: {ex}");
+            }
+
+        }
+
         public void RemoveFiles(string prospectId)
         {
             string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
@@ -193,6 +279,30 @@ namespace EncompassAPI.Services
                 {
                     try
                     {
+                        File.Delete(file);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Base.LogError($"Failed to delete file {file}{Environment.NewLine}Exception: {e}");
+                    }
+                }
+            }
+        }
+
+        private void RemoveFilesExceptOne(string downloadPathPrefix, string fileToKeep)
+        {
+            if (Directory.Exists(downloadPathPrefix))
+            {
+                // Get all files in the directory
+                string[] files = Directory.GetFiles(downloadPathPrefix);
+
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        if (!file.Equals(fileToKeep, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
                         File.Delete(file);
                     }
                     catch (Exception e)
@@ -242,6 +352,8 @@ namespace EncompassAPI.Services
         Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo);
         Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, List<Models.Encompass.Document> docSetDocuments);
         Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
+        ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
+        void RemoveFolder(string prospectId);
         void RemoveFiles(string prospectId);
     }
 }

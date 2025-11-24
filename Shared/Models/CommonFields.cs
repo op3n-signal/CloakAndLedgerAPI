@@ -8,6 +8,7 @@
         public const string AuthKeyInvalid = "Auth Token is invalid.";
         public const string EncompassTokenRequired = "Encompass access token required.";
         public const string EncompassTokenHeaderName = "x-e-Token";
+        public const string DisclosureLogIdHeaderName = "x-d-log-id";
 
         // File
         public const string FailedToDownloadFile = "Failed to download file.";
@@ -55,6 +56,7 @@
         Processing,
         Pending,
         Retrying,
-        Locked
+        Locked,
+        Dead
     }
 }
