@@ -1101,7 +1101,7 @@ namespace EncompassAPI.Services
                             AnchorString = "1 of 16",
                             AnchorXOffset = "-45",
                             AnchorYOffset = "-445",
-                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
                             AnchorMatchWholeWord = "true",
@@ -1114,7 +1114,7 @@ namespace EncompassAPI.Services
                             AnchorString = "6 of 16",
                             AnchorXOffset = "-180",
                             AnchorYOffset = "-90",
-                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
                             AnchorMatchWholeWord = "true",
@@ -1127,7 +1127,72 @@ namespace EncompassAPI.Services
                             AnchorString = "6 of 16",
                             AnchorXOffset = "180",
                             AnchorYOffset = "-95",
-                            AnchorIgnoreIfNotPresent = "false",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 18",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-445",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 18",
+                            AnchorXOffset = "-180",
+                            AnchorYOffset = "-90",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "6 of 18",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-95",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "18 of 18",
+                            AnchorXOffset = "-100",
+                            AnchorYOffset = "-700",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "18 of 18",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-700",
+                            AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
                             AnchorMatchWholeWord = "true",
@@ -1142,7 +1207,7 @@ namespace EncompassAPI.Services
                                 AnchorString = "9 of 16",
                                 AnchorXOffset = "-45",
                                 AnchorYOffset = "-445",
-                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
                                 AnchorMatchWholeWord = "true",
@@ -1155,7 +1220,7 @@ namespace EncompassAPI.Services
                                 AnchorString = "14 of 16",
                                 AnchorXOffset = "-130",
                                 AnchorYOffset = "-90",
-                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
                                 AnchorMatchWholeWord = "true",
@@ -1168,7 +1233,72 @@ namespace EncompassAPI.Services
                                 AnchorString = "14 of 16",
                                 AnchorXOffset = "175",
                                 AnchorYOffset = "-95",
-                                AnchorIgnoreIfNotPresent = "false",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "9 of 18",
+                                AnchorXOffset = "-45",
+                                AnchorYOffset = "-445",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 18",
+                                AnchorXOffset = "-130",
+                                AnchorYOffset = "-90",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "14 of 18",
+                                AnchorXOffset = "175",
+                                AnchorYOffset = "-95",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "18 of 18",
+                                AnchorXOffset = "-100",
+                                AnchorYOffset = "-650",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "18 of 18",
+                                AnchorXOffset = "180",
+                                AnchorYOffset = "-650",
+                                AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
                                 AnchorMatchWholeWord = "true",
