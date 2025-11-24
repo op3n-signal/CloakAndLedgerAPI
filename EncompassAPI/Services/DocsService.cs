@@ -120,6 +120,10 @@ namespace EncompassAPI.Services
                     _logger.Base.LogError($"No resource locks found for loan: {loanId} in org: {orgId}");
                     return new ProcessResult<string>(false, $"No resource locks found for loan: {loanId} in org: {orgId}");
                 }
+                else
+                {
+                    _logger.Base.LogInformation($"Loan is locked for loan: {loanId} in org: {orgId}");
+                }
 
                 return new ProcessResult<string>(true)
                 {
