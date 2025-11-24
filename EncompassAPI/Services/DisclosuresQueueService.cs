@@ -101,8 +101,8 @@ namespace EncompassAPI.Services
 
                 if (item == null)
                 {
-                    _logger.Base.LogWarning($"Disclosure queue item not found for id: {disclosureLogId}");
-                    return new ProcessResult<DisclosureQueueItem>(false, $"Disclosure queue item not found for id: {disclosureLogId}");
+                    _logger.Base.LogWarning($"Disclosure queue item not found for disclosure log id: {disclosureLogId}");
+                    return new ProcessResult<DisclosureQueueItem>(false, $"Disclosure queue item not found for disclosure log id: {disclosureLogId}");
                 }
 
                 return new ProcessResult<DisclosureQueueItem>(true) { Result = item };

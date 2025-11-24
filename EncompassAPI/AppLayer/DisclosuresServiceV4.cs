@@ -83,7 +83,7 @@ namespace EncompassAPI.AppLayer
                 // Check if there is a disclosure queue item for this disclosure log id
                 ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
 
-                if (prDisclosureQueue.Success)
+                if (prDisclosureQueue.Success && prDisclosureQueue.Result.status != "Dead")
                 {
                     Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
 
