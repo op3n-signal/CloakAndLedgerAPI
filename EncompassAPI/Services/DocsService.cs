@@ -1099,6 +1099,7 @@ namespace EncompassAPI.Services
 
                     if (documentName == "1003 - URLA" && !urlaAdditionalBorrowerPage)
                     {
+                        // 16 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
@@ -1138,6 +1139,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
+                        // 18 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
@@ -1205,6 +1207,7 @@ namespace EncompassAPI.Services
 
                         if (draftEditRequest.Recipients.Count == 2)
                         {
+                            // 16 pages
                             draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
@@ -1244,6 +1247,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
+                            // 18 pages
                             draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
@@ -1312,23 +1316,11 @@ namespace EncompassAPI.Services
                     }
                     else if (documentName == "1003 - URLA" && urlaAdditionalBorrowerPage)
                     {
+                        // 12 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 12",
-                            AnchorXOffset = "-45",
-                            AnchorYOffset = "-445",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "true",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
-
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
-                        {
-                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
-                            AnchorString = "1 of 14",
                             AnchorXOffset = "-45",
                             AnchorYOffset = "-445",
                             AnchorIgnoreIfNotPresent = "true",
@@ -1351,6 +1343,19 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
+                        // 14 pages
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 14",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-445",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
 
                         draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                         {
@@ -1406,6 +1411,7 @@ namespace EncompassAPI.Services
 
                         if (draftEditRequest.Recipients.Count == 2)
                         {
+                            // 12 pages
                             draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
@@ -1432,12 +1438,26 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
+                            // 14 pages
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            {
+                                RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
+                                AnchorString = "9 of 14",
+                                AnchorXOffset = "-45",
+                                AnchorYOffset = "-445",
+                                AnchorIgnoreIfNotPresent = "true",
+                                AnchorUnits = "pixels",
+                                AnchorCaseSensitive = "true",
+                                AnchorMatchWholeWord = "true",
+                                ScaleValue = "0.75"
+                            });
+
                             draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "6 of 14",
-                                AnchorXOffset = "-140",
-                                AnchorYOffset = "-50",
+                                AnchorXOffset = "-135",
+                                AnchorYOffset = "-40",
                                 AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
@@ -1450,7 +1470,7 @@ namespace EncompassAPI.Services
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "6 of 14",
                                 AnchorXOffset = "180",
-                                AnchorYOffset = "-55",
+                                AnchorYOffset = "-45",
                                 AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
