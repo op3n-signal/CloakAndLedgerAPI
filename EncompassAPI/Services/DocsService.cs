@@ -1173,12 +1173,12 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "18 of 18",
-                            AnchorXOffset = "-100",
-                            AnchorYOffset = "-700",
+                            AnchorXOffset = "-150",
+                            AnchorYOffset = "-640",
                             AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
@@ -1191,7 +1191,7 @@ namespace EncompassAPI.Services
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "18 of 18",
                             AnchorXOffset = "180",
-                            AnchorYOffset = "-700",
+                            AnchorYOffset = "-640",
                             AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
@@ -1279,12 +1279,12 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "18 of 18",
-                                AnchorXOffset = "-100",
-                                AnchorYOffset = "-650",
+                                AnchorXOffset = "-130",
+                                AnchorYOffset = "-600",
                                 AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
@@ -1297,7 +1297,7 @@ namespace EncompassAPI.Services
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "18 of 18",
                                 AnchorXOffset = "180",
-                                AnchorYOffset = "-650",
+                                AnchorYOffset = "-600",
                                 AnchorIgnoreIfNotPresent = "true",
                                 AnchorUnits = "pixels",
                                 AnchorCaseSensitive = "true",
