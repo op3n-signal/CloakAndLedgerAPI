@@ -176,6 +176,11 @@ namespace EncompassAPI.Services
 
                 if(responseData.response.ToLower() != "success")
                 {
+                    _logger.Base.LogWarning($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
+
+                    if (responseData.message.Contains("MISSING_ARGUMENT"))
+                        return new ProcessResult<string>(true, $"Document updated.");
+
                     throw new Exception($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
                 }
 
