@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - master   
-      - FB_AddDocMapping
   workflow_dispatch:  # Enable manual triggering via GitHub UI
 
 env:
