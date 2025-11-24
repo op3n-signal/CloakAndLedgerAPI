@@ -612,7 +612,11 @@ namespace EncompassAPI.Services
 
             List<EncompassDocument> neededDocuments = new List<EncompassDocument>();
 
-            foreach (var document in documents)
+            IOrderedEnumerable<EncompassDocument> orderedDocs = documents.OrderByDescending(x => x.createdDate);
+
+            _logger.LogVerbose(JsonSerializer.Serialize(orderedDocs));
+
+            foreach (var document in orderedDocs)
             {
                 //Let's not remove wet sign only documents for now
                 /* if (document.signatureType == "Wet Sign Only")
