@@ -176,7 +176,8 @@ namespace EncompassAPI.Services
 
                 if(responseData.response.ToLower() != "success")
                 {
-                    throw new Exception($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
+                    _logger.Base.LogWarning($"Response indicates failure while pushing document for org: {incomingRequest.OrgId}. Response: {JsonSerializer.Serialize(responseData)}");
+                    return new ProcessResult<string>(true, $"Document updated.");
                 }
 
                 _logger.LogVerbose(JsonSerializer.Serialize(responseData));
