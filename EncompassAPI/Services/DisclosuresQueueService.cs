@@ -73,7 +73,7 @@ namespace EncompassAPI.Services
                 }
 
                 var orderedItems = items
-                .Where(x => x.status != "Processing" && x.status != "Completed")
+                .Where(x => x.status != "Processing" && x.status != "Completed" && x.status != "Dead")
                 .OrderBy(x => x.modified_date)
                 .ToList();
 
