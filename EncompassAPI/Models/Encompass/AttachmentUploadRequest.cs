@@ -26,6 +26,7 @@ namespace EncompassAPI.Models.Encompass
         public string url { get; set; }
         public string authorizationHeader { get; set; }
         public string contentType { get; set; }
+        public string[] originalUrls { get; set; }
     }
 
 }

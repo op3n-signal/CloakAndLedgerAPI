@@ -42,14 +42,21 @@ namespace EncompassAPI.Services
 
                 foreach (var item in attachmentUrls.attachments)
                 {
-                    Dictionary<string, string> headers = new Dictionary<string, string>() { { "Authorization", item.authorizationHeader } };
+                    Dictionary<string, string> headers = new Dictionary<string, string>();
+
+                    if(item.authorizationHeader != null)
+                    {
+                        headers.Add("Authorization", item.authorizationHeader);
+                    }
+
+                    string url = item.url != null ? item.url : item.originalUrls[0];
 
                     // Get file content from skydrive
-                    HttpResponseMessage response = await _http.GetAsync(item.url, headers);
+                    HttpResponseMessage response = await _http.GetAsync(url, headers);
 
                     if (response == null)
                     {
-                        _logger.Base.LogError($"Error getting file: {item.url}");
+                        _logger.Base.LogError($"Error getting file: {url}");
                         return new ProcessResult<string>(false, CommonFields.ServerError);
                     }
 
