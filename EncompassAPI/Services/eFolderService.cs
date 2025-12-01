@@ -153,6 +153,8 @@ namespace EncompassAPI.Services
                     return new ProcessResult<AttachmentUrls>(false, $"No attachment download URLs found for attachments in loan {loanId} in org {orgId}.");
                 }
 
+                _logger.LogVerbose(JsonSerializer.Serialize(attachmentUrls));
+
                 return new ProcessResult<AttachmentUrls>(true)
                 {
                     Result = attachmentUrls
