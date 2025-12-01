@@ -53,6 +53,12 @@ namespace EncompassAPI.AppLayer
             _token = token;
         }
 
+        public void Init(string token, string logId)
+        {
+            _token = token;
+            _latestLogId = logId;
+        }
+
         public async Task Retrieve(CandidIncomingRequest request)
         {
             try
@@ -69,8 +75,17 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
-                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_orgId, _loanId, prDisclosureLogs.Result);
+                ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog;
+
+                if (string.IsNullOrEmpty(_latestLogId))
+                {
+                    prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLogById(_orgId, _loanId, _latestLogId, prDisclosureLogs.Result);
+                }
+                else
+                {
+                    // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
+                    prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_orgId, _loanId, prDisclosureLogs.Result);
+                }
 
                 if (!prDisclosureTrackingLog.Success)
                 {
@@ -306,6 +321,7 @@ namespace EncompassAPI.AppLayer
     public interface IDisclosuresServiceV4
     {
         void Init(string token);
+        void Init(string token, string logId);
         /// <summary>
         /// This will handle the event notification from Encompass.
         /// This will detect the org the event is for, and then retrieve the access token for that org.

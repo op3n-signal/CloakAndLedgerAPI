@@ -95,5 +95,29 @@ namespace EncompassAPI.Controllers
             // Return 202 Accepted
             return Accepted();
         }
+
+        [HttpPost("Retrieve/{logId}")]
+        public IActionResult RetrieveDisclosures(string logId, CandidIncomingRequest request)
+        {
+            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
+
+            // Start background process
+            var task = Task.Run(async () =>
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    // Get a scoped service in THIS scope
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+
+                    disclosuresService.Init(token, logId);
+
+                    // Run the background process
+                    await disclosuresService.Retrieve(request);
+                }
+            });
+
+            // Return 202 Accepted
+            return Accepted();
+        }
     }
 }

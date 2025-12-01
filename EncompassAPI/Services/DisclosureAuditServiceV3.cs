@@ -158,6 +158,47 @@ namespace EncompassAPI.Services
             }
         }
 
+        public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogById(string orgId, string loanId, string logId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
+        {
+            _logger.Base.LogInformation($"{nameof(GetLastestDisclosureTrackingLogById)}");
+
+            try
+            {
+                // Order logs by created date descending
+                IEnumerable<DisclosureTrackingLog> matchedLogs = ieDisclosureLogs.Where(log => log.id == logId);
+
+                // Get the latest log
+                DisclosureTrackingLog selectedLog = matchedLogs.First();
+
+                if (selectedLog.disclosureType.ToLower() == "revised")
+                {
+                    ieDisclosureLogs = matchedLogs.TakeWhile(d => d.disclosureType.ToLower() == "revised");
+
+                    selectedLog.revision = ieDisclosureLogs.Count();
+                }
+
+                // Let's only proceed if the actual received date is not set
+                if (selectedLog.disclosedMethod == "Other")
+                {
+                    _logger.Base.LogError($"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
+                    return new ProcessResult<DisclosureTrackingLog>(false, $"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
+                }
+
+                _logger.LogVerbose("disclosureType: " + selectedLog.disclosureType);
+                _logger.LogVerbose("disclosureType: " + JsonSerializer.Serialize(selectedLog.documents.forms));
+
+                return new ProcessResult<DisclosureTrackingLog>(true)
+                {
+                    Result = selectedLog
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DisclosureTrackingLog>(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogByReceivedDate(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
         {
             _logger.Base.LogInformation($"Entering {nameof(GetLastestDisclosureTrackingLogByReceivedDate)}");
@@ -338,6 +379,7 @@ namespace EncompassAPI.Services
         Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token);
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
+        ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogById(string orgId, string loanId, string logId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureStatus status, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, DisclosureStatus status, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureStatus status, bool includeInTimeline, string token);

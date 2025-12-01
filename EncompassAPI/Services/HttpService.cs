@@ -151,6 +151,8 @@ namespace EncompassAPI.Services
                     {
                         string json = await response.Content.ReadAsStringAsync();
 
+                        _logger.LogInformation(json);
+
                         if (json.Contains("status") && json.Contains("RUNNING"))
                         {
                             throw new HttpRequestException($"Server response in still in status: running");
