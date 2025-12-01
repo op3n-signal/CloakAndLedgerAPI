@@ -1671,7 +1671,7 @@
     public class Customfield
     {
         public string fieldName { get; set; }
-        public string value { get; set; }
+        public object value { get; set; }
         public string format { get; set; }
     }
 
