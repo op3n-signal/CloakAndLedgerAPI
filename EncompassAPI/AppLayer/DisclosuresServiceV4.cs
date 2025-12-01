@@ -77,7 +77,7 @@ namespace EncompassAPI.AppLayer
 
                 ProcessResult<DisclosureTrackingLog> prDisclosureTrackingLog;
 
-                if (string.IsNullOrEmpty(_latestLogId))
+                if (!string.IsNullOrEmpty(_latestLogId))
                 {
                     prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLogById(_orgId, _loanId, _latestLogId, prDisclosureLogs.Result);
                 }
