@@ -98,31 +98,19 @@ namespace EncompassAPI.AppLayer
                 // Check if there is a disclosure queue item for this disclosure log id
                 ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
 
-                if (prDisclosureQueue.Success && prDisclosureQueue.Result.status != "Dead")
+                if (prDisclosureQueue.Success)
                 {
                     Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
 
-                    if (status == DisclosureStatus.Processing)
+                    if (status == DisclosureStatus.Dead || status == DisclosureStatus.Retrying || status == DisclosureStatus.Processing || status == DisclosureStatus.None || status == DisclosureStatus.Completed)
                     {
-                        // Exit if we are already processing
-                        _status = DisclosureStatus.Processing;
+                        _status = status;
                         return;
                     }
-                    else if (status == DisclosureStatus.Retrying)
-                    {
-                        // Exit if we are retrying
-                        _status = DisclosureStatus.Retrying;
-                        return;
+                    else {
+                        // Set status to retrying
+                        await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying);
                     }
-                    else if (status == DisclosureStatus.Completed)
-                    {
-                        // Exit if we are already completed
-                        _status = DisclosureStatus.Completed;
-                        return;
-                    }
-
-                    // Set status to retrying
-                    await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying);
                 }
                 else
                 {
@@ -309,11 +297,6 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            if(_status == DisclosureStatus.Processing || _status == DisclosureStatus.Retrying || _status == DisclosureStatus.None)
-            {
-                return;
-            }
-
             await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
         }
     }
