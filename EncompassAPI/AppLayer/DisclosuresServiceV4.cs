@@ -28,6 +28,7 @@ namespace EncompassAPI.AppLayer
         private readonly IDocusignService _docusignService;
         private readonly IDisclosureAuditServiceV3 _disclosureAuditService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
+        private readonly ILogger<DisclosuresServiceV4> _logger;
 
         private string _orgId;
         private string _loanId;
@@ -35,7 +36,7 @@ namespace EncompassAPI.AppLayer
         private string _latestLogId;
         private DisclosureStatus _status;
 
-        public DisclosuresServiceV4(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService)
+        public DisclosuresServiceV4(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, ILogger<DisclosuresServiceV4> logger)
         {
             _fileService = fileService;
             _eFolderService = eFolderService;
@@ -46,6 +47,7 @@ namespace EncompassAPI.AppLayer
             _docusignService = docusignService;
             _disclosureAuditService = disclosureAuditService;
             _disclosuresQueueService = disclosuresQueueService;
+            _logger = logger;
         }
 
         public void Init(string token)
@@ -291,6 +293,7 @@ namespace EncompassAPI.AppLayer
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex.ToString());
                 return;
             }
         }
