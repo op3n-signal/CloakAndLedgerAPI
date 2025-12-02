@@ -1803,6 +1803,7 @@ namespace EncompassAPI.Services
 
                 if (string.IsNullOrWhiteSpace(disclosuresName))
                 {
+                    _logger.LogVerbose($"No disclosures name found for type {stage}");
                     return new ProcessResult<string>(false, $"No disclosures name found for type {stage}");
                 }
 
