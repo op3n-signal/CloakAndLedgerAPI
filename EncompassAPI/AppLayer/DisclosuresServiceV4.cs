@@ -148,7 +148,7 @@ namespace EncompassAPI.AppLayer
                 _status = DisclosureStatus.Processing;
 
                 // Document names from disclosure tracking log
-                Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).ToDictionary(name => name, name => false);
+                Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).Distinct().ToDictionary(name => name, name => false);
 
                 ProcessResult<LoanInfo> prLoanInfo = await _docsService.GetLoanInfo(request.OrgId, request.LoanId, _token);
 
