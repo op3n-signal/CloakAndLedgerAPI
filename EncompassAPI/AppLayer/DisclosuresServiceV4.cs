@@ -8,12 +8,14 @@ using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Encompass.LoanInfo;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Shared;
 using Shared.Models;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace EncompassAPI.AppLayer
 {
@@ -81,6 +83,9 @@ namespace EncompassAPI.AppLayer
 
                 if (!string.IsNullOrEmpty(_latestLogId))
                 {
+                    _logger.LogInformation("Latest log id");
+                    _logger.LogInformation(_latestLogId);
+
                     prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLogById(_orgId, _loanId, _latestLogId, prDisclosureLogs.Result);
                 }
                 else
@@ -88,6 +93,9 @@ namespace EncompassAPI.AppLayer
                     // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
                     prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_orgId, _loanId, prDisclosureLogs.Result);
                 }
+
+                _logger.LogInformation("prDisclosureTrackingLog");
+                _logger.LogInformation(JsonSerializer.Serialize(prDisclosureTrackingLog.Result));
 
                 if (!prDisclosureTrackingLog.Success)
                 {
