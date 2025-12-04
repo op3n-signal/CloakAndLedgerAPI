@@ -1097,7 +1097,7 @@ namespace EncompassAPI.Services
                     _logger.LogVerbose($"Beginning page number for {documentName} is {beginningPageNumber}");
 
 
-                   /* if (documentName == "1003 - URLA" && !urlaAdditionalBorrowerPage)
+                    if (documentName == "1003 - URLA" && !urlaAdditionalBorrowerPage)
                     {
                         // 16 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1635,7 +1635,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
                         }
-                    }*/
+                    }
                 }
 
                 // Find recipient by the partyId
@@ -1643,7 +1643,7 @@ namespace EncompassAPI.Services
                 {
                     _logger.LogVerbose($"Mapping tabs for recipient: {recipient.RecipientName}");
 
-                    // Sign and date tabs where the borrowr name is capitalized
+                    // Sign and date tabs with the borrow name capitalized
                     recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                     {
                         RecipientId = recipient.RecipientId.ToString(),
@@ -1669,64 +1669,6 @@ namespace EncompassAPI.Services
                         AnchorMatchWholeWord = "true",
                         ScaleValue = "0.75"
                     });
-
-                    if (draftEditRequest.Recipients.IndexOf(recipient) == 0)
-                    {
-                        // Sign and date tabs where the signature is where it says Applicant signature
-                        recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
-                        {
-                            RecipientId = recipient.RecipientId.ToString(),
-                            AnchorString = "Applicant Signature",
-                            AnchorXOffset = "4",
-                            AnchorYOffset = "-6",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "true",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
-
-                        recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
-                        {
-                            RecipientId = recipient.RecipientId.ToString(),
-                            AnchorString = "Borrower Date",
-                            AnchorXOffset = "4",
-                            AnchorYOffset = "-6",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "true",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
-
-                        recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
-                        {
-                            RecipientId = recipient.RecipientId.ToString(),
-                            AnchorString = $"Borrower\n{recipient.RecipientName}",
-                            AnchorXOffset = "4",
-                            AnchorYOffset = "-6",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "false",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
-                    }
-                    else
-                    {
-                        recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
-                        {
-                            RecipientId = recipient.RecipientId.ToString(),
-                            AnchorString = "Co-Applicant Signature",
-                            AnchorXOffset = "4",
-                            AnchorYOffset = "-6",
-                            AnchorIgnoreIfNotPresent = "true",
-                            AnchorUnits = "pixels",
-                            AnchorCaseSensitive = "true",
-                            AnchorMatchWholeWord = "true",
-                            ScaleValue = "0.75"
-                        });
-                    }
                 }
 
                 return new ProcessResult<DraftEditRequestV4>(true)
