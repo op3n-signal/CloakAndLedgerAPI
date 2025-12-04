@@ -114,6 +114,9 @@ namespace EncompassAPI.AppLayer
 
                     if (status == DisclosureStatus.Dead || status == DisclosureStatus.Retrying || status == DisclosureStatus.Processing || status == DisclosureStatus.None || status == DisclosureStatus.Completed)
                     {
+                        if(status == DisclosureStatus.Dead)
+                            await _disclosuresQueueService.DeleteDisclosureQueueItem(prDisclosureQueue.Result.id);
+
                         _status = status;
                         return;
                     }
@@ -308,7 +311,8 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
+            if(_status != DisclosureStatus.Dead)
+                await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
         }
     }
 
