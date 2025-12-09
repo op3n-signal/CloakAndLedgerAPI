@@ -1097,7 +1097,7 @@ namespace EncompassAPI.Services
                     _logger.LogVerbose($"Beginning page number for {documentName} is {beginningPageNumber}");
 
 
-                    if (documentName == "1003 - URLA" && !urlaAdditionalBorrowerPage)
+                    if (documentName.Contains("1003") && !urlaAdditionalBorrowerPage)
                     {
                         // 16 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1354,7 +1354,7 @@ namespace EncompassAPI.Services
                             });
                         }
                     }
-                    else if (documentName == "1003 - URLA" && urlaAdditionalBorrowerPage)
+                    else if (documentName.Contains("1003") && urlaAdditionalBorrowerPage)
                     {
                         // 12 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1442,6 +1442,46 @@ namespace EncompassAPI.Services
                             AnchorString = "14 of 14",
                             AnchorXOffset = "180",
                             AnchorYOffset = "-635",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        // 10 pages
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "1 of 10",
+                            AnchorXOffset = "-45",
+                            AnchorYOffset = "-437",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "5 of 10",
+                            AnchorXOffset = "-180",
+                            AnchorYOffset = "-90",
+                            AnchorIgnoreIfNotPresent = "true",
+                            AnchorUnits = "pixels",
+                            AnchorCaseSensitive = "true",
+                            AnchorMatchWholeWord = "true",
+                            ScaleValue = "0.75"
+                        });
+
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        {
+                            RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
+                            AnchorString = "5 of 10",
+                            AnchorXOffset = "180",
+                            AnchorYOffset = "-95",
                             AnchorIgnoreIfNotPresent = "true",
                             AnchorUnits = "pixels",
                             AnchorCaseSensitive = "true",
@@ -1591,7 +1631,7 @@ namespace EncompassAPI.Services
                             });
                         }
                     }
-                    else if(documentName == "Privacy Policy")
+                    else if(documentName.Contains("Privacy Policy"))
                     {
                         draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                         {
