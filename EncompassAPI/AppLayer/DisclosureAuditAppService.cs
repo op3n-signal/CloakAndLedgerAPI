@@ -89,7 +89,7 @@ namespace EncompassAPI.AppLayer
 
             if (prRetrievedLockId.Success)
             {
-                _status = DisclosureStatus.Locked;
+                _status = DisclosureStatus.PostSignature_Locked;
                 return new ProcessResult(false, prRetrievedLockId.Message);
             }
 

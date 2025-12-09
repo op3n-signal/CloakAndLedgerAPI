@@ -178,7 +178,7 @@ namespace EncompassAPI.Services
                 }
 
                 // Let's only proceed if the actual received date is not set
-                if (selectedLog.disclosedMethod == "Other")
+                if (selectedLog.disclosedMethod == "Other" && selectedLog.disclosedMethodDescription == "Error")
                 {
                     _logger.Base.LogError($"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
                     return new ProcessResult<DisclosureTrackingLog>(false, $"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
