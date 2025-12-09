@@ -1097,7 +1097,7 @@ namespace EncompassAPI.Services
                     _logger.LogVerbose($"Beginning page number for {documentName} is {beginningPageNumber}");
 
 
-                    if (documentName.Contains("1003") && !urlaAdditionalBorrowerPage)
+                    if ((documentName == "1003 - URLA" || documentName.Contains("1003 URLA")) && !urlaAdditionalBorrowerPage)
                     {
                         // 16 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1354,7 +1354,7 @@ namespace EncompassAPI.Services
                             });
                         }
                     }
-                    else if (documentName.Contains("1003") && urlaAdditionalBorrowerPage)
+                    else if ((documentName == "1003 - URLA" || documentName.Contains("1003 URLA")) && urlaAdditionalBorrowerPage)
                     {
                         // 12 pages
                         draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
@@ -1631,7 +1631,7 @@ namespace EncompassAPI.Services
                             });
                         }
                     }
-                    else if(documentName.Contains("Privacy Policy"))
+                    else if(documentName == "Privacy Policy")
                     {
                         draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
                         {
