@@ -6,6 +6,7 @@ using Amazon.Runtime.Internal.Transform;
 using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Dynamo;
+using EncompassAPI.Models.Salesforce;
 using Shared.Models;
 using System.Text.Json;
 
@@ -52,6 +53,34 @@ namespace EncompassAPI.Services
             }
         }
 
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status)
+        {
+            try
+            {
+                var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
+                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                DisclosureQueueItem item = new DisclosureQueueItem()
+                {
+                    id = disclosureLogId,
+                    token = token,
+                    json_request = JsonSerializer.Serialize(request),
+                    status = status.ToString(),
+                    created_date = existing?.created_date ?? now,
+                    modified_date = now
+                };
+
+                await _dbContext.SaveAsync(item);
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.loanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
+                return new ProcessResult(false, "Failed to enqueue disclosure item.");
+            }
+        }
+
         public async Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems()
         {
             try
@@ -73,7 +102,7 @@ namespace EncompassAPI.Services
                 }
 
                 var orderedItems = items
-                .Where(x => x.status == "Failed" || x.status == "Locked")
+                .Where(x => x.status == "Failed" || x.status == "Locked" || x.status == "PostSignature_Failed" || x.status == "PostSignature_Locked")
                 .OrderBy(x => x.modified_date)
                 .ToList();
 
@@ -177,6 +206,7 @@ namespace EncompassAPI.Services
     public interface IDisclosuresQueueService
     {
         Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);

@@ -275,6 +275,29 @@ namespace EncompassAPI.Services
             }
         }
 
+        public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, string description, bool includeInTimeline, string token)
+        {
+            try
+            {
+                foreach (var id in logIds)
+                {
+                    ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, id, id == latestLogId, description, includeInTimeline, token);
+
+                    if (!result.Success)
+                    {
+                        return result;
+                    }
+                }
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to update disclosure tracking logs for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureStatus status, bool includeInTimeline, string token)
         {
             _logger.Base.LogInformation($"Entering {nameof(UpdateDisclosureTrackingLog)}");
@@ -287,9 +310,45 @@ namespace EncompassAPI.Services
                 dynamic payload = new System.Dynamic.ExpandoObject();
                 payload.includedInTimeline = includeInTimeline;
 
-                if (isLatestLog) {
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                HttpResponseMessage response = await _http.PatchAsync(url, headers, JsonSerializer.Serialize(payload));
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
+                    return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
+                }
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to retrieve documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to retrieve documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
+        public async Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, string description, bool includeInTimeline, string token)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(UpdateDisclosureTrackingLog)}");
+
+            try
+            {
+                // Get Disclosure tracking logs from Encompass
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
+
+                dynamic payload = new System.Dynamic.ExpandoObject();
+                payload.includedInTimeline = includeInTimeline;
+
+                if (isLatestLog)
+                {
                     payload.disclosedMethod = CommonFields.DisclosedMethod;
-                    payload.disclosedMethodDescription = status == DisclosureStatus.Completed ? CommonFields.AppName : DisclosureStatus.Failed.ToString();
+                    payload.disclosedMethodDescription = description;
                 }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
@@ -382,7 +441,9 @@ namespace EncompassAPI.Services
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogById(string orgId, string loanId, string logId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureStatus status, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, DisclosureStatus status, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, string description, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureStatus status, bool includeInTimeline, string token);
+        Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, string description, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogByReceivedDate(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
     }

@@ -72,6 +72,30 @@ namespace EncompassAPI.Controllers
             return Accepted();
         }
 
+        [HttpPost("v4/Retrieve")]
+        public IActionResult RetrieveDisclosuresV4(CandidIncomingRequest request)
+        {
+            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
+
+            // Start background process
+            var task = Task.Run(async () =>
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    // Get a scoped service in THIS scope
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+
+                    disclosuresService.Init(token);
+
+                    // Run the background process
+                    await disclosuresService.Retrieve(request);
+                }
+            });
+
+            // Return 202 Accepted
+            return Accepted();
+        }
+
         [HttpPost("Retrieve")]
         public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
         {
@@ -83,7 +107,7 @@ namespace EncompassAPI.Controllers
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
                     disclosuresService.Init(token);
 
@@ -107,7 +131,7 @@ namespace EncompassAPI.Controllers
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
                     disclosuresService.Init(token, logId);
 

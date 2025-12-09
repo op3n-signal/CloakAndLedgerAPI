@@ -27,7 +27,26 @@ namespace EncompassAPI.Controllers
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
 
-            ProcessResult processResult = await _disclosureAuditAppService.UpdateDisclosureIntentToProceed(candidAuditRequest, token);
+            _disclosureAuditAppService.Init(token);
+
+            ProcessResult processResult = await _disclosureAuditAppService.UpdateDisclosureIntentToProceed(candidAuditRequest);
+
+            if (!processResult.Success)
+            {
+                return Problem(processResult.Message);
+            }
+
+            return Ok(processResult.Success);
+        }
+
+        [HttpPost("Update/IntentToProceed/{logId}")]
+        public async Task<IActionResult> UpdateDisclosureIntentToProceed(string logId, CandidAuditRequest candidAuditRequest)
+        {
+            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
+
+            _disclosureAuditAppService.Init(token, logId);
+
+            ProcessResult processResult = await _disclosureAuditAppService.UpdateDisclosureIntentToProceed(candidAuditRequest);
 
             if (!processResult.Success)
             {

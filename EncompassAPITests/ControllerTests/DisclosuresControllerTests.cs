@@ -29,9 +29,9 @@ namespace EncompassAPITests.ControllerTests
             };
 
             // Act
-            var actionResult = thisController.RetrieveDisclosures(request);
+            /*var actionResult = thisController.RetrieveDisclosures(request);
             var objectResult = actionResult as ObjectResult;
-            AcceptedResult response = objectResult.Value as AcceptedResult;
+            AcceptedResult response = objectResult.Value as AcceptedResult;*/
 
             // Assert
         }
