@@ -24,7 +24,7 @@ namespace EncompassAPI.Controllers
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [HttpPost("v2/Retrieve")]
+/*        [HttpPost("v2/Retrieve")]
         public IActionResult RetrieveDisclosuresV2(CandidIncomingRequest request)
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
@@ -94,7 +94,7 @@ namespace EncompassAPI.Controllers
 
             // Return 202 Accepted
             return Accepted();
-        }
+        }*/
 
         [HttpPost("Retrieve")]
         public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
@@ -104,15 +104,23 @@ namespace EncompassAPI.Controllers
             // Start background process
             var task = Task.Run(async () =>
             {
-                using (var scope = _serviceScopeFactory.CreateScope())
+                try
                 {
-                    // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        // Get a scoped service in THIS scope
+                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
-                    disclosuresService.Init(token);
+                        disclosuresService.Init(token);
 
-                    // Run the background process
-                    await disclosuresService.Retrieve(request);
+                        // Run the background process
+                        await disclosuresService.Retrieve(request);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Put a breakpoint here or log to file
+                    Console.WriteLine("Retrieve background exception: " + ex);
                 }
             });
 

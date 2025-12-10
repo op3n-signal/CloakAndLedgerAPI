@@ -19,7 +19,6 @@ namespace EncompassAPI.AppLayer
     public class DisclosuresServiceV5 : IDisclosuresServiceV5, IAsyncDisposable
     {
         private readonly IFileService _fileService;
-        private readonly IeFolderService _eFolderService;
         private readonly S3Service _s3Service;
         private readonly ICandidDataService _candidDataService;
         private readonly ISalesforceService _sfService;
@@ -36,10 +35,9 @@ namespace EncompassAPI.AppLayer
         private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresServiceV5(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, ILogger<DisclosuresServiceV4> logger)
+        public DisclosuresServiceV5(IFileService fileService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, ILogger<DisclosuresServiceV4> logger)
         {
             _fileService = fileService;
-            _eFolderService = eFolderService;
             _s3Service = s3Service;
             _candidDataService = candidDataService;
             _sfService = sfService;

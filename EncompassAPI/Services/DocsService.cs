@@ -783,12 +783,17 @@ namespace EncompassAPI.Services
 
                                     float width = field.right - field.left;
                                     float leftPosition = field.left;
+                                    float topPosition = field.top;
 
                                     if (doc.name == "Loan Estimate")
                                     {
                                         width = width / 2;
 
                                         leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
+                                    }
+                                    else if(doc.name == "Disclosures - Reconsideration of Value")
+                                    {
+                                   
                                     }
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
@@ -810,8 +815,8 @@ namespace EncompassAPI.Services
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
                                         RecipientId = recipient.RecipientId.ToString(),
-                                        XPosition = ((int)Math.Round(612 - leftPosition)).ToString(),
-                                        YPosition = ((int)Math.Round(field.top)).ToString(),
+                                        XPosition = ((int)Math.Round(field.right - 50)).ToString(),
+                                        YPosition = ((int)Math.Round(field.bottom)).ToString(),
                                         ScaleValue = field.scale.ToString(),
                                         Width = ((int)Math.Round(width)).ToString(),
                                         Height = ((int)Math.Round(field.bottom - field.top)).ToString()

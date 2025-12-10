@@ -48,9 +48,9 @@ builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
 builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IDisclosureDataRepo, DisclosureDataRepo>();
 
-builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
+/*builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
 builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();
-builder.Services.AddScoped<IDisclosuresServiceV4, DisclosuresServiceV4>();
+builder.Services.AddScoped<IDisclosuresServiceV4, DisclosuresServiceV4>();*/
 builder.Services.AddScoped<IDisclosuresServiceV5, DisclosuresServiceV5>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
