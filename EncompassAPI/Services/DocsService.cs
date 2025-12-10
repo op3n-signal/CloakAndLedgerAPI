@@ -783,7 +783,9 @@ namespace EncompassAPI.Services
 
                                     float width = field.right - field.left;
                                     float leftPosition = field.left;
+                                    float leftDatePosition = field.right - 50;
                                     float topPosition = field.top;
+                                    float bottomDatePosition = field.bottom - 15;
 
                                     if (doc.name == "Loan Estimate")
                                     {
@@ -793,7 +795,8 @@ namespace EncompassAPI.Services
                                     }
                                     else if(doc.name == "Disclosures - Reconsideration of Value")
                                     {
-                                   
+                                        leftDatePosition = field.left;
+                                        bottomDatePosition = field.bottom + 25;
                                     }
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
@@ -815,8 +818,8 @@ namespace EncompassAPI.Services
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
                                         RecipientId = recipient.RecipientId.ToString(),
-                                        XPosition = ((int)Math.Round(field.right - 50)).ToString(),
-                                        YPosition = ((int)Math.Round(field.bottom)).ToString(),
+                                        XPosition = ((int)Math.Round(leftDatePosition)).ToString(),
+                                        YPosition = ((int)Math.Round(bottomDatePosition)).ToString(),
                                         ScaleValue = field.scale.ToString(),
                                         Width = ((int)Math.Round(width)).ToString(),
                                         Height = ((int)Math.Round(field.bottom - field.top)).ToString()
