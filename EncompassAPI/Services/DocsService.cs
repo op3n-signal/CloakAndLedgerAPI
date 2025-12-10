@@ -783,7 +783,7 @@ namespace EncompassAPI.Services
 
                                     float width = field.right - field.left;
                                     float leftPosition = field.left;
-                                    float leftDatePosition = field.right - 50;
+                                    float leftDatePosition = field.right - 55;
                                     float topPosition = field.top;
                                     float bottomDatePosition = field.bottom - 15;
 
@@ -796,7 +796,7 @@ namespace EncompassAPI.Services
                                     else if(doc.name == "Disclosures - Reconsideration of Value")
                                     {
                                         leftDatePosition = field.left;
-                                        bottomDatePosition = field.bottom + 25;
+                                        bottomDatePosition = field.bottom + 40;
                                     }
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
