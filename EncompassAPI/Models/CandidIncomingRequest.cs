@@ -10,7 +10,7 @@
 
         public string ProspectId { get; set; }
 
-        public List<Recipient> Recipients { get; set; }
+        public List<CandidRecipient> Recipients { get; set; }
 
         public string ReplyToName { get; set; }
 
@@ -23,7 +23,7 @@
         public string BorrowerValue { get; set; }
     }
 
-    public class Recipient
+    public class CandidRecipient
     {
         public string RecipientName { get; set; }
 

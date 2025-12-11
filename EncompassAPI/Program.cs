@@ -37,6 +37,7 @@ builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection
 builder.Services.Configure<EncompassConfig>(options => builder.Configuration.GetSection(nameof(EncompassConfig)).Bind(options));
 builder.Services.Configure<SalesforceConfig>(options => builder.Configuration.GetSection(nameof(SalesforceConfig)).Bind(options));
 builder.Services.Configure<DocusignConfig>(options => builder.Configuration.GetSection(nameof(DocusignConfig)).Bind(options));
+builder.Services.Configure<CacheStorageConfig>(options => builder.Configuration.GetSection(nameof(CacheStorageConfig)).Bind(options));
 
 builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();

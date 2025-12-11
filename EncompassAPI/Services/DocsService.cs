@@ -6,7 +6,6 @@ using EncompassAPI.AppLayer;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Docusign;
-using EncompassAPI.Models.Docusign.AnchorTags;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Encompass.LoanInfo;
 using Microsoft.Extensions.Logging;
@@ -19,7 +18,6 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace EncompassAPI.Services
 {
@@ -639,12 +637,12 @@ namespace EncompassAPI.Services
             return neededDocuments;
         }
 
-        public ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts)
+        public ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts)
         {
             try
             {
                 const string documentId = "3";
-                DraftEditRequest draftEditRequest = _mapper.Map<DraftEditRequest>(request);
+                DraftEditRequestV4 draftEditRequest = _mapper.Map<DraftEditRequestV4>(request);
                 bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
                 int totalPageCount = filePageCounts.Last().Value;
                 List<string> keys = filePageCounts.Keys.ToList();
@@ -697,7 +695,7 @@ namespace EncompassAPI.Services
                         string signerName = signer.partyId.Replace("Borrower-", "");
 
                         // Find recipient by the partyId
-                        Models.Docusign.Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
+                        Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
 
                         // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
                         if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == false)
@@ -717,17 +715,17 @@ namespace EncompassAPI.Services
                         {
                             //todo cannot find recipient in request
                             _logger.Base.LogError($"Cannot find recipient {signerName} in the request.");
-                            return new ProcessResult<DraftEditRequest>(false, $"Cannot find recipient {signerName} in the request.");
+                            return new ProcessResult<DraftEditRequestV4>(false, $"Cannot find recipient {signerName} in the request.");
                         }
 
                         // Initialize tabs if null
                         if (recipient.Tabs == null)
                         {
-                            recipient.Tabs = new Models.Docusign.Tabs()
+                            recipient.Tabs = new Tabs()
                             {
-                                SignHereTabs = new List<Models.Docusign.SignHere>(),
-                                InitialHereTabs = new List<Models.Docusign.InitialHere>(),
-                                DateSignedTabs = new List<Models.Docusign.DateSigned>()
+                                SignHereTabs = new List<SignHere>(),
+                                InitialHereTabs = new List<InitialHere>(),
+                                DateSignedTabs = new List<DateSigned>()
                             };
                         }
 
@@ -739,7 +737,7 @@ namespace EncompassAPI.Services
                             switch (field.type.ToLower())
                             {
                                 case "signature":
-                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -753,7 +751,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "initials":
-                                    recipient.Tabs.InitialHereTabs.Add(new Models.Docusign.InitialHere
+                                    recipient.Tabs.InitialHereTabs.Add(new InitialHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -767,7 +765,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "signeddate":
-                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -793,7 +791,22 @@ namespace EncompassAPI.Services
 
                                         leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
                                     }
-                                    else if(doc.name == "Disclosures - Reconsideration of Value")
+                                    else if(doc.name == "Disclosures - Reconsideration of Value") // form is not formatted correctly on customers end // width not set correctly
+                                    {
+                                        leftDatePosition = field.left;
+                                        bottomDatePosition = field.bottom + 40;
+                                    }
+                                    else if (doc.name == "Disclosures - Right to Receive a Copy of Appraisal Report")
+                                    {
+                                        leftDatePosition = field.left;
+                                        bottomDatePosition = field.bottom + 40;
+                                    }
+                                    else if (doc.name == "Disclosures - Reconsideration of Value")
+                                    {
+                                        leftDatePosition = field.left;
+                                        bottomDatePosition = field.bottom + 40;
+                                    }
+                                    else if (doc.name == "Disclosures - Reconsideration of Value")
                                     {
                                         leftDatePosition = field.left;
                                         bottomDatePosition = field.bottom + 40;
@@ -801,7 +814,7 @@ namespace EncompassAPI.Services
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
 
-                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -813,7 +826,7 @@ namespace EncompassAPI.Services
                                         Width = ((int)Math.Round(width)).ToString(),
                                         Height = ((int)Math.Round(field.bottom - field.top)).ToString()
                                     });
-                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -835,7 +848,7 @@ namespace EncompassAPI.Services
                     }
                 }
 
-                return new ProcessResult<DraftEditRequest>(true)
+                return new ProcessResult<DraftEditRequestV4>(true)
                 {
                     Result = draftEditRequest
                 };
@@ -843,16 +856,430 @@ namespace EncompassAPI.Services
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<DraftEditRequest>(false, $"Failed to map to draft edit request.");
+                return new ProcessResult<DraftEditRequestV4>(false, $"Failed to map to draft edit request.");
             }
         }
 
-        public ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts)
+        public ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents)
+        {
+            try
+            {
+                int documentId = 1;
+                DraftEditRequestV4 draftEditRequest = _mapper.Map<DraftEditRequestV4>(request);
+                bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
+
+                foreach (Document doc in documents ?? new List<Document>())
+                {
+                    _logger.LogVerbose($"Mapping document: {doc.name}");
+
+                    string tabLabelSignature1 = "";
+                    string tabLabelSignature2 = "";
+                    bool alreadySignedFirstHalf = false;
+
+                    if (doc.name == "Loan Estimate")
+                    {
+                        tabLabelSignature1 = "Applicant Signature";
+                        tabLabelSignature2 = "Co-Applicant Signature";
+                    }
+
+                    foreach (Models.Encompass.Signer signer in doc.signers ?? Array.Empty<Models.Encompass.Signer>())
+                    {
+                        _logger.LogVerbose($"Mapping signer: {signer.partyId}");
+
+                        if (signer.partyId.ToLower().Contains("originator"))
+                        {
+                            // Skip originator
+                            _logger.LogVerbose("Skipping originator");
+                            continue;
+                        }
+
+                        string signerName = signer.partyId.Replace("Borrower-", "");
+
+                        // Find recipient by the partyId
+                        Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
+
+                        // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
+                        if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == false)
+                        {
+                            recipient = draftEditRequest.Recipients[1];
+                        }
+                        else if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == true)
+                        {
+                            recipient = draftEditRequest.Recipients[0];
+                        }
+                        else if (doc.name == "Credit Score Disclosure, 2")
+                        {
+                            {
+                                recipient = draftEditRequest.Recipients[0];
+                            }
+
+                            if (recipient == null)
+                            {
+                                //todo cannot find recipient in request
+                                _logger.Base.LogError($"Cannot find recipient {signerName} in the request.");
+                                return new ProcessResult<DraftEditRequestV4>(false, $"Cannot find recipient {signerName} in the request.");
+                            }
+
+                            // Initialize tabs if null
+                            if (recipient.Tabs == null)
+                            {
+                                recipient.Tabs = new Tabs()
+                                {
+                                    SignHereTabs = new List<SignHere>(),
+                                    InitialHereTabs = new List<InitialHere>(),
+                                    DateSignedTabs = new List<DateSigned>()
+                                };
+                            }
+
+                            _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+
+                            // Map fields into recipient tabs
+                            foreach (Field field in signer.fields ?? Array.Empty<Field>())
+                            {
+                                switch (field.type.ToLower())
+                                {
+                                    case "signature":
+                                        recipient.Tabs.SignHereTabs.Add(new SignHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+
+                                    case "initials":
+                                        recipient.Tabs.InitialHereTabs.Add(new InitialHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+
+                                    case "signeddate":
+                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+                                    case "signanddate":
+
+                                        float width = field.right - field.left;
+                                        float leftPosition = field.left;
+                                        float leftDatePosition = field.right - 55;
+                                        float topPosition = field.top;
+                                        float bottomDatePosition = field.bottom - 15;
+
+                                        if (doc.name == "Loan Estimate")
+                                        {
+                                            width = width / 2;
+
+                                            leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value") // form is not formatted correctly on customers end // width not set correctly
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Right to Receive a Copy of Appraisal Report")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+
+                                        _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
+
+                                        recipient.Tabs.SignHereTabs.Add(new SignHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            TabLabel = alreadySignedFirstHalf == false ? tabLabelSignature1 : tabLabelSignature2,
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(width)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(leftDatePosition)).ToString(),
+                                            YPosition = ((int)Math.Round(bottomDatePosition)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(width)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+
+                                        alreadySignedFirstHalf = true;
+                                        break;
+                                    default:
+                                        // handle other types if needed
+                                        break;
+                                }
+                            }
+                        }
+
+                        documentId++;
+                    }
+                }
+
+                    return new ProcessResult<DraftEditRequestV4>(true)
+                {
+                    Result = draftEditRequest
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DraftEditRequestV4>(false, $"Failed to map to draft edit request.");
+            }
+        }
+
+        public ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents)
+        {
+            try
+            {
+                int documentId = 1;
+                DraftEditRequestV5 draftEditRequest = _mapper.Map<DraftEditRequestV5>(request);
+                draftEditRequest.DocumentIdMap = new Dictionary<string, string>();
+                bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
+
+                foreach (Document doc in documents ?? new List<Document>())
+                {
+                    _logger.LogVerbose($"Mapping document: {doc.name}");
+
+                    string tabLabelSignature1 = "";
+                    string tabLabelSignature2 = "";
+                    bool alreadySignedFirstHalf = false;
+
+                    if (doc.name == "Loan Estimate")
+                    {
+                        tabLabelSignature1 = "Applicant Signature";
+                        tabLabelSignature2 = "Co-Applicant Signature";
+                    }
+
+                    foreach (Models.Encompass.Signer signer in doc.signers ?? Array.Empty<Models.Encompass.Signer>())
+                    {
+                        _logger.LogVerbose($"Mapping signer: {signer.partyId}");
+
+                        if (signer.partyId.ToLower().Contains("originator"))
+                        {
+                            // Skip originator
+                            _logger.LogVerbose("Skipping originator");
+                            continue;
+                        }
+
+                        string signerName = signer.partyId.Replace("Borrower-", "");
+
+                        // Find recipient by the partyId
+                        Recipient recipient = draftEditRequest.Recipients.Find(rec => rec.RecipientName.ToLower() == signerName.ToLower());
+
+                        // There is a bug with the doc set api where they have the borrower and co-borrower credit disclosure forms mixed up
+                        if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == false)
+                        {
+                            recipient = draftEditRequest.Recipients[1];
+                        }
+                        else if (doc.name == "Credit Score Disclosure" && isOnlyOneRecipient == true)
+                        {
+                            recipient = draftEditRequest.Recipients[0];
+                        }
+                        else if (doc.name == "Credit Score Disclosure, 2")
+                        {
+                            {
+                                recipient = draftEditRequest.Recipients[0];
+                            }
+
+                            if (recipient == null)
+                            {
+                                //todo cannot find recipient in request
+                                _logger.Base.LogError($"Cannot find recipient {signerName} in the request.");
+                                return new ProcessResult<DraftEditRequestV5>(false, $"Cannot find recipient {signerName} in the request.");
+                            }
+
+                            // Initialize tabs if null
+                            if (recipient.Tabs == null)
+                            {
+                                recipient.Tabs = new Tabs()
+                                {
+                                    SignHereTabs = new List<SignHere>(),
+                                    InitialHereTabs = new List<InitialHere>(),
+                                    DateSignedTabs = new List<DateSigned>()
+                                };
+                            }
+
+                            _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+
+                            // Map fields into recipient tabs
+                            foreach (Field field in signer.fields ?? Array.Empty<Field>())
+                            {
+                                switch (field.type.ToLower())
+                                {
+                                    case "signature":
+                                        recipient.Tabs.SignHereTabs.Add(new SignHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+
+                                    case "initials":
+                                        recipient.Tabs.InitialHereTabs.Add(new InitialHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+
+                                    case "signeddate":
+                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        break;
+                                    case "signanddate":
+
+                                        float width = field.right - field.left;
+                                        float leftPosition = field.left;
+                                        float leftDatePosition = field.right - 55;
+                                        float topPosition = field.top;
+                                        float bottomDatePosition = field.bottom - 15;
+
+                                        if (doc.name == "Loan Estimate")
+                                        {
+                                            width = width / 2;
+
+                                            leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value") // form is not formatted correctly on customers end // width not set correctly
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Right to Receive a Copy of Appraisal Report")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+                                        else if (doc.name == "Disclosures - Reconsideration of Value")
+                                        {
+                                            leftDatePosition = field.left;
+                                            bottomDatePosition = field.bottom + 40;
+                                        }
+
+                                        _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
+
+                                        recipient.Tabs.SignHereTabs.Add(new SignHere
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            TabLabel = alreadySignedFirstHalf == false ? tabLabelSignature1 : tabLabelSignature2,
+                                            XPosition = ((int)Math.Round(field.left)).ToString(),
+                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(width)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                        {
+                                            DocumentId = documentId.ToString(),
+                                            PageNumber = (field.page).ToString(),
+                                            RecipientId = recipient.RecipientId.ToString(),
+                                            XPosition = ((int)Math.Round(leftDatePosition)).ToString(),
+                                            YPosition = ((int)Math.Round(bottomDatePosition)).ToString(),
+                                            ScaleValue = field.scale.ToString(),
+                                            Width = ((int)Math.Round(width)).ToString(),
+                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                        });
+
+                                        alreadySignedFirstHalf = true;
+                                        break;
+                                    default:
+                                        // handle other types if needed
+                                        break;
+                                }
+                            }
+                        }
+                    }
+
+                    draftEditRequest.DocumentIdMap.Add(doc.name, documentId.ToString());
+
+                    // Increase document id number
+                    documentId++;
+                }
+
+                return new ProcessResult<DraftEditRequestV5>(true)
+                {
+                    Result = draftEditRequest
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<DraftEditRequestV5>(false, $"Failed to map to draft edit request.");
+            }
+        }
+
+        public ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts)
         {
             try
             {
                 const string documentId = "3";
-                DraftEditRequest draftEditRequest = _mapper.Map<DraftEditRequest>(request);
+                DraftEditRequestV4 draftEditRequest = _mapper.Map<DraftEditRequestV4>(request);
                 bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
                 int totalPageCount = filePageCounts.Last().Value;
                 List<string> keys = filePageCounts.Keys.ToList();
@@ -917,7 +1344,7 @@ namespace EncompassAPI.Services
                         _logger.LogVerbose($"Mapping signer: {signer.partyId}");
 
                         // Find recipient by the partyId
-                        Models.Docusign.Recipient recipient = signer.partyId == "signer1" ? draftEditRequest.Recipients[0] : signer.partyId == "signer2" ?draftEditRequest.Recipients[1] : null;
+                        Recipient recipient = signer.partyId == "signer1" ? draftEditRequest.Recipients[0] : signer.partyId == "signer2" ?draftEditRequest.Recipients[1] : null;
 
                         if (signer.partyId.ToLower().Contains("originator"))
                         {
@@ -930,7 +1357,7 @@ namespace EncompassAPI.Services
                         {
                             _logger.Base.LogError($@"Cannot find recipient {signer.partyId} in the request.{Environment.NewLine}
                                 Logic is not implemented for signer: {signer.partyId}");
-                            return new ProcessResult<DraftEditRequest>(false, $"Cannot find recipient {signer.partyId} in the request.");
+                            return new ProcessResult<DraftEditRequestV4>(false, $"Cannot find recipient {signer.partyId} in the request.");
                         }
 
                         _logger.LogVerbose($"Found recipient for signer {signer.partyId}: {recipient.RecipientName}");
@@ -938,11 +1365,11 @@ namespace EncompassAPI.Services
                         // Initialize tabs if null
                         if (recipient.Tabs == null)
                         {
-                            recipient.Tabs = new Models.Docusign.Tabs()
+                            recipient.Tabs = new Tabs()
                             {
-                                SignHereTabs = new List<Models.Docusign.SignHere>(),
-                                InitialHereTabs = new List<Models.Docusign.InitialHere>(),
-                                DateSignedTabs = new List<Models.Docusign.DateSigned>()
+                                SignHereTabs = new List<SignHere>(),
+                                InitialHereTabs = new List<InitialHere>(),
+                                DateSignedTabs = new List<DateSigned>()
                             };
                         }
 
@@ -954,7 +1381,7 @@ namespace EncompassAPI.Services
                             switch (field.type.ToLower())
                             {
                                 case "signature":
-                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -968,7 +1395,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "initials":
-                                    recipient.Tabs.InitialHereTabs.Add(new Models.Docusign.InitialHere
+                                    recipient.Tabs.InitialHereTabs.Add(new InitialHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -982,7 +1409,7 @@ namespace EncompassAPI.Services
                                     break;
 
                                 case "signeddate":
-                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -1008,7 +1435,7 @@ namespace EncompassAPI.Services
 
                                     _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
 
-                                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.SignHere
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -1020,7 +1447,7 @@ namespace EncompassAPI.Services
                                         Width = ((int)Math.Round(width)).ToString(),
                                         Height = ((int)Math.Round(field.bottom - field.top)).ToString()
                                     });
-                                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.DateSigned
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
                                     {
                                         DocumentId = documentId,
                                         PageNumber = (beginningPageNumber + field.page).ToString(),
@@ -1042,7 +1469,7 @@ namespace EncompassAPI.Services
                     }
                 }
 
-                return new ProcessResult<DraftEditRequest>(true)
+                return new ProcessResult<DraftEditRequestV4>(true)
                 {
                     Result = draftEditRequest
                 };
@@ -1050,7 +1477,7 @@ namespace EncompassAPI.Services
             catch (Exception ex)
             {
                 _logger.Base.LogError($"Failed to map to draft edit request.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<DraftEditRequest>(false, $"Failed to map to draft edit request.");
+                return new ProcessResult<DraftEditRequestV4>(false, $"Failed to map to draft edit request.");
             }
         }
 
@@ -1108,7 +1535,7 @@ namespace EncompassAPI.Services
                     if ((documentName == "1003 - URLA" || documentName.Contains("1003 URLA")) && !urlaAdditionalBorrowerPage)
                     {
                         // 16 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 16",
@@ -1121,7 +1548,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 16",
@@ -1134,7 +1561,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 16",
@@ -1148,7 +1575,7 @@ namespace EncompassAPI.Services
                         });
 
                         // 10 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 10",
@@ -1161,7 +1588,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "5 of 10",
@@ -1174,7 +1601,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "5 of 10",
@@ -1188,7 +1615,7 @@ namespace EncompassAPI.Services
                         });
 
                         // 18 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 18",
@@ -1201,7 +1628,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 18",
@@ -1214,7 +1641,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 18",
@@ -1227,7 +1654,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "18 of 18",
@@ -1240,7 +1667,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "18 of 18",
@@ -1256,7 +1683,7 @@ namespace EncompassAPI.Services
                         if (draftEditRequest.Recipients.Count == 2)
                         {
                             // 16 pages
-                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "9 of 16",
@@ -1269,7 +1696,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 16",
@@ -1282,7 +1709,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 16",
@@ -1296,7 +1723,7 @@ namespace EncompassAPI.Services
                             });
 
                             // 18 pages
-                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "9 of 18",
@@ -1309,7 +1736,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 18",
@@ -1322,7 +1749,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 18",
@@ -1335,7 +1762,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "18 of 18",
@@ -1348,7 +1775,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "18 of 18",
@@ -1365,7 +1792,7 @@ namespace EncompassAPI.Services
                     else if ((documentName == "1003 - URLA" || documentName.Contains("1003 URLA")) && urlaAdditionalBorrowerPage)
                     {
                         // 12 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 12",
@@ -1378,7 +1805,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 12",
@@ -1392,7 +1819,7 @@ namespace EncompassAPI.Services
                         });
 
                         // 14 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 14",
@@ -1405,7 +1832,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 14",
@@ -1418,7 +1845,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "6 of 14",
@@ -1431,7 +1858,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "14 of 14",
@@ -1444,7 +1871,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "14 of 14",
@@ -1458,7 +1885,7 @@ namespace EncompassAPI.Services
                         });
 
                         // 10 pages
-                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                        draftEditRequest.Recipients[0].Tabs.InitialHereTabs.Add(new InitialHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "1 of 10",
@@ -1471,7 +1898,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "5 of 10",
@@ -1484,7 +1911,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             RecipientId = draftEditRequest.Recipients[0].RecipientId.ToString(),
                             AnchorString = "5 of 10",
@@ -1500,7 +1927,7 @@ namespace EncompassAPI.Services
                         if (draftEditRequest.Recipients.Count == 2)
                         {
                             // 12 pages
-                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "9 of 12",
@@ -1513,7 +1940,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "6 of 12",
@@ -1527,7 +1954,7 @@ namespace EncompassAPI.Services
                             });
 
                             // 14 pages
-                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new Models.Docusign.AnchorTags.InitialHere
+                            draftEditRequest.Recipients[1].Tabs.InitialHereTabs.Add(new InitialHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "9 of 14",
@@ -1540,7 +1967,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "6 of 14",
@@ -1553,7 +1980,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "6 of 14",
@@ -1566,7 +1993,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 14",
@@ -1579,7 +2006,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 RecipientId = draftEditRequest.Recipients[1].RecipientId.ToString(),
                                 AnchorString = "14 of 14",
@@ -1596,7 +2023,7 @@ namespace EncompassAPI.Services
                     else if (documentName == "Loan Estimate")
                     {
                         // Sign and date tabs with the anchor string as Applicant Signature 
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             DocumentId = documentId,
                             PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
@@ -1606,7 +2033,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             DocumentId = documentId,
                             PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
@@ -1618,7 +2045,7 @@ namespace EncompassAPI.Services
 
                         if (draftEditRequest.Recipients.Count == 2)
                         {
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 DocumentId = documentId,
                                 PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
@@ -1628,7 +2055,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 DocumentId = documentId,
                                 PageNumber = (beginningPageNumber + 3).ToString(), // hard-coded to 3
@@ -1641,7 +2068,7 @@ namespace EncompassAPI.Services
                     }
                     else if(documentName == "Privacy Policy")
                     {
-                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                        draftEditRequest.Recipients[0].Tabs.SignHereTabs.Add(new SignHere
                         {
                             DocumentId = documentId,
                             PageNumber = (beginningPageNumber + 1).ToString(), 
@@ -1651,7 +2078,7 @@ namespace EncompassAPI.Services
                             ScaleValue = "0.75"
                         });
 
-                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                        draftEditRequest.Recipients[0].Tabs.DateSignedTabs.Add(new DateSigned
                         {
                             DocumentId = documentId,
                             PageNumber = (beginningPageNumber + 1).ToString(), 
@@ -1663,7 +2090,7 @@ namespace EncompassAPI.Services
 
                         if (draftEditRequest.Recipients.Count == 2)
                         {
-                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                            draftEditRequest.Recipients[1].Tabs.SignHereTabs.Add(new SignHere
                             {
                                 DocumentId = documentId,
                                 PageNumber = (beginningPageNumber + 1).ToString(), 
@@ -1673,7 +2100,7 @@ namespace EncompassAPI.Services
                                 ScaleValue = "0.75"
                             });
 
-                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                            draftEditRequest.Recipients[1].Tabs.DateSignedTabs.Add(new DateSigned
                             {
                                 DocumentId = documentId,
                                 PageNumber = (beginningPageNumber + 1).ToString(), 
@@ -1687,12 +2114,12 @@ namespace EncompassAPI.Services
                 }
 
                 // Find recipient by the partyId
-                foreach (Models.Docusign.AnchorTags.Recipient recipient in draftEditRequest.Recipients)
+                foreach (Recipient recipient in draftEditRequest.Recipients)
                 {
                     _logger.LogVerbose($"Mapping tabs for recipient: {recipient.RecipientName}");
 
                     // Sign and date tabs with the borrow name capitalized
-                    recipient.Tabs.SignHereTabs.Add(new Models.Docusign.AnchorTags.SignHere
+                    recipient.Tabs.SignHereTabs.Add(new SignHere
                     {
                         RecipientId = recipient.RecipientId.ToString(),
                         AnchorString = recipient.RecipientName.ToUpper(), // capitalized
@@ -1705,7 +2132,7 @@ namespace EncompassAPI.Services
                         ScaleValue = "0.75"
                     });
 
-                    recipient.Tabs.DateSignedTabs.Add(new Models.Docusign.AnchorTags.DateSigned
+                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
                     {
                         RecipientId = recipient.RecipientId.ToString(),
                         AnchorString = recipient.RecipientName.ToUpper(), // capitalized
@@ -1796,7 +2223,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames)
+        public ProcessResult<Dictionary<string, int>> MergePdfs(string disclosuresDownloadPath, string disclosuresName, List<string> attachmentNames)
         {
             try
             {
@@ -1805,7 +2232,7 @@ namespace EncompassAPI.Services
                 int currentPageCount = 0;
 
                 // Get all PDF files with path in the folder
-                string[] inputFiles = Directory.GetFiles(downloadPathPrefix, "*.pdf");
+                string[] inputFiles = Directory.GetFiles(disclosuresDownloadPath, "*.pdf");
 
                 // Order the files based on how they were ordered
                 var sortedFiles = attachmentNames
@@ -1846,7 +2273,7 @@ namespace EncompassAPI.Services
                     }
 
                     // Save the merged document
-                    outputDocument.Save($"{downloadPathPrefix}/{disclosuresName}");
+                    outputDocument.Save($"{disclosuresDownloadPath}/{disclosuresName}");
                 }
 
                 return new ProcessResult<Dictionary<string, int>>(true)
@@ -1856,8 +2283,8 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to merge pdfs in path {downloadPathPrefix}.{Environment.NewLine}Exception: {ex}");
-                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {downloadPathPrefix}.");
+                _logger.Base.LogError($"Failed to merge pdfs in path {disclosuresDownloadPath}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<Dictionary<string, int>>(false, $"Failed to merge pdfs in path {disclosuresDownloadPath}.");
             }
         }
 
@@ -1963,16 +2390,18 @@ namespace EncompassAPI.Services
 
         ProcessResult CheckIfAllDocumentsExist(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
 
-        ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts);
-        ProcessResult<DraftEditRequest> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts);
+        ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents, Dictionary<string, int> filePageCounts);
+        ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<Document> documents);
+        ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(CandidIncomingRequest request, List<DocumentSignerMapping> docMappings, Dictionary<string, int> filePageCounts);
         ProcessResult<DraftEditRequestV4> MapToDraftEditRequest(bool urlaAdditionalBorrowerPage, CandidIncomingRequest request, Dictionary<string, int> filePageCounts);
 
-        ProcessResult<Dictionary<string, int>> MergePdfs(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
+        ProcessResult<Dictionary<string, int>> MergePdfs(string disclosuresDownloadPath, string disclosuresName, List<string> attachmentNames);
         ProcessResult<Dictionary<string, int>> MergePdfs(bool isJointApplication, string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
 
         List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents);
         List<EncompassDocument> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<EncompassDocument> documents);
 
         ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision);
+        ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents);
     }
 }

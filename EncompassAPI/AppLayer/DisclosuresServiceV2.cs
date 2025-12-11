@@ -221,7 +221,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Map signature coordinates to draft edit _request for docusign
-                ProcessResult<DraftEditRequest> prDraftEditRequest = _docsService.MapToDraftEditRequest(request, docSetDocuments, prFilePageCounts.Result);
+                ProcessResult<DraftEditRequestV4> prDraftEditRequest = _docsService.MapToDraftEditRequest(request, docSetDocuments, prFilePageCounts.Result);
 
                 if (!prDraftEditRequest.Success)
                 {

@@ -1,4 +1,6 @@
 ﻿using Amazon.Runtime.Internal;
+using Amazon.S3;
+using Amazon.S3.Transfer;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
@@ -15,14 +17,51 @@ namespace EncompassAPI.Services
     public class FileService : IFileService
     {
         private IHttpService _http;
+        private readonly S3Service _s3Service;
         private readonly FileConfig _fileConfig;
         private readonly LoggerService<FileService> _logger;
+        private readonly CacheStorageConfig _cacheStorageConfig;
 
-        public FileService(IDefaultHttpService http, LoggerService<FileService> logger, IOptionsSnapshot<FileConfig> fileOptions)
+        public FileService(IDefaultHttpService http, S3Service s3Service, LoggerService<FileService> logger, IOptionsSnapshot<FileConfig> fileOptions, IOptionsSnapshot<CacheStorageConfig> cacheStorageOptions)
         {
             _http = http;
+            _s3Service = s3Service;
             _fileConfig = fileOptions.Value;
             _logger = logger;
+            _cacheStorageConfig = cacheStorageOptions.Value;
+        }
+
+        public async Task<ProcessResult<(string bucket, string key)>> PushFilesToS3(string orgId, string prospectId, DisclosureStage disclosureStage)
+        {
+            _logger.LogVerbose(nameof(PushFilesToS3));
+
+            try
+            {
+                string[] inputFiles = Directory.GetFiles($"{_fileConfig.LocalDownloadPath}/{prospectId}/{disclosureStage}/*.pdf");
+
+                string key = $"{_cacheStorageConfig.S3BucketPrefix}/{orgId}/{prospectId}/{disclosureStage}";
+
+                foreach (string filePath in inputFiles)
+                {
+                    ProcessResult prRespone = await _s3Service.PushFileToS3(_cacheStorageConfig.S3Bucket, key, filePath);
+
+                    if(!prRespone.Success)
+                    {
+                        _logger.Base.LogError($"{CommonFields.FailedToUploadFile} for file {filePath} to S3 at {key}");
+                        return new ProcessResult<(string, string)>(false, prRespone.Message);
+                    }
+                }
+
+                return new ProcessResult<(string, string)>(true)
+                {
+                    Result = (_cacheStorageConfig.S3Bucket, key)
+                };
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<(string, string)>(false, CommonFields.FailedToUploadFile);
+            }
         }
 
         public async Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo)
@@ -68,6 +107,62 @@ namespace EncompassAPI.Services
                     Attachment attachment = attachmentInfo.First(att => att.entityId == item.id);
 
                     filename = $"{attachment.entityName}.pdf";
+                    _logger.LogVerbose($"Downloaded filename: {filename}");
+
+                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
+
+                    // Save file to local folder
+                    await File.WriteAllBytesAsync(fullPath, fileBytes);
+                }
+
+
+                return new ProcessResult<string>(true)
+                {
+                    Result = prefixDownloadPath
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.FailedToDownloadAllFiles}{Environment.NewLine}Exception: {ex}");
+
+                // Failed, we do not want to continue
+                return new ProcessResult<string>(false, CommonFields.FailedToDownloadAllFiles);
+            }
+        }
+
+        public async Task<ProcessResult<string>> DownloadMutipleFiles(string orgId, string prospectId, List<Models.Encompass.Document> docSetDocuments, DisclosureStage disclosureStage)
+        {
+            _logger.Base.LogInformation($"Entering {nameof(DownloadMutipleFiles)}");
+
+            // Remove files if they exist already first
+            RemoveFiles(prospectId);
+
+            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{orgId}/{prospectId}/{disclosureStage}";
+
+            try
+            {
+                string filename = "";
+                //string timeStartedDownwloading = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                Directory.CreateDirectory(prefixDownloadPath); // Create directory if not exists
+
+                foreach (var item in docSetDocuments)
+                {
+                    Dictionary<string, string> headers = new Dictionary<string, string>() { { "Authorization", item.pdf.authorizationHeader } };
+
+                    // Get file content from skydrive
+                    HttpResponseMessage response = await _http.GetAsync(item.pdf.url, headers);
+
+                    if (response == null)
+                    {
+                        _logger.Base.LogError($"Error getting file: {item.pdf.url}");
+                        return new ProcessResult<string>(false, CommonFields.ServerError);
+                    }
+
+                    // Get file bytes
+                    byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
+
+                    // Get file name
+                    filename = $"{item.name}.pdf";
                     _logger.LogVerbose($"Downloaded filename: {filename}");
 
                     string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
@@ -356,8 +451,10 @@ namespace EncompassAPI.Services
 
     public interface IFileService
     {
+        Task<ProcessResult<(string bucket, string key)>> PushFilesToS3(string orgId, string prospectId, DisclosureStage disclosureStage);
         Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, AttachmentUrls attachmentUrls, Attachment[] attachmentInfo);
         Task<ProcessResult<string>> DownloadMutipleFiles(string prospectId, List<Models.Encompass.Document> docSetDocuments);
+        Task<ProcessResult<string>> DownloadMutipleFiles(string orgId, string prospectId, List<Models.Encompass.Document> docSetDocuments, DisclosureStage disclosureStage);
         Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
         ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
         void RemoveFolder(string prospectId);

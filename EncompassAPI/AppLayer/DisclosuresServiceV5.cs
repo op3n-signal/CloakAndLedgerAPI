@@ -260,7 +260,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Download attachments from encompass. It has to be multiple attachments because we can only get the signature coordinates by each document. Documents have page numbers.
-                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.ProspectId, docSetDocuments);
+                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.OrgId, request.ProspectId, docSetDocuments, prDisclosureStage.Result);
 
                 if (!prFileDownload.Success)
                 {
@@ -268,8 +268,10 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
+                string disclosuresDownloadPath = prFileDownload.Result;
+
                 // Merge files here and this file is what I send back to candid... 
-                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
+                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(disclosuresDownloadPath, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
 
                 if (!prFilePageCounts.Success)
                 {
@@ -277,8 +279,19 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
+                ProcessResult<(string bucket, string key)> prUploadFiles = await _fileService.PushFilesToS3(request.OrgId, request.ProspectId, prDisclosureStage.Result);
+
+                if (!prUploadFiles.Success)
+                {
+                    _status = DisclosureStatus.Failed;
+                    return;
+                }
+
+                string disclosureBucket = prUploadFiles.Result.bucket;
+                string disclosuresPathInS3 = prUploadFiles.Result.key;
+
                 // Map signature coordinates to draft edit _request for docusign
-                ProcessResult<DraftEditRequest> prDraftEditRequest = _docsService.MapToDraftEditRequest(request, docSetDocuments, prFilePageCounts.Result);
+                ProcessResult<DraftEditRequestV5> prDraftEditRequest = _docsService.MapToDraftEditRequestV5(request, docSetDocuments);
 
                 if (!prDraftEditRequest.Success)
                 {
@@ -315,10 +328,11 @@ namespace EncompassAPI.AppLayer
 
                 // Set up bucket name
                 string bucket = prAWSSettings.Result.Root_Folder_Name__c.Replace(" ", "-").ToLower();
-                prDraftEditRequest.Result.S3RootFolderName = bucket;
+                prDraftEditRequest.Result.S3RootFolderName = disclosureBucket;
+                prDraftEditRequest.Result.S3Path = disclosuresPathInS3;
                 prDraftEditRequest.Result.Status = "sent";
 
-                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, prDisclosuresName.Result);
+                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, disclosuresDownloadPath, prDisclosuresName.Result);
 
                 if (!prUpload.Success)
                 {
@@ -334,9 +348,6 @@ namespace EncompassAPI.AppLayer
                     _status = DisclosureStatus.Failed;
                     return;
                 }
-
-                // Pass document id to docusign request
-                prDraftEditRequest.Result.DocumentId = prDocumentId.Result;
 
                 ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result, prDisclosuresName.Result);
 

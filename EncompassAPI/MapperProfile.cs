@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Docusign;
-using EncompassAPI.Models.Docusign.AnchorTags;
 using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Entity;
 using EncompassAPI.Services;
@@ -19,8 +18,7 @@ namespace EncompassAPI
             CreateMap<CandidIncomingRequest, DraftEditRequestV4>()
                 .ForMember(dest => dest.OrganizationId, opt => opt.MapFrom(src => src.OrgId))
                 .ForMember(dest => dest.S3Path, opt => opt.MapFrom(src => src.Path));
-            CreateMap<Models.Recipient, Models.Docusign.Recipient>();
-            CreateMap<Models.Recipient, Models.Docusign.AnchorTags.Recipient>();
+            CreateMap<CandidRecipient, Recipient>();
             CreateMap<Models.Encompass.Document, DocumentSignerMapping>()
                 .ForMember(dest => dest.DocumentName, opt => opt.MapFrom(src => src.name));
             CreateMap<DocumentSignerMappingEntity, DocumentSignerMapping>()

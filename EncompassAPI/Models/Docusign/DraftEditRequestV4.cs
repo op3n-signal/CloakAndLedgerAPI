@@ -1,30 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace EncompassAPI.Models.Docusign.AnchorTags
+namespace EncompassAPI.Models.Docusign
 {
-    public class DraftEditRequestV4
+    public class DraftEditRequestV4 : DraftEditRequest
     {
-        public string OrganizationId { get; set; }
-
-        public List<Recipient> Recipients { get; set; }
-
         public string DocumentId { get; set; }
+    }
 
-        public string S3RootFolderName { get; set; }
-
-        public string S3Path { get; set; }
-
-        public string DocumentName { get; set; }
-
-        public string EmailSubject { get; set; }
-
-        public string EmailMessage { get; set; }
-
-        public string ReplyToEmail { get; set; }
-
-        public string ReplyToName { get; set; } 
-
-        public string Status { get; set; }
+    public class DraftEditRequestV5 : DraftEditRequest
+    {
+        public Dictionary<string, string> DocumentIdMap { get; set; }
     }
 
     public class Recipient

@@ -88,6 +88,79 @@ namespace EncompassAPI.Services
             await _s3Client.AbortMultipartUploadAsync(request);
         }
 
+        public async Task<ProcessResult> PushFileToS3(string bucket, string keyPath, string localFilePath)
+        {
+            _logger.LogVerbose(nameof(PushFileToS3));
+
+            try
+            {
+
+                if (!File.Exists(localFilePath))
+                {
+                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {localFilePath}");
+                    return new ProcessResult(false, CommonFields.FileDoesNotExist);
+                }
+
+                TransferUtility transferUtility = new TransferUtility(_s3Client);
+
+                TransferUtilityUploadRequest request = new TransferUtilityUploadRequest()
+                {
+                    BucketName = bucket,
+                    Key = keyPath,
+                    FilePath = localFilePath
+                };
+
+                await transferUtility.UploadAsync(request);
+
+                _logger.LogVerbose($"File {localFilePath} has been successfully uploaded to bucket {bucket}.");
+                return new ProcessResult(true);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, CommonFields.FailedToUploadFile);
+            }
+        }
+
+        public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId, string disclosuresDownloadPath, string disclosuresName)
+        {
+            _logger.LogVerbose(nameof(PushFileToS3));
+
+            string fileToPushToS3 = disclosuresDownloadPath + "/" + disclosuresName;
+
+            try
+            {
+
+                if (!File.Exists(fileToPushToS3))
+                {
+                    _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {disclosuresName}");
+                    return new ProcessResult<string>(false, CommonFields.FileDoesNotExist);
+                }
+
+                TransferUtility transferUtility = new TransferUtility(_s3Client);
+
+                TransferUtilityUploadRequest request = new TransferUtilityUploadRequest()
+                {
+                    BucketName = bucket,
+                    Key = path + "/" + disclosuresName,
+                    FilePath = fileToPushToS3
+                };
+
+                await transferUtility.UploadAsync(request);
+
+                _logger.LogVerbose($"File {disclosuresName} has been successfully uploaded to bucket {bucket}.");
+                return new ProcessResult<string>(true)
+                {
+                    Result = "http://s3.amazonaws.com/" + bucket + "/" + path + "/" + disclosuresName
+                };
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<string>(false, CommonFields.FailedToUploadFile);
+            }
+        }
+
         public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId, string disclosuresName)
         {
             _logger.LogVerbose(nameof(PushFileToS3));
