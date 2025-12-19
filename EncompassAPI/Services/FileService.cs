@@ -9,6 +9,7 @@ using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
 using Shared.Models;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -72,7 +73,7 @@ namespace EncompassAPI.Services
             _logger.Base.LogInformation($"Entering {nameof(DownloadMutipleFiles)}");
 
             // Remove files if they exist already first
-            RemoveFiles(prospectId);
+            RemoveFiles($"{_fileConfig.LocalDownloadPath}/{prospectId}");
 
             string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
 
@@ -112,7 +113,7 @@ namespace EncompassAPI.Services
                     filename = $"{attachment.entityName}.pdf";
                     _logger.LogVerbose($"Downloaded filename: {filename}");
 
-                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
+                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "%2F"));
 
                     // Save file to local folder
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
@@ -138,7 +139,7 @@ namespace EncompassAPI.Services
             _logger.Base.LogInformation(nameof(DownloadMutipleFiles));
 
             // Remove files if they exist already first
-            RemoveFiles(prospectId);
+            RemoveFiles($"{_fileConfig.LocalDownloadPath}/{orgId}/{prospectId}/{disclosureStage}");
 
             string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{orgId}/{prospectId}/{disclosureStage}";
 
@@ -168,7 +169,7 @@ namespace EncompassAPI.Services
                     filename = $"{item.name}.pdf";
                     _logger.LogVerbose($"Downloaded filename: {filename}");
 
-                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
+                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "%2F"));
 
                     // Save file to local folder
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
@@ -224,7 +225,7 @@ namespace EncompassAPI.Services
                     filename = $"{item.name}.pdf";
                     _logger.LogVerbose($"Downloaded filename: {filename}");
 
-                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "_"));
+                    string fullPath = Path.Combine(prefixDownloadPath, filename.Replace("/", "%2F"));
 
                     // Save file to local folder
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
@@ -301,7 +302,7 @@ namespace EncompassAPI.Services
 
                 // Order the files based on how they were ordered
                 var sortedFiles = attachmentNames
-                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "%2F")))
                 .ToArray();
 
                 _logger.LogVerbose("Sorted files: ");
@@ -371,14 +372,12 @@ namespace EncompassAPI.Services
 
         }
 
-        public void RemoveFiles(string prospectId)
+        public void RemoveFiles(string prefixPath)
         {
-            string prefixDownloadPath = $"{_fileConfig.LocalDownloadPath}/{prospectId}";
-
-            if (Directory.Exists(prefixDownloadPath))
+            if (Directory.Exists(prefixPath))
             {
                 // Get all files in the directory
-                string[] files = Directory.GetFiles(prefixDownloadPath);
+                string[] files = Directory.GetFiles(prefixPath);
 
                 foreach (string file in files)
                 {
@@ -461,6 +460,6 @@ namespace EncompassAPI.Services
         Task<ProcessResult<FileMetadata>> DownloadFile(string urlPdfPath, string authorization);
         ProcessResult<Dictionary<string, int>> MergePdfsV4(string downloadPathPrefix, string disclosuresName, List<string> attachmentNames);
         void RemoveFolder(string prospectId);
-        void RemoveFiles(string prospectId);
+        void RemoveFiles(string prefixPath);
     }
 }

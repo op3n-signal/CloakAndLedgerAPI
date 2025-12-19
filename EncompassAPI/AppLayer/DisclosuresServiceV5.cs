@@ -289,7 +289,7 @@ namespace EncompassAPI.AppLayer
                 string disclosuresPathInS3 = prUploadFiles.Result.key;
 
                 // Map signature coordinates to draft edit _request for docusign
-                ProcessResult<DraftEditRequestV5> prDraftEditRequest = _docsService.MapToDraftEditRequestV5(request, docSetDocuments);
+                ProcessResult<DraftEditRequestV5> prDraftEditRequest = _docsService.MapToDraftEditRequestV5(request, docSetDocuments, dictAttachmentNamesToFind.Keys.ToList());
 
                 if (!prDraftEditRequest.Success)
                 {
@@ -375,13 +375,6 @@ namespace EncompassAPI.AppLayer
                 _fileService.RemoveFolder(request.ProspectId);
 
                 _status = DisclosureStatus.Retrieved;
-
-                ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_orgId, _loanId, prDisclosureTrackingLog.Result, _token);
-
-                if (!prUpdateLogActualReceivedDate.Success)
-                {
-                    return;
-                }
             }
             catch (Exception ex)
             {

@@ -1,5 +1,6 @@
 ﻿using Amazon.CloudWatchLogs;
 using Amazon.Runtime.Internal;
+using Amazon.Runtime.Internal.Transform;
 using Amazon.S3.Model;
 using AutoMapper;
 using EncompassAPI.AppLayer;
@@ -657,7 +658,7 @@ namespace EncompassAPI.Services
                     _logger.LogVerbose($"Mapping document: {doc.name}");
 
                     // Get current item in page count dictionary
-                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == doc.name.Replace("/", "_"));
+                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == doc.name.Replace("/", "%2F"));
                     int indexOfCurrentItem = keys.ToList().IndexOf(currentItem.Key);
                     // This page number is what page the current document starts from
                     int beginningPageNumber = 0;
@@ -1067,12 +1068,12 @@ namespace EncompassAPI.Services
             }
         }
 
-        public ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents)
+        public ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents, List<string> documentsOrder)
         {
             _logger.Base.LogInformation(nameof(MapToDraftEditRequestV5));
+
             try
             {
-                int documentId = 1;
                 DraftEditRequestV5 draftEditRequest = _mapper.Map<DraftEditRequestV5>(request);
                 draftEditRequest.DocumentIdMap = new Dictionary<string, string>();
                 bool isOnlyOneRecipient = draftEditRequest.Recipients.Count == 1;
@@ -1081,6 +1082,8 @@ namespace EncompassAPI.Services
                 {
                     _logger.LogVerbose($"Mapping document: {doc.name}");
 
+                    int index = documentsOrder.IndexOf(doc.name);
+                    int documentId = index + 1;
                     string tabLabelSignature1 = "";
                     string tabLabelSignature2 = "";
                     bool alreadySignedFirstHalf = false;
@@ -1118,143 +1121,126 @@ namespace EncompassAPI.Services
                         }
                         else if (doc.name == "Credit Score Disclosure, 2")
                         {
+                            recipient = draftEditRequest.Recipients[0];
+                        }
+
+                        if (recipient == null)
+                        {
+                            //todo cannot find recipient in request
+                            _logger.Base.LogError($"Cannot find recipient {signerName} in the request.");
+                            return new ProcessResult<DraftEditRequestV5>(false, $"Cannot find recipient {signerName} in the request.");
+                        }
+
+                        // Initialize tabs if null
+                        if (recipient.Tabs == null)
+                        {
+                            recipient.Tabs = new Tabs()
                             {
-                                recipient = draftEditRequest.Recipients[0];
-                            }
+                                SignHereTabs = new List<SignHere>(),
+                                InitialHereTabs = new List<InitialHere>(),
+                                DateSignedTabs = new List<DateSigned>()
+                            };
+                        }
 
-                            if (recipient == null)
+                        _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+
+                        // Map fields into recipient tabs
+                        foreach (Field field in signer.fields ?? Array.Empty<Field>())
+                        {
+                            switch (field.type.ToLower())
                             {
-                                //todo cannot find recipient in request
-                                _logger.Base.LogError($"Cannot find recipient {signerName} in the request.");
-                                return new ProcessResult<DraftEditRequestV5>(false, $"Cannot find recipient {signerName} in the request.");
-                            }
+                                case "signature":
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
+                                    {
+                                        DocumentId = documentId.ToString(),
+                                        PageNumber = (field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
 
-                            // Initialize tabs if null
-                            if (recipient.Tabs == null)
-                            {
-                                recipient.Tabs = new Tabs()
-                                {
-                                    SignHereTabs = new List<SignHere>(),
-                                    InitialHereTabs = new List<InitialHere>(),
-                                    DateSignedTabs = new List<DateSigned>()
-                                };
-                            }
+                                case "initials":
+                                    recipient.Tabs.InitialHereTabs.Add(new InitialHere
+                                    {
+                                        DocumentId = documentId.ToString(),
+                                        PageNumber = (field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
 
-                            _logger.LogVerbose($"Mapping fields for signer: {JsonSerializer.Serialize(signer.fields)}");
+                                case "signeddate":
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                    {
+                                        DocumentId = documentId.ToString(),
+                                        PageNumber = (field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(field.right - field.left)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    break;
+                                case "signanddate":
 
-                            // Map fields into recipient tabs
-                            foreach (Field field in signer.fields ?? Array.Empty<Field>())
-                            {
-                                switch (field.type.ToLower())
-                                {
-                                    case "signature":
-                                        recipient.Tabs.SignHereTabs.Add(new SignHere
-                                        {
-                                            DocumentId = documentId.ToString(),
-                                            PageNumber = (field.page).ToString(),
-                                            RecipientId = recipient.RecipientId.ToString(),
-                                            XPosition = ((int)Math.Round(field.left)).ToString(),
-                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
-                                            ScaleValue = field.scale.ToString(),
-                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
-                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
-                                        });
-                                        break;
+                                    float width = field.right - field.left;
+                                    float leftPosition = field.left;
+                                    float leftDatePosition = field.right - 55;
+                                    float topPosition = field.top;
+                                    float bottomDatePosition = field.bottom - 15;
 
-                                    case "initials":
-                                        recipient.Tabs.InitialHereTabs.Add(new InitialHere
-                                        {
-                                            DocumentId = documentId.ToString(),
-                                            PageNumber = (field.page).ToString(),
-                                            RecipientId = recipient.RecipientId.ToString(),
-                                            XPosition = ((int)Math.Round(field.left)).ToString(),
-                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
-                                            ScaleValue = field.scale.ToString(),
-                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
-                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
-                                        });
-                                        break;
+                                    if (doc.name == "Loan Estimate")
+                                    {
+                                        width = width / 2;
 
-                                    case "signeddate":
-                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
-                                        {
-                                            DocumentId = documentId.ToString(),
-                                            PageNumber = (field.page).ToString(),
-                                            RecipientId = recipient.RecipientId.ToString(),
-                                            XPosition = ((int)Math.Round(field.left)).ToString(),
-                                            YPosition = ((int)Math.Round(field.top)).ToString(),
-                                            ScaleValue = field.scale.ToString(),
-                                            Width = ((int)Math.Round(field.right - field.left)).ToString(),
-                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
-                                        });
-                                        break;
-                                    case "signanddate":
+                                        leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
+                                    }
+                                    else if (doc.name == "Disclosures - Reconsideration of Value") // form is not formatted correctly on customers end // width not set correctly
+                                    {
+                                        leftDatePosition = field.left;
+                                        bottomDatePosition = field.bottom + 40;
+                                    }
 
-                                        float width = field.right - field.left;
-                                        float leftPosition = field.left;
-                                        float leftDatePosition = field.right - 55;
-                                        float topPosition = field.top;
-                                        float bottomDatePosition = field.bottom - 15;
+                                    _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
 
-                                        if (doc.name == "Loan Estimate")
-                                        {
-                                            width = width / 2;
+                                    recipient.Tabs.SignHereTabs.Add(new SignHere
+                                    {
+                                        DocumentId = documentId.ToString(),
+                                        PageNumber = (field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        TabLabel = alreadySignedFirstHalf == false ? tabLabelSignature1 : tabLabelSignature2,
+                                        XPosition = ((int)Math.Round(field.left)).ToString(),
+                                        YPosition = ((int)Math.Round(field.top - 5)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(width)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
+                                    recipient.Tabs.DateSignedTabs.Add(new DateSigned
+                                    {
+                                        DocumentId = documentId.ToString(),
+                                        PageNumber = (field.page).ToString(),
+                                        RecipientId = recipient.RecipientId.ToString(),
+                                        XPosition = ((int)Math.Round(leftDatePosition)).ToString(),
+                                        YPosition = ((int)Math.Round(bottomDatePosition)).ToString(),
+                                        ScaleValue = field.scale.ToString(),
+                                        Width = ((int)Math.Round(width)).ToString(),
+                                        Height = ((int)Math.Round(field.bottom - field.top)).ToString()
+                                    });
 
-                                            leftPosition = alreadySignedFirstHalf ? field.left - width : field.right + width;
-                                        }
-                                        else if (doc.name == "Disclosures - Reconsideration of Value") // form is not formatted correctly on customers end // width not set correctly
-                                        {
-                                            leftDatePosition = field.left;
-                                            bottomDatePosition = field.bottom + 40;
-                                        }
-                                        else if (doc.name == "Disclosures - Right to Receive a Copy of Appraisal Report")
-                                        {
-                                            leftDatePosition = field.left;
-                                            bottomDatePosition = field.bottom + 40;
-                                        }
-                                        else if (doc.name == "Disclosures - Reconsideration of Value")
-                                        {
-                                            leftDatePosition = field.left;
-                                            bottomDatePosition = field.bottom + 40;
-                                        }
-                                        else if (doc.name == "Disclosures - Reconsideration of Value")
-                                        {
-                                            leftDatePosition = field.left;
-                                            bottomDatePosition = field.bottom + 40;
-                                        }
-
-                                        _logger.LogVerbose($"Current Field Map SignAndDate: {JsonSerializer.Serialize(field)}");
-
-                                        recipient.Tabs.SignHereTabs.Add(new SignHere
-                                        {
-                                            DocumentId = documentId.ToString(),
-                                            PageNumber = (field.page).ToString(),
-                                            RecipientId = recipient.RecipientId.ToString(),
-                                            TabLabel = alreadySignedFirstHalf == false ? tabLabelSignature1 : tabLabelSignature2,
-                                            XPosition = ((int)Math.Round(field.left)).ToString(),
-                                            YPosition = ((int)Math.Round(field.top - 5)).ToString(),
-                                            ScaleValue = field.scale.ToString(),
-                                            Width = ((int)Math.Round(width)).ToString(),
-                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
-                                        });
-                                        recipient.Tabs.DateSignedTabs.Add(new DateSigned
-                                        {
-                                            DocumentId = documentId.ToString(),
-                                            PageNumber = (field.page).ToString(),
-                                            RecipientId = recipient.RecipientId.ToString(),
-                                            XPosition = ((int)Math.Round(leftDatePosition)).ToString(),
-                                            YPosition = ((int)Math.Round(bottomDatePosition)).ToString(),
-                                            ScaleValue = field.scale.ToString(),
-                                            Width = ((int)Math.Round(width)).ToString(),
-                                            Height = ((int)Math.Round(field.bottom - field.top)).ToString()
-                                        });
-
-                                        alreadySignedFirstHalf = true;
-                                        break;
-                                    default:
-                                        // handle other types if needed
-                                        break;
-                                }
+                                    alreadySignedFirstHalf = true;
+                                    break;
+                                default:
+                                    // handle other types if needed
+                                    break;
                             }
                         }
                     }
@@ -1298,7 +1284,7 @@ namespace EncompassAPI.Services
                     {
                         string filename = key.Replace(".pdf", "");
 
-                        string docMappingName = docMapping.DocumentName.Replace("/", "_");
+                        string docMappingName = docMapping.DocumentName.Replace("/", "%2F");
 
                         return filename == docMappingName;
                     });
@@ -1313,7 +1299,7 @@ namespace EncompassAPI.Services
                     _logger.LogVerbose($"Mapping document: {docMapping.DocumentName}");
 
                     // Get current item in page count dictionary
-                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == docMapping.DocumentName.Replace("/", "_"));
+                    KeyValuePair<string, int> currentItem = filePageCounts.First(item => item.Key.Replace(".pdf", "") == docMapping.DocumentName.Replace("/", "%2F"));
                     _logger.LogVerbose($"current item: {JsonSerializer.Serialize(currentItem)}");
                     int indexOfCurrentItem = keys.ToList().IndexOf(currentItem.Key);
                     _logger.LogVerbose($"indexOfCurrentItem: {JsonSerializer.Serialize(currentItem)}");
@@ -2174,7 +2160,7 @@ namespace EncompassAPI.Services
 
                 // Order the files based on how they were ordered
                 var sortedFiles = attachmentNames
-                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "%2F")))
                 .ToArray();
 
                 _logger.LogVerbose("Sorted files: ");
@@ -2240,7 +2226,7 @@ namespace EncompassAPI.Services
 
                 // Order the files based on how they were ordered
                 var sortedFiles = attachmentNames
-                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "_")))
+                .Select(name => inputFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == name.Replace("/", "%2F")))
                 .ToArray();
 
                 _logger.LogVerbose("Sorted files: ");
@@ -2406,6 +2392,6 @@ namespace EncompassAPI.Services
         List<EncompassDocument> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<EncompassDocument> documents);
 
         ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision);
-        ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents);
+        ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents, List<string> documentsOrder);
     }
 }

@@ -10,6 +10,7 @@ namespace EncompassAPI.Models.Docusign
     public class DraftEditRequestV5 : DraftEditRequest
     {
         public Dictionary<string, string> DocumentIdMap { get; set; }
+        public string ProspectId { get; set; }
     }
 
     public class Recipient

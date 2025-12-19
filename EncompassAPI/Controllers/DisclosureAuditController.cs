@@ -29,7 +29,7 @@ namespace EncompassAPI.Controllers
 
             _disclosureAuditAppService.Init(token);
 
-            ProcessResult processResult = await _disclosureAuditAppService.UpdateDisclosureIntentToProceed(candidAuditRequest);
+            ProcessResult processResult = await _disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
 
             if (!processResult.Success)
             {
@@ -46,7 +46,7 @@ namespace EncompassAPI.Controllers
 
             _disclosureAuditAppService.Init(token, logId);
 
-            ProcessResult processResult = await _disclosureAuditAppService.UpdateDisclosureIntentToProceed(candidAuditRequest);
+            ProcessResult processResult = await _disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
 
             if (!processResult.Success)
             {

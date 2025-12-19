@@ -37,7 +37,7 @@ namespace EncompassAPI.AppLayer
             _disclosureLogId = logId;
         }
 
-        public async Task<ProcessResult> UpdateDisclosureIntentToProceed(CandidAuditRequest candidAuditRequest)
+        public async Task<ProcessResult> UpdatePostSignatureFields(CandidAuditRequest candidAuditRequest)
         {
             ProcessResult processResult = new ProcessResult(true);
 
@@ -93,6 +93,14 @@ namespace EncompassAPI.AppLayer
                 return new ProcessResult(false, prRetrievedLockId.Message);
             }
 
+            ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result, _token);
+
+            if (!prUpdateLogActualReceivedDate.Success)
+            {
+                _status = DisclosureStatus.PostSignature_Failed;
+                return new ProcessResult(false, prUpdateLogActualReceivedDate.Message); ;
+            }
+
             ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, _disclosureLogId, blContainsLE, _token);
 
             if (!prUpdate.Success)
@@ -118,7 +126,7 @@ namespace EncompassAPI.AppLayer
     {
         void Init(string token);
         void Init(string token, string logId);
-        Task<ProcessResult> UpdateDisclosureIntentToProceed(CandidAuditRequest candidAuditRequest);
+        Task<ProcessResult> UpdatePostSignatureFields(CandidAuditRequest candidAuditRequest);
         ValueTask DisposeAsync();
     } 
 }
