@@ -25,7 +25,7 @@ namespace EncompassAPI.Services
             _logger = logger;
             _fileConfig = fileOptions.Value;
             _s3Config = s3Options.Value;
-            _s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(_s3Config.AwsRegion)); ;
+            _s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(_s3Config.AwsRegion));
         }
 
         public async Task<string> InitiateMultiPartUpload(string bucketName, string key)
@@ -94,7 +94,6 @@ namespace EncompassAPI.Services
 
             try
             {
-
                 if (!File.Exists(localFilePath))
                 {
                     _logger.Base.LogError($"{CommonFields.FileDoesNotExist}: {localFilePath}");
@@ -107,7 +106,15 @@ namespace EncompassAPI.Services
                 {
                     BucketName = bucket,
                     Key = keyPath,
-                    FilePath = localFilePath
+                    FilePath = localFilePath,
+                    AutoResetStreamPosition = true,
+                    
+                    
+                };
+
+                request.UploadProgressEvent += (sender, e) =>
+                {
+                    _logger.LogVerbose($"Upload progress: {e.PercentDone}% for file {localFilePath}");
                 };
 
                 await transferUtility.UploadAsync(request);
@@ -124,7 +131,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId, string disclosuresDownloadPath, string disclosuresName)
         {
-            _logger.LogVerbose(nameof(PushFileToS3));
+            _logger.Base.LogInformation(nameof(PushFileToS3));
 
             string fileToPushToS3 = disclosuresDownloadPath + "/" + disclosuresName;
 

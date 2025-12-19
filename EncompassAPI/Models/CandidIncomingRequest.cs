@@ -21,6 +21,7 @@
         public string AssignedTo { get; set; }
 
         public string BorrowerValue { get; set; }
+        public bool AutoIndexSignedDisclosures { get; set; }
     }
 
     public class CandidRecipient

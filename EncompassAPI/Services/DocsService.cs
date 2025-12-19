@@ -100,6 +100,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> GetResourceLock(string orgId, string loanId, string token)
         {
+            _logger.Base.LogInformation(nameof(GetResourceLock));
             try
             {
                 // Get resource locks
@@ -376,6 +377,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<List<string>>> GetEFolderDocuments(string orgId, string loanId, Dictionary<string, bool> dictAttachmentNamesToFind, string token)
         {
+            _logger.Base.LogInformation(nameof(GetEFolderDocuments));
             try
             {
                 // Get loan audit result
@@ -454,7 +456,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> AddToDocSet(string orgId, string loanId, string orderId, string applicationId, List<string> templateNames, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(AddToDocSet)}");
+            _logger.Base.LogInformation(nameof(AddToDocSet));
 
             try
             {
@@ -507,7 +509,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<List<Document>>> GetDocSet(string orgId, string loanId, string orderId, string jobId, string token, DisclosureStage stage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(GetDocSet)}");
+            _logger.Base.LogInformation(nameof(GetDocSet));
 
             try
             {
@@ -555,7 +557,7 @@ namespace EncompassAPI.Services
         // documents are the docs we got from the doc set api that hold the signature coordinates
         public ProcessResult CheckIfAllDocumentsExist(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents)
         {
-            _logger.Base.LogInformation($"Entering {nameof(CheckIfAllDocumentsExist)}");
+            _logger.Base.LogInformation(nameof(CheckIfAllDocumentsExist));
 
             foreach (var item in dictAttachmentNamesToFind)
             {
@@ -577,7 +579,7 @@ namespace EncompassAPI.Services
 
         public List<Document> RemoveUnneededDocuments(Dictionary<string, bool> dictAttachmentNamesToFind, List<Document> documents)
         {
-            _logger.Base.LogInformation($"Entering {nameof(RemoveUnneededDocuments)}");
+            _logger.Base.LogInformation(nameof(RemoveUnneededDocuments));
 
             List<Document> neededDocuments = new List<Document>();
 
@@ -1067,6 +1069,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<DraftEditRequestV5> MapToDraftEditRequestV5(CandidIncomingRequest request, List<Document> documents)
         {
+            _logger.Base.LogInformation(nameof(MapToDraftEditRequestV5));
             try
             {
                 int documentId = 1;
@@ -2225,6 +2228,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<Dictionary<string, int>> MergePdfs(string disclosuresDownloadPath, string disclosuresName, List<string> attachmentNames)
         {
+            _logger.Base.LogInformation(nameof(MergePdfs));
             try
             {
                 Dictionary<string, int> filePageCounts = new Dictionary<string, int>();
@@ -2240,7 +2244,6 @@ namespace EncompassAPI.Services
                 .ToArray();
 
                 _logger.LogVerbose("Sorted files: ");
-
                 _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
 
                 using (PdfDocument outputDocument = new PdfDocument())
@@ -2290,6 +2293,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<string> GetDisclosuresName(DisclosureStage stage, int revision)
         {
+            _logger.Base.LogInformation(nameof(GetDisclosuresName));
             try
             {
                 string disclosuresName;

@@ -26,7 +26,7 @@ namespace EncompassAPI.AppLayer
         private readonly IDocusignService _docusignService;
         private readonly IDisclosureAuditServiceV3 _disclosureAuditService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
-        private readonly ILogger<DisclosuresServiceV4> _logger;
+        private readonly LoggerService<DisclosuresServiceV4> _logger;
 
         private string _orgId;
         private string _loanId;
@@ -35,7 +35,7 @@ namespace EncompassAPI.AppLayer
         private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresServiceV5(IFileService fileService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, ILogger<DisclosuresServiceV4> logger)
+        public DisclosuresServiceV5(IFileService fileService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, LoggerService<DisclosuresServiceV4> logger)
         {
             _fileService = fileService;
             _s3Service = s3Service;
@@ -66,6 +66,11 @@ namespace EncompassAPI.AppLayer
                 _orgId = request.OrgId;
                 _loanId = request.LoanId;
 
+                if(request.OrgId != "00D4x000007swJU")
+                {
+                    return;
+                }
+
                 // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
                 ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _disclosureAuditService.GetDisclosureTrackingLogs(_orgId, _loanId, _token);
 
@@ -79,9 +84,6 @@ namespace EncompassAPI.AppLayer
 
                 if (!string.IsNullOrEmpty(_latestLogId))
                 {
-                    _logger.LogInformation("Latest log id");
-                    _logger.LogInformation(_latestLogId);
-
                     prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLogById(_orgId, _loanId, _latestLogId, prDisclosureLogs.Result);
                 }
                 else
@@ -89,9 +91,6 @@ namespace EncompassAPI.AppLayer
                     // We need the latest disclosure tracking log. This is the log that is generated automatically from the print function
                     prDisclosureTrackingLog = _disclosureAuditService.GetLastestDisclosureTrackingLog(_orgId, _loanId, prDisclosureLogs.Result);
                 }
-
-                _logger.LogInformation("prDisclosureTrackingLog");
-                _logger.LogInformation(JsonSerializer.Serialize(prDisclosureTrackingLog.Result));
 
                 if (!prDisclosureTrackingLog.Success)
                 {
@@ -165,6 +164,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prLogUpdated.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -187,6 +187,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prAuditId.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -195,6 +196,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prAuditSuccess.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -203,6 +205,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prOrderId.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -211,6 +214,7 @@ namespace EncompassAPI.AppLayer
 
                 if (!prDocuments.Success)
                 {
+                    _status = DisclosureStatus.Failed;
                     return;
                 }
 
@@ -228,6 +232,7 @@ namespace EncompassAPI.AppLayer
 
                     if (!prEFolderDocumentNames.Success)
                     {
+                        _status = DisclosureStatus.Failed;
                         return;
                     }
 
@@ -236,6 +241,7 @@ namespace EncompassAPI.AppLayer
 
                     if (!prJobId.Success)
                     {
+                        _status = DisclosureStatus.Failed;
                         return;
                     }
 
@@ -243,6 +249,7 @@ namespace EncompassAPI.AppLayer
 
                     if (!prDocuments.Success)
                     {
+                        _status = DisclosureStatus.Failed;
                         return;
                     }
 
@@ -269,15 +276,6 @@ namespace EncompassAPI.AppLayer
                 }
 
                 string disclosuresDownloadPath = prFileDownload.Result;
-
-                // Merge files here and this file is what I send back to candid... 
-                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(disclosuresDownloadPath, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
-
-                if (!prFilePageCounts.Success)
-                {
-                    _status = DisclosureStatus.Failed;
-                    return;
-                }
 
                 ProcessResult<(string bucket, string key)> prUploadFiles = await _fileService.PushFilesToS3(request.OrgId, request.ProspectId, prDisclosureStage.Result);
 
@@ -332,6 +330,15 @@ namespace EncompassAPI.AppLayer
                 prDraftEditRequest.Result.S3Path = disclosuresPathInS3;
                 prDraftEditRequest.Result.Status = "sent";
 
+                // Merge files here and this file is what I send back to candid... 
+                ProcessResult<Dictionary<string, int>> prFilePageCounts = _docsService.MergePdfs(disclosuresDownloadPath, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
+
+                if (!prFilePageCounts.Success)
+                {
+                    _status = DisclosureStatus.Failed;
+                    return;
+                }
+
                 ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, disclosuresDownloadPath, prDisclosuresName.Result);
 
                 if (!prUpload.Success)
@@ -349,7 +356,7 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result, prDisclosuresName.Result);
+                ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result);
 
                 if (!prEnvelopeId.Success)
                 {
@@ -378,7 +385,8 @@ namespace EncompassAPI.AppLayer
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.ToString());
+                _status = DisclosureStatus.Failed;
+                _logger.Base.LogError(ex.ToString());
                 return;
             }
         }

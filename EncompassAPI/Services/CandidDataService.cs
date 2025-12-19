@@ -17,6 +17,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<OrgInfo>> GetCandidCredentialsByOrg(string orgId)
         {
+            _logger.Base.LogInformation(nameof(GetCandidCredentialsByOrg));
             try
             {
                 OrgInfo orgInfo = await _candidDataRepo.GetCandidCredentials(orgId);

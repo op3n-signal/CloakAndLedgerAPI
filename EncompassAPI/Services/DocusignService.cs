@@ -24,17 +24,15 @@ namespace EncompassAPI.Services
             _fileConfig = fileOptions.Value;
         }
 
-        public async Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest, string disclosuresName)
+        public async Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequestV5 draftEditRequest)
         {
-            _logger.LogVerbose($"Entering {nameof(RequestDraftEdit)}");
+            _logger.Base.LogInformation(nameof(RequestDraftEdit));
 
             try
             {
-                draftEditRequest.S3Path += "/" + disclosuresName;
-
                 DocusignSecret docusignSecret = await SecretService.GetSecret<DocusignSecret>(_awsConfig.DocusignSecretPath);
 
-                if (docusignSecret == null || string.IsNullOrWhiteSpace(docusignSecret.jwt_token) || string.IsNullOrWhiteSpace(docusignSecret.requestDraftForEditingEndpoint))
+                if (docusignSecret == null || string.IsNullOrWhiteSpace(docusignSecret.jwt_token) || string.IsNullOrWhiteSpace(docusignSecret.requestDraftForEditingEndpointV4))
                 {
                     _logger.Base.LogError($"No docusign secret found at path: {_awsConfig.DocusignSecretPath}");
                     return new ProcessResult<string>(false, "No docusign secret found");
@@ -48,9 +46,8 @@ namespace EncompassAPI.Services
 
                 _logger.LogVerbose("Draft edit request:");
                 _logger.LogVerbose(JsonSerializer.Serialize(draftEditRequest));
-                _logger.LogVerbose(JsonSerializer.Serialize(draftEditRequest));
 
-                DocusignDraftResponse docusignDraftResponse = await _http.PostAsync<DocusignDraftResponse>(docusignSecret.requestDraftForEditingEndpoint, headers, JsonSerializer.Serialize(draftEditRequest));
+                DocusignDraftResponse docusignDraftResponse = await _http.PostAsync<DocusignDraftResponse>(docusignSecret.requestDraftForEditingEndpointV4, headers, JsonSerializer.Serialize(draftEditRequest));
 
                 if (docusignDraftResponse == null)
                 {
@@ -194,7 +191,7 @@ namespace EncompassAPI.Services
 
     public interface IDocusignService
     {
-        Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequest draftEditRequest, string disclosuresName);
+        Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequestV5 draftEditRequest);
         Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequestV4 draftEditRequest, string disclosuresName);
         Task<ProcessResult<string>> LinkForEditorEndpoint(string envelopeId, string orgId);
     }

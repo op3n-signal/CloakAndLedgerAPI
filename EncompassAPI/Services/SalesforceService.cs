@@ -23,7 +23,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<OrgRequestInfo>> AuthenticateToSalesforce(OrgInfo orgInfo)
         {
-            _logger.LogVerbose($"Starting {nameof(AuthenticateToSalesforce)} for org: {orgInfo.OrgId}");
+            _logger.Base.LogInformation(nameof(AuthenticateToSalesforce));
 
             try
             {
@@ -59,7 +59,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> CreateDocument(CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName)
         {
-            _logger.LogVerbose($"Starting {nameof(CreateDocument)} for org: {incomingRequest.OrgId}");
+            _logger.Base.LogInformation(nameof(CreateDocument));
 
             try
             {
@@ -125,7 +125,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId, string documentId)
         {
-            _logger.LogVerbose($"Starting {nameof(PushUploadUrlToCandid)} for org: {incomingRequest.OrgId}");
+            _logger.LogVerbose(nameof(PushUploadUrlToCandid));
 
             try
             {
@@ -203,7 +203,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<GoogleDriveClone>> GetOrgAWSSettings(string orgId, string loId, OrgRequestInfo requestInfo)
         {
-            _logger.LogVerbose($"Starting {nameof(GetOrgAWSSettings)} for org: {orgId}");
+            _logger.Base.LogInformation(nameof(GetOrgAWSSettings));
 
             try
             {

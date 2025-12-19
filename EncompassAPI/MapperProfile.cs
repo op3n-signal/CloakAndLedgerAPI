@@ -18,6 +18,9 @@ namespace EncompassAPI
             CreateMap<CandidIncomingRequest, DraftEditRequestV4>()
                 .ForMember(dest => dest.OrganizationId, opt => opt.MapFrom(src => src.OrgId))
                 .ForMember(dest => dest.S3Path, opt => opt.MapFrom(src => src.Path));
+            CreateMap<CandidIncomingRequest, DraftEditRequestV5>()
+            .ForMember(dest => dest.OrganizationId, opt => opt.MapFrom(src => src.OrgId))
+            .ForMember(dest => dest.S3Path, opt => opt.MapFrom(src => src.Path));
             CreateMap<CandidRecipient, Recipient>();
             CreateMap<Models.Encompass.Document, DocumentSignerMapping>()
                 .ForMember(dest => dest.DocumentName, opt => opt.MapFrom(src => src.name));

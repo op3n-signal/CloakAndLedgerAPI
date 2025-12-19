@@ -33,17 +33,20 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<(string bucket, string key)>> PushFilesToS3(string orgId, string prospectId, DisclosureStage disclosureStage)
         {
-            _logger.LogVerbose(nameof(PushFilesToS3));
+            _logger.Base.LogInformation(nameof(PushFilesToS3));
 
             try
             {
-                string[] inputFiles = Directory.GetFiles($"{_fileConfig.LocalDownloadPath}/{prospectId}/{disclosureStage}/*.pdf");
+                string[] inputFiles = Directory.GetFiles($"{_fileConfig.LocalDownloadPath}/{orgId}/{prospectId}/{disclosureStage}", "*.pdf");
 
-                string key = $"{_cacheStorageConfig.S3BucketPrefix}/{orgId}/{prospectId}/{disclosureStage}";
+                string key = $"{_cacheStorageConfig.S3BucketPrefix}/{orgId}/{prospectId}/{disclosureStage}/";
 
                 foreach (string filePath in inputFiles)
                 {
-                    ProcessResult prRespone = await _s3Service.PushFileToS3(_cacheStorageConfig.S3Bucket, key, filePath);
+                    string fileName = Path.GetFileName(filePath);
+                    string objectKey = $"{key}{fileName}";
+
+                    ProcessResult prRespone = await _s3Service.PushFileToS3(_cacheStorageConfig.S3Bucket, objectKey, filePath);
 
                     if(!prRespone.Success)
                     {
@@ -132,7 +135,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> DownloadMutipleFiles(string orgId, string prospectId, List<Models.Encompass.Document> docSetDocuments, DisclosureStage disclosureStage)
         {
-            _logger.Base.LogInformation($"Entering {nameof(DownloadMutipleFiles)}");
+            _logger.Base.LogInformation(nameof(DownloadMutipleFiles));
 
             // Remove files if they exist already first
             RemoveFiles(prospectId);

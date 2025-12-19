@@ -73,14 +73,12 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token)
         {
-            _logger.Base.LogInformation($"{nameof(GetDisclosureTrackingLogs)}");
+            _logger.Base.LogInformation(nameof(GetDisclosureTrackingLogs));
 
             try
             {
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs";
-
-                _logger.LogVerbose("token: " + token);
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -119,7 +117,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
         {
-            _logger.Base.LogInformation($"{nameof(GetLastestDisclosureTrackingLog)}");
+            _logger.Base.LogInformation(nameof(GetLastestDisclosureTrackingLog));
 
             try
             {
@@ -136,16 +134,6 @@ namespace EncompassAPI.Services
                     latestLog.revision = ieDisclosureLogs.Count();
                 }
 
-                // Let's only proceed if the actual received date is not set
-                if (latestLog.disclosedMethod == "Other" && latestLog.disclosedMethodDescription == "Error")
-                {
-                    _logger.Base.LogError($"Disclosed Method is set to {latestLog.disclosedMethod} and description {latestLog.disclosedMethodDescription} in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
-                    return new ProcessResult<DisclosureTrackingLog>(false, $"Disclosed Method is set to {latestLog.disclosedMethod} and description {latestLog.disclosedMethodDescription} in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
-                }
-
-                _logger.LogVerbose("disclosureType: " + latestLog.disclosureType);
-                _logger.LogVerbose("disclosureType: " + JsonSerializer.Serialize(latestLog.documents.forms));
-
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {
                     Result = latestLog
@@ -160,7 +148,7 @@ namespace EncompassAPI.Services
 
         public ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogById(string orgId, string loanId, string logId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs)
         {
-            _logger.Base.LogInformation($"{nameof(GetLastestDisclosureTrackingLogById)}");
+            _logger.Base.LogInformation(nameof(GetLastestDisclosureTrackingLogById));
 
             try
             {
@@ -231,6 +219,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs, string latestLogId, DisclosureStatus status, bool includeInTimeline, string token)
         {
+            _logger.Base.LogInformation(nameof(UpdateDisclosureTrackingLogs));
             try
             {
                 foreach (var log in ieDisclosureLogs)
@@ -376,7 +365,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(UpdateReceivedDateInTrackingLog)}");
+            _logger.Base.LogInformation(nameof(UpdateReceivedDateInTrackingLog));
 
             try
             {
