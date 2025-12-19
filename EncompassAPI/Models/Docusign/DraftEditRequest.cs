@@ -8,6 +8,8 @@ namespace EncompassAPI.Models.Docusign
 
         public List<Recipient> Recipients { get; set; }
 
+        public string DocumentId { get; set; }
+
         public string S3RootFolderName { get; set; }
 
         public string S3Path { get; set; }

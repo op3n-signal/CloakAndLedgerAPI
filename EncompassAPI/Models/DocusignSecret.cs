@@ -11,5 +11,6 @@
         public string requestDraftForEditingEndpoint { get; set; }
 
         public string requestDraftForEditingEndpointV4 { get; set; }
+        public string requestDraftForEditingEndpointV5 { get; set; }
     }
 }

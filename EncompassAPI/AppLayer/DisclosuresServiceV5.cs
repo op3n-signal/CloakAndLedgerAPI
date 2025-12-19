@@ -356,6 +356,9 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
+                // Pass document id to docusign request
+                prDraftEditRequest.Result.DocumentId = prDocumentId.Result;
+
                 ProcessResult<string> prEnvelopeId = await _docusignService.RequestDraftEdit(prDraftEditRequest.Result);
 
                 if (!prEnvelopeId.Success)

@@ -199,12 +199,6 @@ namespace EncompassAPI.Services
                 // Get the latest log
                 DisclosureTrackingLog latestLog = orderedLogs.First();
 
-                if (string.IsNullOrEmpty(latestLog.disclosureRecipients[0].actualReceivedDate))
-                {
-                    _logger.Base.LogError($"No actual received date found in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
-                    return new ProcessResult<DisclosureTrackingLog>(false, $"No actual received date found in the latest disclosure log {latestLog.id} for loan {loanId} in org {orgId}.");
-                }
-
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {
                     Result = latestLog

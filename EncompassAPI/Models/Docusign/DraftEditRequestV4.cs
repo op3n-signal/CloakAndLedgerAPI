@@ -4,7 +4,7 @@ namespace EncompassAPI.Models.Docusign
 {
     public class DraftEditRequestV4 : DraftEditRequest
     {
-        public string DocumentId { get; set; }
+      
     }
 
     public class DraftEditRequestV5 : DraftEditRequest
