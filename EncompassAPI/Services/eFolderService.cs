@@ -333,91 +333,103 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token)
+        public async Task<ProcessResult> Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token)
         {
-            // Get encompass containers
-            ProcessResult<List<EncompassDocument>> prDocuments = await GetContainers(request.orgId, request.loanId, token);
+            _logger.Base.LogInformation(nameof(Upload));
 
-            if (!prDocuments.Success)
+            try
             {
-                return;
-            }
+                // Get encompass containers
+                ProcessResult<List<EncompassDocument>> prDocuments = await GetContainers(request.orgId, request.loanId, token);
 
-            List<EncompassDocument> encompassDocuments = new List<EncompassDocument>();
-            List<Container> containersToCreate = new List<Container>();
-
-            // Check if there is a container we need to create
-            foreach (string docName in pdfObjects.Keys)
-            {
-                // Does any container match this document name?
-                bool blMatch = prDocuments.Result.Any(doc => doc.title == docName);
-
-                if (blMatch)
+                if (!prDocuments.Success)
                 {
-                    // Add document to list where containers already exist
-                    EncompassDocument documentFound = prDocuments.Result.Find(doc => doc.title == docName);
-
-                    encompassDocuments.Add(documentFound);
+                    return new ProcessResult(false, prDocuments.Message);
                 }
-                else
+
+                List<EncompassDocument> encompassDocuments = new List<EncompassDocument>();
+                List<Container> containersToCreate = new List<Container>();
+
+                // Check if there is a container we need to create
+                foreach (string docName in pdfObjects.Keys)
                 {
-                    // Add doc name to list to be created
-                    Container container = new Container()
+                    // Does any container match this document name?
+                    bool blMatch = prDocuments.Result.Any(doc => doc.title == docName);
+
+                    if (blMatch)
                     {
-                        title = docName
-                    };
-                    containersToCreate.Add(container);
+                        // Add document to list where containers already exist
+                        EncompassDocument documentFound = prDocuments.Result.Find(doc => doc.title == docName);
+
+                        encompassDocuments.Add(documentFound);
+                    }
+                    else
+                    {
+                        // Add doc name to list to be created
+                        Container container = new Container()
+                        {
+                            title = docName
+                        };
+                        containersToCreate.Add(container);
+                    }
                 }
+
+                if (containersToCreate.Count > 0)
+                {
+                    // Create containers
+                    ProcessResult<List<EncompassDocument>> prCreatedDocuments = await CreateContainers(request.orgId, request.loanId, containersToCreate, token);
+
+                    if (!prCreatedDocuments.Success)
+                    {
+                        return new ProcessResult(false, prCreatedDocuments.Message);
+                    }
+
+                    // Add newly created containers to list
+                    encompassDocuments.AddRange(prCreatedDocuments.Result);
+                }
+
+                // Loop through each pdf object
+                foreach (KeyValuePair<string, byte[]> kvp in pdfObjects)
+                {
+                    string fileName = kvp.Key;
+                    byte[] fileData = kvp.Value;
+
+                    // Upload Attachment info
+                    ProcessResult<UploadUrl> prUploadUrl = await CreateAttachmentUrl(request.orgId, request.loanId, fileName, token);
+
+                    if (!prUploadUrl.Success)
+                    {
+                        return new ProcessResult(false, prUploadUrl.Message);
+                    }
+
+                    string attachmentId = prUploadUrl.Result.attachmentId;
+
+                    // Upload attachment data
+                    ProcessResult prUpload = await UploadToMediaUrl(request.orgId, request.loanId, prUploadUrl.Result, fileData, token);
+
+                    if (!prUpload.Success)
+                    {
+                        return new ProcessResult(false, prUpload.Message);
+                    }
+
+                    EncompassDocument document = encompassDocuments.Find(doc => doc.title == fileName);
+
+                    // Assign attachment to efolder
+                    //https://developer.icemortgagetechnology.com/developer-connect/reference/assign-document-attachments
+                    ProcessResult prAssigned = await AssignAttachmentToContainer(request.orgId, request.loanId, attachmentId, document.id, token);
+
+                    if (!prAssigned.Success)
+                    {
+                        return new ProcessResult(false, prAssigned.Message);
+                    }
+                }
+
+                return new ProcessResult(true);
             }
-
-            if (containersToCreate.Count > 0)
+            catch (Exception ex)
             {
-                // Create containers
-                ProcessResult<List<EncompassDocument>> prCreatedDocuments = await CreateContainers(request.orgId, request.loanId, containersToCreate, token);
-
-                if (!prCreatedDocuments.Success)
-                {
-                    return;
-                }
-
-                // Add newly created containers to list
-                encompassDocuments.AddRange(prCreatedDocuments.Result);
-            }
-
-            // Loop through each pdf object
-            foreach (KeyValuePair<string, byte[]> kvp in pdfObjects)
-            {
-                string fileName = kvp.Key;
-                byte[] fileData = kvp.Value;
-
-                // Upload Attachment info
-                ProcessResult<UploadUrl> prUploadUrl = await CreateAttachmentUrl(request.orgId, request.loanId, fileName, token);
-
-                if (!prUploadUrl.Success)
-                {
-                    return;
-                }
-
-                string attachmentId = prUploadUrl.Result.attachmentId;
-
-                // Upload attachment data
-                ProcessResult prUpload = await UploadToMediaUrl(request.orgId, request.loanId, prUploadUrl.Result, fileData, token);
-
-                if (!prUpload.Success)
-                {
-                    return;
-                }
-
-                EncompassDocument document = encompassDocuments.Find(doc => doc.title == fileName);
-
-                // Assign attachment to efolder
-                //https://developer.icemortgagetechnology.com/developer-connect/reference/assign-document-attachments
-                ProcessResult prAssigned = await AssignAttachmentToContainer(request.orgId, request.loanId, attachmentId, document.id, token);
-
-                if (!prAssigned.Success)
-                {
-                    return;
-                }
+                _logger.Base.LogError($"Failed to upload documents for loan {request.loanId} in org {request.orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, ResultStatus.InternalError, $"Failed to upload documents for loan {request.loanId} in org {request.orgId}.");
             }
         }
 
@@ -458,6 +470,6 @@ namespace EncompassAPI.Services
         /// <returns></returns>
         Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token);
         Task<ProcessResult<List<EncompassDocument>>> GetContainers(string orgId, string loanId, string token);
-        Task Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token);
+        Task<ProcessResult> Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token);
     }
 }

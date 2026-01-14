@@ -21,17 +21,21 @@ namespace EncompassAPI.AppLayer
 
         public async Task AutoIndex(AutoIndexRequest request, string token)
         {
-
+            string keyPath = $"{_cacheStorageConfig.S3CachePrefix}/{request.orgId}/{request.documentId}/{request.envelopeId}/";
             // Get Documents from s3 
-            ProcessResult<Dictionary<string, byte[]>> prObjects = await _s3Service.GetPdfObjects(_cacheStorageConfig.S3Bucket, _cacheStorageConfig.S3CachePrefix);
+            ProcessResult<Dictionary<string, byte[]>> prObjects = await _s3Service.GetPdfObjects(_cacheStorageConfig.S3Bucket, keyPath);
 
             if(!prObjects.Success)
             {
                 return;
             }
 
-            await _eFolderService.Upload(request, prObjects.Result, token);
+            ProcessResult prUpload = await _eFolderService.Upload(request, prObjects.Result, token);
 
+            if(!prUpload.Success)
+            {
+                return;
+            }
         }
 
         public async ValueTask DisposeAsync()

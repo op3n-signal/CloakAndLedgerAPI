@@ -210,6 +210,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<Dictionary<string, byte[]>>> GetPdfObjects(string bucket, string keyPath)
         {
+            _logger.Base.LogInformation(nameof(GetPdfObjects));
             try
             {
                 var request = new ListObjectsV2Request
