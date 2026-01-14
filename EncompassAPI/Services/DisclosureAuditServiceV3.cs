@@ -357,7 +357,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token)
+        public async Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, bool econsentReceivedCo, DisclosureTrackingLog disclosureLog, string token)
         {
             _logger.Base.LogInformation(nameof(UpdateReceivedDateInTrackingLog));
 
@@ -368,15 +368,19 @@ namespace EncompassAPI.Services
                 string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
 
                 List<object> disclosureRecipients = new List<object>();
-                disclosureRecipients.Add(new
-                {
-                    id = disclosureLog.disclosureRecipients[0].id,
-                    actualReceivedDate = currentDate,
-                    disclosedMethod = "Other",
-                    disclosedMethodDescription = CommonFields.AppName
-                });
 
-                if (disclosureLog.disclosureRecipients.Length > 1)
+                if (econsentReceivedB && string.IsNullOrEmpty(disclosureLog.disclosureRecipients[0].actualReceivedDate))
+                {
+                    disclosureRecipients.Add(new
+                    {
+                        id = disclosureLog.disclosureRecipients[0].id,
+                        actualReceivedDate = currentDate,
+                        disclosedMethod = "Other",
+                        disclosedMethodDescription = CommonFields.AppName
+                    });
+                }
+
+                if (disclosureLog.disclosureRecipients.Length > 1 && string.IsNullOrEmpty(disclosureLog.disclosureRecipients[1].actualReceivedDate) && econsentReceivedCo)
                 {
                     disclosureRecipients.Add(new
                     {
@@ -427,7 +431,18 @@ namespace EncompassAPI.Services
         Task<ProcessResult> UpdateDisclosureTrackingLogs(string orgId, string loanId, List<string> logIds, string latestLogId, string description, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, DisclosureStatus status, bool includeInTimeline, string token);
         Task<ProcessResult> UpdateDisclosureTrackingLog(string orgId, string loanId, string disclosureLogId, bool isLatestLog, string description, bool includeInTimeline, string token);
-        Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, DisclosureTrackingLog disclosureLog, string token);
+        /// <summary>
+        /// When this method is used pre signature, we will update the actual received date if econsent was received for borrower and/or co-borrower respectively.
+        /// When this method is used post signature, we will only update the actual received date if it is not already set.
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="loanId"></param>
+        /// <param name="econsentReceivedB"></param>
+        /// <param name="econsentReceivedCo"></param>
+        /// <param name="disclosureLog"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, bool econsentReceivedCo, DisclosureTrackingLog disclosureLog, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogByReceivedDate(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
     }
 }

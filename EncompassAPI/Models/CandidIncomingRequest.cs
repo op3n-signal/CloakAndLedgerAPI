@@ -21,7 +21,12 @@
         public string AssignedTo { get; set; }
 
         public string BorrowerValue { get; set; }
+
         public bool AutoIndexSignedDisclosures { get; set; }
+
+        public bool econsentReceivedB { get; set; }
+
+        public bool econsentReceivedCo { get; set; }
     }
 
     public class CandidRecipient
