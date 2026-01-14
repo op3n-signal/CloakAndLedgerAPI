@@ -230,7 +230,7 @@ namespace EncompassAPI.Services
 
                 foreach (var obj in pdfObjects)
                 {
-                    string filename = Path.GetFileName(obj.Key);
+                    string filename = Path.GetFileName(obj.Key).Replace(".pdf", "").Replace("%2F", "/");
                     using var getResponse = await _s3Client.GetObjectAsync(bucket, obj.Key);
                     using var ms = new MemoryStream();
 

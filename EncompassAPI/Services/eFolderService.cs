@@ -282,14 +282,10 @@ namespace EncompassAPI.Services
             {
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
-                    { "Authorization", uploadUrl.AuthorizationHeader },
+                    { "Authorization", uploadUrl.authorizationHeader },
                 };
 
-                var content = new ByteArrayContent(fileData);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
-
-
-                await _http.PutAsync(uploadUrl.uploadUrl, headers, content);
+                await _http.PutAsync(uploadUrl.uploadUrl, headers, fileData);
 
                 return new ProcessResult(true);
             }
@@ -314,14 +310,9 @@ namespace EncompassAPI.Services
                     { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
                 };
 
-                Entity entity = new Entity()
-                {
-                    entityid = attachmentId,
-                    entitytype = "attachment"
-                };
-                Entity[] payload = new Entity[] { entity };
+                string payload = "[{\"entityId\": \"" + attachmentId + "\", \"entityType\": \"attachment\"}]";
 
-                bool response = await _http.PatchAsyncV2(url, headers, JsonSerializer.Serialize(payload));
+                bool response = await _http.PatchAsyncV2(url, headers, payload);
 
                 return new ProcessResult(response);
             }
@@ -367,7 +358,8 @@ namespace EncompassAPI.Services
                         // Add doc name to list to be created
                         Container container = new Container()
                         {
-                            title = docName
+                            title = docName,
+                            description = CommonFields.DocumentCreateBy
                         };
                         containersToCreate.Add(container);
                     }
@@ -435,6 +427,7 @@ namespace EncompassAPI.Services
         public struct Container
         {
             public string title { get; set; }
+            public string description { get; set; }
         }
     }
 

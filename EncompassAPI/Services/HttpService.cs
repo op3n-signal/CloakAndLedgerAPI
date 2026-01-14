@@ -1,4 +1,5 @@
-﻿using System.Reflection.PortableExecutable;
+﻿using System.Net;
+using System.Reflection.PortableExecutable;
 using System.Text.Json;
 
 namespace EncompassAPI.Services
@@ -389,7 +390,7 @@ namespace EncompassAPI.Services
             return false;
         }
 
-        public async Task PutAsync(string url, Dictionary<string, string> headers, HttpContent content, int maxRetries = 2, int delayMilliseconds = 2000)
+        public async Task PutAsync(string url, Dictionary<string, string> headers, byte[] content, int maxRetries = 2, int delayMilliseconds = 2000)
         {
             int retryCount = 0;
 
@@ -397,10 +398,10 @@ namespace EncompassAPI.Services
             {
                 try
                 {
-                    using var request = new HttpRequestMessage(HttpMethod.Patch, url);
+                    using var request = new HttpRequestMessage(HttpMethod.Put, url);
 
                     if (content != null)
-                        request.Content = content;
+                        request.Content = new ByteArrayContent(content);
 
                     if (headers != null)
                     {
@@ -633,7 +634,7 @@ namespace EncompassAPI.Services
         /// <param name="delayMilliseconds"></param>
         /// <returns></returns>
         Task<string> PostAsync(string url, Dictionary<string, string> headers, StringContent body, int maxRetries = 3, int delayMilliseconds = 2000);
-        Task PutAsync(string url, Dictionary<string, string> headers, HttpContent content, int maxRetries = 2, int delayMilliseconds = 2000);
+        Task PutAsync(string url, Dictionary<string, string> headers, byte[] content, int maxRetries = 2, int delayMilliseconds = 2000);
         Task<bool> PatchAsyncV2(string url, Dictionary<string, string> headers, string body, int maxRetries = 2, int delayMilliseconds = 2000);
     }
 

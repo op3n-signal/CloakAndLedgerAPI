@@ -41,6 +41,7 @@
         public const string AppName = "Candid";
         
         public const string FailedToGetObjectsFromS3 = "Failed to get files from S3.";
+        public const string DocumentCreateBy = "This Document is Created by Candid";
     }
 
     public enum DisclosureMethodDescription

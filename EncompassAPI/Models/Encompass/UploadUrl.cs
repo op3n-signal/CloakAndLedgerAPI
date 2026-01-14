@@ -2,7 +2,7 @@
 {
     public class UploadUrl
     {
-        public string AuthorizationHeader { get; set; }
+        public string authorizationHeader { get; set; }
 
         public string uploadUrl { get; set; }
 
