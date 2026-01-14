@@ -230,8 +230,6 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<UploadUrl>> CreateAttachmentUrl(string orgId, string loanId, string docName, string token)
         {
-            _logger.Base.LogInformation(nameof(CreateAttachmentUrl));
-
             try
             {
                 // Create Document Containers in Encompass
@@ -276,8 +274,6 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UploadToMediaUrl(string orgId, string loanId, UploadUrl uploadUrl, byte[] fileData, string token)
         {
-            _logger.Base.LogInformation(nameof(UploadToMediaUrl));
-
             try
             {
                 Dictionary<string, string> headers = new Dictionary<string, string>()
@@ -298,8 +294,6 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> AssignAttachmentToContainer(string orgId, string loanId, string attachmentId, string docId, string token)
         {
-            _logger.Base.LogInformation(nameof(AssignAttachmentToContainer));
-
             try
             {
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents/{docId}/attachments?action=add";
@@ -375,9 +369,14 @@ namespace EncompassAPI.Services
                         return new ProcessResult(false, prCreatedDocuments.Message);
                     }
 
+                    _logger.Base.LogInformation($"Created {prCreatedDocuments.Result.Count} new Containers");
+
                     // Add newly created containers to list
                     encompassDocuments.AddRange(prCreatedDocuments.Result);
                 }
+                
+                _logger.Base.LogInformation($"{encompassDocuments.Count} total Containers");
+                _logger.Base.LogInformation($"Uploading {pdfObjects.Count} attachments for loan {request.loanId} in org {request.orgId}.");
 
                 // Loop through each pdf object
                 foreach (KeyValuePair<string, byte[]> kvp in pdfObjects)
@@ -414,6 +413,8 @@ namespace EncompassAPI.Services
                         return new ProcessResult(false, prAssigned.Message);
                     }
                 }
+
+                _logger.Base.LogInformation($"Successfully uploaded attachments for loan {request.loanId} in org {request.orgId}.");
 
                 return new ProcessResult(true);
             }

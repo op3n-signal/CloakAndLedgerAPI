@@ -401,7 +401,11 @@ namespace EncompassAPI.Services
                     using var request = new HttpRequestMessage(HttpMethod.Put, url);
 
                     if (content != null)
+                    {
                         request.Content = new ByteArrayContent(content);
+                        request.Content.Headers.ContentType =
+        new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    }
 
                     if (headers != null)
                     {
@@ -413,7 +417,11 @@ namespace EncompassAPI.Services
 
                     HttpResponseMessage response = await _httpClient.SendAsync(request);
 
+                    string json = await response.Content.ReadAsStringAsync();
+
                     response.EnsureSuccessStatusCode();
+
+                    return;
                 }
                 catch (Exception ex)
                 {

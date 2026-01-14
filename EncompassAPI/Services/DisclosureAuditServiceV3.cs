@@ -24,7 +24,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token)
         {
-            _logger.Base.LogInformation($"Entering {nameof(UpdateIntentToProceedInDisclosureLog)}");
+            _logger.Base.LogInformation(nameof(UpdateIntentToProceedInDisclosureLog));
 
             try
             {
@@ -61,6 +61,8 @@ namespace EncompassAPI.Services
                     _logger.Base.LogError($"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
                     return new ProcessResult(false, $"Failed to update disclosure tracking log {disclosureLogId} for loan {loanId} in org {orgId}. Status code: {response.StatusCode}");
                 }
+
+                _logger.Base.LogInformation($"{nameof(UpdateIntentToProceedInDisclosureLog)} Succeeded");
 
                 return new ProcessResult(true);
             }

@@ -185,6 +185,8 @@ namespace EncompassAPI.Services
 
                 Document uploadedDoc = responseData.itemsNeeded.Find(item => item.documentName == disclosuresName.Replace(".pdf", ""));
 
+                _logger.Base.LogInformation($"{nameof(PushUploadUrlToCandid)} Succeeded");
+
                 return new ProcessResult<string>(true)
                 {
                     Result = uploadedDoc.documentId
