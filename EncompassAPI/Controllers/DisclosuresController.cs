@@ -49,7 +49,7 @@ namespace EncompassAPI.Controllers
                         else
                         {
                             // Get a scoped service in THIS scope
-                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
                             disclosuresService.Init(token);
 
@@ -92,7 +92,7 @@ namespace EncompassAPI.Controllers
                     else
                     {
                         // Get a scoped service in THIS scope
-                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
+                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
                         disclosuresService.Init(token, logId);
 
