@@ -178,7 +178,7 @@ namespace EncompassAPI.Services
             try
             {
                 // Get Document Containers from Encompass
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV1}/{loanId}/documents?includeRemoved=true&requireActiveAttachments=false";
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?includeRemoved=true&requireActiveAttachments=false";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
