@@ -50,8 +50,8 @@ builder.Services.AddScoped<ICandidDataRepo, CandidDataRepo>();
 builder.Services.AddScoped<IDisclosureDataRepo, DisclosureDataRepo>();
 
 /*builder.Services.AddScoped<IDisclosuresServiceV2, DisclosuresV2Service>();
-builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();
-builder.Services.AddScoped<IDisclosuresServiceV4, DisclosuresServiceV4>();*/
+builder.Services.AddScoped<IDisclosuresServiceV3, DisclosuresServiceV3>();*/
+builder.Services.AddScoped<IDisclosuresServiceV4, DisclosuresServiceV4>();
 builder.Services.AddScoped<IDisclosuresServiceV5, DisclosuresServiceV5>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IeFolderService, eFolderService>();
@@ -71,6 +71,7 @@ builder.Services.AddTransient<IDisclosureAuditAppService, DisclosureAuditAppServ
 builder.Services.AddTransient<IDisclosuresQueueService, DisclosuresQueueService>();
 builder.Services.AddTransient<IMappingAppService, MappingAppService>();
 builder.Services.AddTransient<IDocumentSignerMappingService, DocumentSignerMappingService>();
+builder.Services.AddTransient<IDocumentService, DocumentService>();
 
 builder.Services.AddScoped<IDataService, DataService>(serviceProvider =>
 {
