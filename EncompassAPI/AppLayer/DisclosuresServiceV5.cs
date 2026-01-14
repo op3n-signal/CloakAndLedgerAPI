@@ -74,7 +74,6 @@ namespace EncompassAPI.AppLayer
                 // Get all disclosure logs that are included in timeline, set to not included in timeline, then at the end of this process set back to included in timeline
                 ProcessResult<IEnumerable<DisclosureTrackingLog>> prDisclosureLogs = await _disclosureAuditService.GetDisclosureTrackingLogs(_orgId, _loanId, _token);
 
-                //comment
                 if (!prDisclosureLogs.Success)
                 {
                     _status = DisclosureStatus.None;
