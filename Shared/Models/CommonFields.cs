@@ -39,8 +39,6 @@
         public const string EsignStatus = "Pending Signature";
         public const string DisclosedMethod = "Other";
         public const string AppName = "Candid";
-        
-        public const string FailedToGetObjectsFromS3 = "Failed to get files from S3.";
     }
 
     public enum DisclosureMethodDescription

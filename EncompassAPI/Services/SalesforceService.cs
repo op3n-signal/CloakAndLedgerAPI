@@ -70,6 +70,9 @@ namespace EncompassAPI.Services
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
 
+                _logger.LogVerbose("requestInfo.Access_Token");
+                _logger.LogVerbose(requestInfo.Access_Token);
+
                 Document document = new Document
                 {
                     documentName = disclosuresName.Replace(".pdf", ""),
@@ -122,7 +125,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId, string documentId)
         {
-            _logger.Base.LogInformation(nameof(PushUploadUrlToCandid));
+            _logger.LogVerbose(nameof(PushUploadUrlToCandid));
 
             try
             {

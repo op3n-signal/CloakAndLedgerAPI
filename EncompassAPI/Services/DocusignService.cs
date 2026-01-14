@@ -79,7 +79,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> RequestDraftEdit(DraftEditRequestV4 draftEditRequest, string disclosuresName)
         {
-            _logger.Base.LogInformation(nameof(RequestDraftEdit));
+            _logger.LogVerbose($"Entering {nameof(RequestDraftEdit)}");
 
             try
             {

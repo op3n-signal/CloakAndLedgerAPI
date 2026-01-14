@@ -377,14 +377,6 @@ namespace EncompassAPI.AppLayer
 
                 _fileService.RemoveFolder(request.ProspectId);
 
-                // Update the actual received date in the disclosure tracking log to the current date if we received econsent already
-                ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(_orgId, _loanId, request.econsentReceivedB, request.econsentReceivedCo, prDisclosureTrackingLog.Result, _token);
-
-                if (!prUpdateLogActualReceivedDate.Success)
-                {
-                    return;
-                }
-
                 _status = DisclosureStatus.Retrieved;
             }
             catch (Exception ex)

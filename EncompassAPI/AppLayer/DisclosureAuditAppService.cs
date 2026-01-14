@@ -93,8 +93,7 @@ namespace EncompassAPI.AppLayer
                 return new ProcessResult(false, prRetrievedLockId.Message);
             }
 
-            // Manually set econsent received to true since this is post signature
-            ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(candidAuditRequest.orgId, candidAuditRequest.loanId, true, true, prDisclosureTrackingLog.Result, _token);
+            ProcessResult prUpdateLogActualReceivedDate = await _disclosureAuditService.UpdateReceivedDateInTrackingLog(candidAuditRequest.orgId, candidAuditRequest.loanId, prDisclosureTrackingLog.Result, _token);
 
             if (!prUpdateLogActualReceivedDate.Success)
             {

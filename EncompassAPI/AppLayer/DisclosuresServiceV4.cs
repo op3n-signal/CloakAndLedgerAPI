@@ -36,7 +36,6 @@ namespace EncompassAPI.AppLayer
         private string _token;
         private string _latestLogId;
         private DisclosureStatus _status;
-        private List<string> _logIds = new List<string>();
 
         public DisclosuresServiceV4(IFileService fileService, IeFolderService eFolderService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, ILogger<DisclosuresServiceV4> logger)
         {
@@ -140,8 +139,6 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _logIds = prDisclosureLogs.Result.Select(log => log.id).ToList();
-
                 ProcessResult<DisclosureStage> prDisclosureStage = await _docsService.GetDisclosureStage(_orgId, _loanId, _token);
 
                 if (!prDisclosureStage.Success)
@@ -160,15 +157,6 @@ namespace EncompassAPI.AppLayer
 
                 _status = DisclosureStatus.Processing;
 
-                // We need to update the log to not be included in the timeline otherwise we cannot get the signature coordinates
-                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, prDisclosureLogs.Result, _latestLogId, _status, false, _token);
-
-                if (!prLogUpdated.Success)
-                {
-                    _status = DisclosureStatus.Failed;
-                    return;
-                }
-
                 // Document names from disclosure tracking log
                 Dictionary<string, bool> dictAttachmentNamesToFind = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).Distinct().ToDictionary(name => name, name => false);
 
@@ -181,102 +169,47 @@ namespace EncompassAPI.AppLayer
                 }
 
                 int borrowerCount = prLoanInfo.Result.expectedBorrowerCount;
-                string applicationId = prLoanInfo.Result.applications[0].id;
+                bool urlaAdditionalBorrowerPage = prLoanInfo.Result.applications[0].coborrower.printOnAdditionalBorrowerPage;
 
-                ProcessResult<string> prAuditId = await _docsService.CreateLoanAuditForOrder(_orgId, _loanId, applicationId, _token, prDisclosureStage.Result);
+                // Get documents from encompass efolder of type edisclosures
+                ProcessResult<List<EncompassDocument>> ieEFolderDocuments = await _eFolderService.GetListOfDocuments(_orgId, _loanId, _token);
 
-                if (!prAuditId.Success)
+                if (!ieEFolderDocuments.Success)
                 {
                     _status = DisclosureStatus.Failed;
                     return;
                 }
 
-                //todo maybe return response of what failed in the audit // send back in response to candid
-                ProcessResult prAuditSuccess = await _docsService.GetDocumentAuditForOrder(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
+                // Filter out documents that are not in disclosure log
+                List<EncompassDocument> neededDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, ieEFolderDocuments.Result);
 
-                if (!prAuditSuccess.Success)
+                // Get the attachments for all documents
+                ProcessResult<Attachment[]> prAttachments = await _eFolderService.GetAttachments(request.OrgId, request.LoanId, neededDocuments);
+
+                if (!prAttachments.Success)
                 {
                     _status = DisclosureStatus.Failed;
                     return;
                 }
 
-                // Get documents with signature coordinates
-                ProcessResult<string> prOrderId = await _docsService.GenerateDocSet(_orgId, _loanId, prAuditId.Result, _token, prDisclosureStage.Result);
+                // Get the download urls
+                ProcessResult<AttachmentUrls> prAttachmentDownloadUrls = await _eFolderService.GetAttachmentDownloadUrls(request.OrgId, request.LoanId, prAttachments.Result, _token);
 
-                if (!prOrderId.Success)
+                if (!prAttachmentDownloadUrls.Success)
                 {
                     _status = DisclosureStatus.Failed;
                     return;
-                }
-
-                // This only returns a select amount of documents
-                ProcessResult<List<Models.Encompass.Document>> prDocuments = await _docsService.GetOrderStatus(_orgId, _loanId, prOrderId.Result, _token, prDisclosureStage.Result);
-
-                if (!prDocuments.Success)
-                {
-                    _status = DisclosureStatus.Failed;
-                    return;
-                }
-
-                // Removes documents that are not needed from the doc set api
-                List<Models.Encompass.Document> docSetDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, prDocuments.Result);
-
-                // Check if attachmentNamesToFind are found in documents
-                ProcessResult prAllExist = _docsService.CheckIfAllDocumentsExist(dictAttachmentNamesToFind, docSetDocuments);
-
-                // Only enter here if not all docs were found
-                if (!prAllExist.Success)
-                {
-                    // Retrieve efolder docs
-                    ProcessResult<List<string>> prEFolderDocumentNames = await _docsService.GetEFolderDocuments(_orgId, _loanId, dictAttachmentNamesToFind, _token);
-
-                    if (!prEFolderDocumentNames.Success)
-                    {
-                        _status = DisclosureStatus.Failed;
-                        return;
-                    }
-
-                    // Add to list
-                    ProcessResult<string> prJobId = await _docsService.AddToDocSet(_orgId, _loanId, prOrderId.Result, applicationId, prEFolderDocumentNames.Result, _token, prDisclosureStage.Result);
-
-                    if (!prJobId.Success)
-                    {
-                        _status = DisclosureStatus.Failed;
-                        return;
-                    }
-
-                    prDocuments = await _docsService.GetDocSet(_orgId, _loanId, prOrderId.Result, prJobId.Result, _token, prDisclosureStage.Result);
-
-                    if (!prDocuments.Success)
-                    {
-                        _status = DisclosureStatus.Failed;
-                        return;
-                    }
-
-                    // Removes documents that are not needed from the doc set api
-                    docSetDocuments = _docsService.RemoveUnneededDocuments(dictAttachmentNamesToFind, prDocuments.Result);
-
-                    // Check if attachmentNamesToFind are found in documents
-                    prAllExist = _docsService.CheckIfAllDocumentsExist(dictAttachmentNamesToFind, docSetDocuments);
-
-                    if (!prAllExist.Success)
-                    {
-                        // todo find other documents if all are still not found, if we can't just respnd back to event, let candid know we couldn't find all documents
-                        // todo maybe check efolder
-                    }
                 }
 
                 // Download docs from encompass using attachment download urls
                 // It has to be multiple attachments because we can only get the signature coordinates by each document. Documents have page numbers.
-                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.OrgId, request.ProspectId, docSetDocuments, prDisclosureStage.Result);
+                ProcessResult<string> prFileDownload = await _fileService.DownloadMutipleFiles(request.ProspectId, prAttachmentDownloadUrls.Result, prAttachments.Result);
 
                 if (!prFileDownload.Success)
                 {
                     _status = DisclosureStatus.Failed;
                     return;
                 }
-
-                string disclosuresDownloadPath = prFileDownload.Result;
 
                 // Merge files here and this file is what I send back to candid... 
                 ProcessResult<Dictionary<string, int>> prFilePageCounts = _fileService.MergePdfsV4(prFileDownload.Result, prDisclosuresName.Result, dictAttachmentNamesToFind.Keys.ToList());
@@ -288,7 +221,7 @@ namespace EncompassAPI.AppLayer
                 }
 
                 // Map signature coordinates to draft edit _request for docusign
-                ProcessResult<DraftEditRequestV4> prDraftEditRequest = _docsService.MapToDraftEditRequestV4(request, docSetDocuments, dictAttachmentNamesToFind.Keys.ToList());
+                ProcessResult<DraftEditRequestV4> prDraftEditRequest = _docsService.MapToDraftEditRequest(urlaAdditionalBorrowerPage, request, prFilePageCounts.Result);
 
                 if (!prDraftEditRequest.Success)
                 {
@@ -328,7 +261,7 @@ namespace EncompassAPI.AppLayer
                 prDraftEditRequest.Result.S3RootFolderName = bucket;
                 prDraftEditRequest.Result.Status = "sent";
 
-                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, disclosuresDownloadPath, prDisclosuresName.Result);
+                ProcessResult<string> prUpload = await _s3Service.PushFileToS3(bucket, request.Path, request.ProspectId, prDisclosuresName.Result);
 
                 if (!prUpload.Success)
                 {
@@ -366,7 +299,7 @@ namespace EncompassAPI.AppLayer
 
                 _fileService.RemoveFolder(request.ProspectId);
 
-                _status = DisclosureStatus.Retrieved;
+                _status = DisclosureStatus.Completed;
             }
             catch (Exception ex)
             {
@@ -377,20 +310,8 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            if (_status != DisclosureStatus.Dead && _status != DisclosureStatus.Completed)
-            {
+            if(_status != DisclosureStatus.Dead)
                 await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
-
-                string description = _status == DisclosureStatus.Retrieved ? "Candid" : "Error";
-
-                // We need to update the log to be included in the timeline now that we are done
-                ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, description, true, _token);
-
-                if (!prLogUpdated.Success)
-                {
-                    return;
-                }
-            }
         }
     }
 
