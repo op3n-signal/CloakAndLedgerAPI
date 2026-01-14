@@ -7,6 +7,7 @@ using EncompassAPI.Models.Encompass;
 using EncompassAPI.Models.Encompass.LoanInfo;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Shared;
@@ -101,6 +102,10 @@ namespace EncompassAPI.AppLayer
                 // Check if there is a disclosure queue item for this disclosure log id
                 ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(prDisclosureTrackingLog.Result.id);
 
+                _logger.Base.LogInformation("Retrieve called.");
+                _logger.Base.LogInformation("_latestLogId.");
+                _logger.Base.LogInformation(_latestLogId);
+
                 if (prDisclosureQueue.Success)
                 {
                     Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
@@ -110,10 +115,12 @@ namespace EncompassAPI.AppLayer
                         // This method is called multiple time, so in order to get around this we want to make sure that _latestLogId is not null or empty
                         // _latestLogId being not null or empty means this is a retry attempt from the lambda retry mechanism
                         await _disclosuresQueueService.UpdateStatus(prDisclosureTrackingLog.Result.id, DisclosureStatus.Retrying);
+                        _logger.Base.LogInformation("updating status to retry");
                     }
                     else
                     {
                         // exit out dont let dispose happen
+                        _logger.Base.LogInformation("exiting out");
                         return;
                     }
                 }
@@ -392,8 +399,10 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
+            _logger.Base.LogInformation("disposing");
             if (_status != DisclosureStatus.None)
             {
+                _logger.Base.LogInformation("updating status and tracking log");
                 await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
 
                 string description = _status == DisclosureStatus.Retrieved ? "Candid" : "Error";
