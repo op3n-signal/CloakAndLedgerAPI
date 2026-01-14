@@ -182,8 +182,7 @@ namespace EncompassAPI.Services
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
-                    { "Authorization", "Bearer " + token },
-                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                    { "Authorization", "Bearer " + token }
                 };
 
                 IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.GetAsync<EncompassDocument[]>(url, headers);
