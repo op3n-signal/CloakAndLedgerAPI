@@ -98,37 +98,32 @@ namespace EncompassAPI.AppLayer
                     return;
                 }
 
-                _latestLogId = prDisclosureTrackingLog.Result.id;
-
                 // Check if there is a disclosure queue item for this disclosure log id
-                ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(_latestLogId);
+                ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(prDisclosureTrackingLog.Result.id);
 
                 if (prDisclosureQueue.Success)
                 {
                     Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
 
-                    if (status == DisclosureStatus.Dead || status == DisclosureStatus.Retrying || status == DisclosureStatus.Processing || status == DisclosureStatus.None || status == DisclosureStatus.Completed)
-                    {
-                        if(status == DisclosureStatus.Dead)
-                            await _disclosuresQueueService.DeleteDisclosureQueueItem(prDisclosureQueue.Result.id);
-
-                        _status = status;
-                        return;
-                    }
-                    else if(status == DisclosureStatus.Retrieved)
-                    {
-                        return;
-                    }
-                    else {
+                    if((status == DisclosureStatus.Locked || status == DisclosureStatus.Failed) && !string.IsNullOrEmpty(_latestLogId)) {
                         // Set status to retrying
-                        await _disclosuresQueueService.UpdateStatus(_latestLogId, DisclosureStatus.Retrying);
+                        // This method is called multiple time, so in order to get around this we want to make sure that _latestLogId is not null or empty
+                        // _latestLogId being not null or empty means this is a retry attempt from the lambda retry mechanism
+                        await _disclosuresQueueService.UpdateStatus(prDisclosureTrackingLog.Result.id, DisclosureStatus.Retrying);
+                    }
+                    else
+                    {
+                        // exit out dont let dispose happen
+                        return;
                     }
                 }
                 else
                 {
                     // Set status to processing
-                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, request, DisclosureStatus.Processing);
+                    await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, request, DisclosureStatus.Processing);
                 }
+
+                _latestLogId = prDisclosureTrackingLog.Result.id;
 
                 // Get the resource lock id from loan
                 ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(_orgId, request.LoanId, _token);
@@ -397,12 +392,13 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            if (_status != DisclosureStatus.Dead && _status != DisclosureStatus.Completed)
+            if (_status != DisclosureStatus.None)
             {
                 await _disclosuresQueueService.UpdateStatus(_latestLogId, _status);
 
                 string description = _status == DisclosureStatus.Retrieved ? "Candid" : "Error";
 
+                
                 // We need to update the log to be included in the timeline now that we are done
                 ProcessResult prLogUpdated = await _disclosureAuditService.UpdateDisclosureTrackingLogs(_orgId, _loanId, _logIds, _latestLogId, description, true, _token);
 
