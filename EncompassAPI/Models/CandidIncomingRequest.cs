@@ -26,7 +26,11 @@
 
         public bool econsentReceivedB { get; set; }
 
+        public DateTime econsentReceivedBDate { get; set; }
+
         public bool econsentReceivedCo { get; set; }
+
+        public DateTime econsentReceivedCoDate { get; set; }
     }
 
     public class CandidRecipient

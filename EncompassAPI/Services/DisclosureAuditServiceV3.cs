@@ -359,7 +359,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, bool econsentReceivedCo, DisclosureTrackingLog disclosureLog, string token)
+        public async Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, DateTime econsentReceivedBDate, bool econsentReceivedCo, DateTime econsentReceivedCoDate, DisclosureTrackingLog disclosureLog, string token)
         {
             _logger.Base.LogInformation(nameof(UpdateReceivedDateInTrackingLog));
 
@@ -376,7 +376,7 @@ namespace EncompassAPI.Services
                     disclosureRecipients.Add(new
                     {
                         id = disclosureLog.disclosureRecipients[0].id,
-                        actualReceivedDate = currentDate,
+                        actualReceivedDate = econsentReceivedBDate,
                         disclosedMethod = "Other",
                         disclosedMethodDescription = CommonFields.AppName
                     });
@@ -387,7 +387,7 @@ namespace EncompassAPI.Services
                     disclosureRecipients.Add(new
                     {
                         id = disclosureLog.disclosureRecipients[1].id,
-                        actualReceivedDate = currentDate,
+                        actualReceivedDate = econsentReceivedCoDate,
                         disclosedMethod = "Other",
                         disclosedMethodDescription = CommonFields.AppName,
                     });
@@ -444,7 +444,7 @@ namespace EncompassAPI.Services
         /// <param name="disclosureLog"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, bool econsentReceivedCo, DisclosureTrackingLog disclosureLog, string token);
+        Task<ProcessResult> UpdateReceivedDateInTrackingLog(string orgId, string loanId, bool econsentReceivedB, DateTime econsentReceivedBDate, bool econsentReceivedCo, DateTime econsentReceivedCoDate, DisclosureTrackingLog disclosureLog, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogByReceivedDate(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
     }
 }
