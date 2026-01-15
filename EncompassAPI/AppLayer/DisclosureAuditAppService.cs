@@ -79,7 +79,7 @@ namespace EncompassAPI.AppLayer
             {
                 Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
 
-                if ((status == DisclosureStatus.PostProcess_Locked || status == DisclosureStatus.PostProcess_Failed) && !string.IsNullOrEmpty(prDisclosureTrackingLog.Result.id))
+                if ((status == DisclosureStatus.Retrieved || status == DisclosureStatus.PostProcess_Locked || status == DisclosureStatus.PostProcess_Failed) && !string.IsNullOrEmpty(prDisclosureTrackingLog.Result.id))
                 {
                     // Set status to retrying
                     // This method is called multiple time, so in order to get around this we want to make sure that _latestLogId is not null or empty
