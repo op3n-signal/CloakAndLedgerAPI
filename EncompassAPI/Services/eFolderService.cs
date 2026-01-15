@@ -394,8 +394,7 @@ namespace EncompassAPI.Services
                         Container container = new Container()
                         {
                             title = docName,
-                            description = CommonFields.DocumentCreateBy,
-                            documentTypes = new List<string>() { "EDisclosures" }
+                            description = CommonFields.DocumentCreateBy
                         };
                         containersToCreate.Add(container);
                     }
@@ -471,7 +470,6 @@ namespace EncompassAPI.Services
         {
             public string title { get; set; }
             public string description { get; set; }
-            public List<string> documentTypes { get; set; }
         }
     }
 
