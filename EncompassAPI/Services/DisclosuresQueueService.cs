@@ -192,7 +192,7 @@ namespace EncompassAPI.Services
                     UpdateExpression = "SET #s = :s, #m = :m"
                 };
 
-                if (status == DisclosureStatus.Retrying)
+                if (status == DisclosureStatus.Retrying || status == DisclosureStatus.PostProcess_Retrying)
                 {
                     request.ExpressionAttributeNames.Add("#r", "retryCount");
                     request.ExpressionAttributeValues.Add(":inc", new AttributeValue { N = "1" }); // increment by 1

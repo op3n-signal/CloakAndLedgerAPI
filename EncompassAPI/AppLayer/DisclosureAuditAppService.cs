@@ -72,17 +72,43 @@ namespace EncompassAPI.AppLayer
                 return processResult;
             }
 
-            _disclosureLogId = prDisclosureTrackingLog.Result.id;
+            // Check if there is a disclosure queue item for this disclosure log id
+            ProcessResult<DisclosureQueueItem> prDisclosureQueue = await _disclosuresQueueService.GetDisclosureQueueItemById(prDisclosureTrackingLog.Result.id);
 
-            ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(_disclosureLogId, _token, candidAuditRequest, DisclosureStatus.PostProcess_Processing);
-
-            if(!prUpsertDisclosureQueue.Success)
+            if (prDisclosureQueue.Success)
             {
-                _status = DisclosureStatus.PostProcess_Failed;
-                processResult.Success = false;
-                processResult.Message = prUpsertDisclosureQueue.Message;
-                return processResult;
+                Enum.TryParse(prDisclosureQueue.Result.status, out DisclosureStatus status);
+
+                if ((status == DisclosureStatus.PostProcess_Locked || status == DisclosureStatus.PostProcess_Failed) && !string.IsNullOrEmpty(prDisclosureTrackingLog.Result.id))
+                {
+                    // Set status to retrying
+                    // This method is called multiple time, so in order to get around this we want to make sure that _latestLogId is not null or empty
+                    // _latestLogId being not null or empty means this is a retry attempt from the lambda retry mechanism
+                    await _disclosuresQueueService.UpdateStatus(prDisclosureTrackingLog.Result.id, DisclosureStatus.PostProcess_Retrying);
+                }
+                else
+                {
+                    // exit out dont let dispose happen
+                    processResult.Success = false;
+                    processResult.Message = "doesn't meet criteria to retry";
+                    return processResult;
+                }
             }
+            else
+            {
+                // Set status to processing
+                ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(_disclosureLogId, _token, candidAuditRequest, DisclosureStatus.PostProcess_Processing);
+
+                if (!prUpsertDisclosureQueue.Success)
+                {
+                    _status = DisclosureStatus.PostProcess_Failed;
+                    processResult.Success = false;
+                    processResult.Message = prUpsertDisclosureQueue.Message;
+                    return processResult;
+                }
+            }
+
+            _disclosureLogId = prDisclosureTrackingLog.Result.id;
 
             bool blContainsLE = prDisclosureTrackingLog.Result.contents.Any(item => item.ToLower().Contains("le"));
 
@@ -133,7 +159,10 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            await _disclosuresQueueService.UpdateStatus(_disclosureLogId, _status);
+            if (_status != DisclosureStatus.None)
+            {
+                await _disclosuresQueueService.UpdateStatus(_disclosureLogId, _status);
+            }
         }
     }
 

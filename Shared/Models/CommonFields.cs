@@ -60,6 +60,7 @@
         Processing,
         Retrieved,
         PostProcess_Processing,
+        PostProcess_Retrying,
         PostProcess_Locked,
         PostProcess_Failed,
         Completed,

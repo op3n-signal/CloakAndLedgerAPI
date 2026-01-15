@@ -36,26 +36,13 @@ namespace EncompassAPI.Controllers
                 {
                     using (var scope = _serviceScopeFactory.CreateScope())
                     {
-                        if (request.AutoIndexSignedDisclosures)
-                        {
-                            // Get a scoped service in THIS scope
-                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
+                        // Get a scoped service in THIS scope
+                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
-                            disclosuresService.Init(token);
+                        disclosuresService.Init(token);
 
-                            // Run the background process
-                            await disclosuresService.Retrieve(request);
-                        }
-                        else
-                        {
-                            // Get a scoped service in THIS scope
-                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
-
-                            disclosuresService.Init(token);
-
-                            // Run the background process
-                            await disclosuresService.Retrieve(request);
-                        }
+                        // Run the background process
+                        await disclosuresService.Retrieve(request);
                     }
                 }
                 catch (Exception ex)
@@ -79,27 +66,13 @@ namespace EncompassAPI.Controllers
             {
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
-                    if (request.AutoIndexSignedDisclosures)
-                    {
-                        // Get a scoped service in THIS scope
-                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
+                    // Get a scoped service in THIS scope
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
-                        disclosuresService.Init(token, logId);
+                    disclosuresService.Init(token, logId);
 
-                        // Run the background process
-                        await disclosuresService.Retrieve(request);
-                    }
-                    else
-                    {
-                        // Get a scoped service in THIS scope
-                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
-
-                        disclosuresService.Init(token, logId);
-
-                        // Run the background process
-                        await disclosuresService.Retrieve(request);
-
-                    }
+                    // Run the background process
+                    await disclosuresService.Retrieve(request);
                 }
             });
 
