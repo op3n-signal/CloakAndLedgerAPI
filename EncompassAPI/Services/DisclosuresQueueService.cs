@@ -38,9 +38,9 @@ namespace EncompassAPI.Services
                     token = token,
                     json_request = JsonSerializer.Serialize(request),
                     status = status.ToString(),
-                    created_date = existing.created_date,
+                    created_date = existing?.created_date ?? now,
                     modified_date = now,
-                    retryCount = existing.retryCount
+                    retryCount = existing?.retryCount ?? 0
                 };
 
                 await _dbContext.SaveAsync(item);
