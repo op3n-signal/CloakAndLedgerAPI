@@ -14,16 +14,18 @@ namespace EncompassAPI.AppLayer
         private readonly IDisclosureAuditServiceV3 _disclosureAuditService;
         private readonly IEncompassService _docsService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
+        private readonly IDocumentService _documentService;
 
         private DisclosureStatus _status;
         private string _disclosureLogId;
         private string _token;
 
-        public DisclosureAuditAppService(IDisclosureAuditServiceV3 disclosureAuditService, IEncompassService docsService, IDisclosuresQueueService disclosuresQueueService)
+        public DisclosureAuditAppService(IDisclosureAuditServiceV3 disclosureAuditService, IEncompassService docsService, IDisclosuresQueueService disclosuresQueueService, IDocumentService documentService)
         {
             _disclosureAuditService = disclosureAuditService;
             _docsService = docsService;
             _disclosuresQueueService = disclosuresQueueService;
+            _documentService = documentService;
         }
 
         public void Init(string token)
@@ -72,11 +74,11 @@ namespace EncompassAPI.AppLayer
 
             _disclosureLogId = prDisclosureTrackingLog.Result.id;
 
-            ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(_disclosureLogId, _token, candidAuditRequest, DisclosureStatus.PostSignature_Processing);
+            ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(_disclosureLogId, _token, candidAuditRequest, DisclosureStatus.PostProcess_Processing);
 
             if(!prUpsertDisclosureQueue.Success)
             {
-                _status = DisclosureStatus.PostSignature_Failed;
+                _status = DisclosureStatus.PostProcess_Failed;
                 processResult.Success = false;
                 processResult.Message = prUpsertDisclosureQueue.Message;
                 return processResult;
@@ -89,7 +91,7 @@ namespace EncompassAPI.AppLayer
 
             if (prRetrievedLockId.Success)
             {
-                _status = DisclosureStatus.PostSignature_Locked;
+                _status = DisclosureStatus.PostProcess_Locked;
                 return new ProcessResult(false, prRetrievedLockId.Message);
             }
 
@@ -98,7 +100,7 @@ namespace EncompassAPI.AppLayer
 
             if (!prUpdateLogActualReceivedDate.Success)
             {
-                _status = DisclosureStatus.PostSignature_Failed;
+                _status = DisclosureStatus.PostProcess_Failed;
                 return new ProcessResult(false, prUpdateLogActualReceivedDate.Message); ;
             }
 
@@ -106,9 +108,19 @@ namespace EncompassAPI.AppLayer
 
             if (!prUpdate.Success)
             {
-                _status = DisclosureStatus.PostSignature_Failed;
+                _status = DisclosureStatus.PostProcess_Failed;
                 processResult.Success = false;
                 processResult.Message = prUpdate.Message;
+                return processResult;
+            }
+
+            ProcessResult prAutoIndex = await _documentService.AutoIndex(candidAuditRequest, _token);
+
+            if (!prAutoIndex.Success)
+            {
+                _status = DisclosureStatus.PostProcess_Failed;
+                processResult.Success = false;
+                processResult.Message = prAutoIndex.Message;
                 return processResult;
             }
 
@@ -118,8 +130,7 @@ namespace EncompassAPI.AppLayer
 
         public async ValueTask DisposeAsync()
         {
-            if (_status != DisclosureStatus.Dead)
-                await _disclosuresQueueService.UpdateStatus(_disclosureLogId, _status);
+            await _disclosuresQueueService.UpdateStatus(_disclosureLogId, _status);
         }
     }
 

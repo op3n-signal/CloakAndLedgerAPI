@@ -3,6 +3,7 @@ using Amazon.Runtime.Documents;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Encompass;
+using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Repos;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -317,7 +318,7 @@ namespace EncompassAPI.Services
             }
         }
 
-        public async Task<ProcessResult> Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token)
+        public async Task<ProcessResult> Upload(CandidAuditRequest request, Dictionary<string, byte[]> pdfObjects, string token)
         {
             _logger.Base.LogInformation(nameof(Upload));
 
@@ -463,6 +464,6 @@ namespace EncompassAPI.Services
         /// <returns></returns>
         Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token);
         Task<ProcessResult<List<EncompassDocument>>> GetContainers(string orgId, string loanId, string token);
-        Task<ProcessResult> Upload(AutoIndexRequest request, Dictionary<string, byte[]> pdfObjects, string token);
+        Task<ProcessResult> Upload(CandidAuditRequest request, Dictionary<string, byte[]> pdfObjects, string token);
     }
 }

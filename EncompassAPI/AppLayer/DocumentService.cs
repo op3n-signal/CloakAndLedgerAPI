@@ -1,5 +1,6 @@
 ﻿using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
+using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ namespace EncompassAPI.AppLayer
 
         }
 
-        public async Task AutoIndex(AutoIndexRequest request, string token)
+        public async Task<ProcessResult> AutoIndex(CandidAuditRequest request, string token)
         {
             string keyPath = $"{_cacheStorageConfig.S3CachePrefix}/{request.orgId}/{request.documentId}/{request.envelopeId}/";
             // Get Documents from s3 
@@ -27,15 +28,17 @@ namespace EncompassAPI.AppLayer
 
             if(!prObjects.Success)
             {
-                return;
+                return new ProcessResult(false, prObjects.Message);
             }
 
             ProcessResult prUpload = await _eFolderService.Upload(request, prObjects.Result, token);
 
             if(!prUpload.Success)
             {
-                return;
+                return new ProcessResult(false, prUpload.Message);
             }
+
+            return new ProcessResult(true);
         }
 
         public async ValueTask DisposeAsync()
@@ -46,7 +49,7 @@ namespace EncompassAPI.AppLayer
 
     public interface IDocumentService
     {
-        Task AutoIndex(AutoIndexRequest request, string token);
+        Task<ProcessResult> AutoIndex(CandidAuditRequest request, string token);
         ValueTask DisposeAsync();
     }
 }

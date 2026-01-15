@@ -22,7 +22,7 @@ namespace EncompassAPI.Controllers
             _disclosureAuditAppService = disclosureAuditAppService;
         }
 
-        [HttpPost("Update/IntentToProceed")]
+        [HttpPost("Start/PostProcessing")]
         public async Task<IActionResult> UpdateDisclosureIntentToProceed(CandidAuditRequest candidAuditRequest)
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
@@ -39,7 +39,7 @@ namespace EncompassAPI.Controllers
             return Ok(processResult.Success);
         }
 
-        [HttpPost("Update/IntentToProceed/{logId}")]
+        [HttpPost("Start/PostProcessing/{logId}")]
         public async Task<IActionResult> UpdateDisclosureIntentToProceed(string logId, CandidAuditRequest candidAuditRequest)
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();

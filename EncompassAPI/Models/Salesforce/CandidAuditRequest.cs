@@ -9,5 +9,11 @@
         public bool econsentReceivedB { get; set; }
 
         public bool econsentReceivedCo { get; set; }
+
+        public string documentId { get; set; }
+
+        public string envelopeId { get; set; }
+
+        public bool autoIndexSignedDisclosures { get; set; }
     }
 }

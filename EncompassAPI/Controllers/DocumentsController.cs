@@ -36,7 +36,7 @@ namespace EncompassAPI.Controllers
                     await using var documentService = scope.ServiceProvider.GetRequiredService<IDocumentService>();
 
                     // Run the background process
-                    await documentService.AutoIndex(request, token);
+                    //await documentService.AutoIndex(request, token);
                 }
             });
 

@@ -55,14 +55,13 @@
     {
         None,
         Failed,
-        Pending,
         Retrying,
         Locked,
         Processing,
         Retrieved,
-        PostSignature_Processing,
-        PostSignature_Locked,
-        PostSignature_Failed,
+        PostProcess_Processing,
+        PostProcess_Locked,
+        PostProcess_Failed,
         Completed,
         Dead
     }
