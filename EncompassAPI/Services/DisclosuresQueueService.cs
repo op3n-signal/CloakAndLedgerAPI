@@ -16,7 +16,14 @@ namespace EncompassAPI.Services
     {
         private readonly IDynamoDBContext _dbContext;
         private readonly IAmazonDynamoDB _dynamoClient;
-        private readonly LoggerService<DisclosuresQueueService> _logger;    
+        private readonly LoggerService<DisclosuresQueueService> _logger;
+        private readonly List<DisclosureStatus> allowedStatusesForRetry = new List<DisclosureStatus>
+        {
+            DisclosureStatus.Failed,
+            DisclosureStatus.Locked,
+            DisclosureStatus.PostProcess_Failed,
+            DisclosureStatus.PostProcess_Locked
+        };
 
         public DisclosuresQueueService(IDynamoDBContext dbContext, IAmazonDynamoDB dynamoClient, LoggerService<DisclosuresQueueService> logger)
         {
@@ -104,7 +111,7 @@ namespace EncompassAPI.Services
                 }
 
                 var orderedItems = items
-                .Where(x => x.status == "Failed" || x.status == "Locked" || x.status == "PostSignature_Failed" || x.status == "PostSignature_Locked")
+                .Where(x => allowedStatusesForRetry.Contains(Enum.Parse<DisclosureStatus>(x.status)))
                 .OrderBy(x => x.modified_date)
                 .ToList();
 
