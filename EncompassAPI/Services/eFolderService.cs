@@ -179,7 +179,7 @@ namespace EncompassAPI.Services
             try
             {
                 // Get Document Containers from Encompass
-                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?includeRemoved=true&requireActiveAttachments=false";
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
@@ -371,7 +371,6 @@ namespace EncompassAPI.Services
 
                 List<EncompassDocument> encompassDocuments = new List<EncompassDocument>();
                 List<Container> containersToCreate = new List<Container>();
-                List<string> containersToUpdate = new List<string>();
 
                 // Check if there is a container we need to create
                 foreach (string docName in pdfObjects.Keys)
@@ -387,11 +386,6 @@ namespace EncompassAPI.Services
                         if(documentFound == null) 
                             return new ProcessResult(false, $"Failed to find document {docName} in loan {request.loanId} in org {request.orgId} after confirming it exists.");
 
-                        if (documentFound.isMarkedRemoved == true)
-                        {
-                            containersToUpdate.Add(documentFound.id);
-                        }
-
                         encompassDocuments.Add(documentFound);
                     }
                     else
@@ -403,16 +397,6 @@ namespace EncompassAPI.Services
                             description = CommonFields.DocumentCreateBy
                         };
                         containersToCreate.Add(container);
-                    }
-                }
-
-                if(containersToUpdate.Count > 0)
-                {
-                    ProcessResult prUpdateContainers = await UpdateContainers(request.orgId, request.loanId, containersToUpdate, token);
-
-                    if (!prUpdateContainers.Success)
-                    {
-                        return new ProcessResult(false, prUpdateContainers.Message);
                     }
                 }
 
