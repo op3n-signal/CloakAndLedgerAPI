@@ -114,14 +114,17 @@ namespace EncompassAPI.AppLayer
                 return processResult;
             }
 
-            ProcessResult prAutoIndex = await _documentService.AutoIndex(candidAuditRequest, _token);
-
-            if (!prAutoIndex.Success)
+            if (candidAuditRequest.autoIndexSignedDisclosures == true)
             {
-                _status = DisclosureStatus.PostProcess_Failed;
-                processResult.Success = false;
-                processResult.Message = prAutoIndex.Message;
-                return processResult;
+                ProcessResult prAutoIndex = await _documentService.AutoIndex(candidAuditRequest, _token);
+
+                if (!prAutoIndex.Success)
+                {
+                    _status = DisclosureStatus.PostProcess_Failed;
+                    processResult.Success = false;
+                    processResult.Message = prAutoIndex.Message;
+                    return processResult;
+                }
             }
 
             _status = DisclosureStatus.Completed;
