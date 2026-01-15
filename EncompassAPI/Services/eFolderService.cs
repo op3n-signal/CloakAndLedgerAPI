@@ -229,6 +229,43 @@ namespace EncompassAPI.Services
             }
         }
 
+        public async Task<ProcessResult> UpdateContainers(string orgId, string loanId, List<string> containerIds, string token)
+        {
+            _logger.Base.LogInformation(nameof(UpdateContainers));
+
+            try
+            {
+                // Create Document Containers in Encompass
+                string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/documents?action=update&view=entity";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Authorization", "Bearer " + token },
+                    { "Content-Type", CommonFields.EncompassHeaders["Content-Type"] }
+                };
+
+                List<object> payload = new List<object>();
+
+                foreach(var id in containerIds)
+                {
+                    payload.Add( new
+                    {
+                        id = id,
+                        isMarkedRemoved = false
+                    });
+                }
+
+                IEnumerable<EncompassDocument> ieEncompassDocuments = await _http.PatchAsync<EncompassDocument[]>(url, headers, JsonSerializer.Serialize(payload));
+
+                return new ProcessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Base.LogError($"Failed to create documents for loan {loanId} in org {orgId}.{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, $"Failed to create documents for loan {loanId} in org {orgId}.");
+            }
+        }
+
         public async Task<ProcessResult<UploadUrl>> CreateAttachmentUrl(string orgId, string loanId, string docName, string token)
         {
             try
@@ -334,6 +371,7 @@ namespace EncompassAPI.Services
 
                 List<EncompassDocument> encompassDocuments = new List<EncompassDocument>();
                 List<Container> containersToCreate = new List<Container>();
+                List<string> containersToUpdate = new List<string>();
 
                 // Check if there is a container we need to create
                 foreach (string docName in pdfObjects.Keys)
@@ -344,7 +382,15 @@ namespace EncompassAPI.Services
                     if (blMatch)
                     {
                         // Add document to list where containers already exist
-                        EncompassDocument documentFound = prDocuments.Result.Find(doc => doc.title == docName);
+                        EncompassDocument? documentFound = prDocuments.Result.Find(doc => doc.title == docName);
+
+                        if(documentFound == null) 
+                            return new ProcessResult(false, $"Failed to find document {docName} in loan {request.loanId} in org {request.orgId} after confirming it exists.");
+
+                        if (documentFound.isMarkedRemoved == true)
+                        {
+                            containersToUpdate.Add(documentFound.id);
+                        }
 
                         encompassDocuments.Add(documentFound);
                     }
@@ -357,6 +403,16 @@ namespace EncompassAPI.Services
                             description = CommonFields.DocumentCreateBy
                         };
                         containersToCreate.Add(container);
+                    }
+                }
+
+                if(containersToUpdate.Count > 0)
+                {
+                    ProcessResult prUpdateContainers = await UpdateContainers(request.orgId, request.loanId, containersToUpdate, token);
+
+                    if (!prUpdateContainers.Success)
+                    {
+                        return new ProcessResult(false, prUpdateContainers.Message);
                     }
                 }
 
@@ -465,5 +521,6 @@ namespace EncompassAPI.Services
         Task<ProcessResult<AttachmentUrls>> GetAttachmentDownloadUrls(string orgId, string loanId, Attachment[] attachments, string token);
         Task<ProcessResult<List<EncompassDocument>>> GetContainers(string orgId, string loanId, string token);
         Task<ProcessResult> Upload(CandidAuditRequest request, Dictionary<string, byte[]> pdfObjects, string token);
+        Task<ProcessResult> UpdateContainers(string orgId, string loanId, List<string> containerIds, string token);
     }
 }
