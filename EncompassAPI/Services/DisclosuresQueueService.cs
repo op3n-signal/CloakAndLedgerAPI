@@ -32,7 +32,7 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status, bool resetCount = false)
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, string request, DisclosureStatus status, bool resetCount = false)
         {
             _logger.Base.LogInformation($"Upserting disclosure queue item for disclosure log id: {disclosureLogId} with status: {status}");
 
@@ -45,7 +45,7 @@ namespace EncompassAPI.Services
                 {
                     id = disclosureLogId,
                     token = token,
-                    json_request = JsonSerializer.Serialize(request),
+                    json_request = request,
                     status = status.ToString(),
                     created_date = existing?.created_date ?? now,
                     modified_date = now,
@@ -58,36 +58,7 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.LoanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
-                return new ProcessResult(false, "Failed to enqueue disclosure item.");
-            }
-        }
-
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status)
-        {
-            try
-            {
-                var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
-                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                DisclosureQueueItem item = new DisclosureQueueItem()
-                {
-                    id = disclosureLogId,
-                    token = token,
-                    json_request = JsonSerializer.Serialize(request),
-                    status = status.ToString(),
-                    created_date = existing?.created_date ?? now,
-                    modified_date = now,
-                    retryCount = 0
-                };
-
-                await _dbContext.SaveAsync(item);
-
-                return new ProcessResult(true);
-            }
-            catch (Exception ex)
-            {
-                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.loanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
+                _logger.Base.LogError($"Failed to enqueue disclosure item for disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
                 return new ProcessResult(false, "Failed to enqueue disclosure item.");
             }
         }
@@ -216,8 +187,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosuresQueueService
     {
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status, bool resetCount = false);
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, string request, DisclosureStatus status, bool resetCount = false);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);

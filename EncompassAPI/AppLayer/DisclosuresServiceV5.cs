@@ -119,7 +119,7 @@ namespace EncompassAPI.AppLayer
                     }
                     else if(status == DisclosureStatus.Dead && string.IsNullOrEmpty(_latestLogId))
                     {
-                        await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, request, DisclosureStatus.Processing, true);
+                        await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, JsonSerializer.Serialize(request), DisclosureStatus.Processing, true);
                         _logger.Base.LogInformation("updating dead status to Processing again");
                     }
                     else
@@ -132,7 +132,7 @@ namespace EncompassAPI.AppLayer
                 else
                 {
                     // Set status to processing
-                    await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, request, DisclosureStatus.Processing);
+                    await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, JsonSerializer.Serialize(request), DisclosureStatus.Processing);
                 }
 
                 _latestLogId = prDisclosureTrackingLog.Result.id;

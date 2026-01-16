@@ -6,6 +6,7 @@ using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
 using Newtonsoft.Json.Linq;
 using Shared.Models;
+using System.Text.Json;
 
 namespace EncompassAPI.AppLayer
 {
@@ -89,7 +90,7 @@ namespace EncompassAPI.AppLayer
                 else if (status == DisclosureStatus.Retrieved)
                 {
                     // Set status to processing
-                    ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, candidAuditRequest, DisclosureStatus.PostProcess_Processing);
+                    ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, JsonSerializer.Serialize(candidAuditRequest), DisclosureStatus.PostProcess_Processing, true);
 
                     if (!prUpsertDisclosureQueue.Success)
                     {

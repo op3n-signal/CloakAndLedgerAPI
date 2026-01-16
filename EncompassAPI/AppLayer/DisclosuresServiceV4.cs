@@ -128,7 +128,7 @@ namespace EncompassAPI.AppLayer
                 else
                 {
                     // Set status to processing
-                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, request, DisclosureStatus.Processing);
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, JsonSerializer.Serialize(request), DisclosureStatus.Processing);
                 }
 
                 // Get the resource lock id from loan
