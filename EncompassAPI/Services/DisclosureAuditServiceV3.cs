@@ -30,7 +30,7 @@ namespace EncompassAPI.Services
             {
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
-                string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+                string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
                 object intentToProceed = new
                 {
@@ -367,27 +367,24 @@ namespace EncompassAPI.Services
             {
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLog.id}";
-                string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+                DateTime currentDate = DateTime.UtcNow;
 
                 List<object> disclosureRecipients = new List<object>();
 
-                if (econsentReceivedB && string.IsNullOrEmpty(disclosureLog.disclosureRecipients[0].actualReceivedDate))
+                disclosureRecipients.Add(new
                 {
-                    disclosureRecipients.Add(new
-                    {
-                        id = disclosureLog.disclosureRecipients[0].id,
-                        actualReceivedDate = econsentReceivedBDate,
-                        disclosedMethod = "Other",
-                        disclosedMethodDescription = CommonFields.AppName
-                    });
-                }
+                    id = disclosureLog.disclosureRecipients[0].id,
+                    actualReceivedDate = econsentReceivedB ? econsentReceivedBDate : currentDate,
+                    disclosedMethod = "Other",
+                    disclosedMethodDescription = CommonFields.AppName
+                });
 
-                if (disclosureLog.disclosureRecipients.Length > 1 && string.IsNullOrEmpty(disclosureLog.disclosureRecipients[1].actualReceivedDate) && econsentReceivedCo)
+                if (disclosureLog.disclosureRecipients.Length > 1)
                 {
                     disclosureRecipients.Add(new
                     {
                         id = disclosureLog.disclosureRecipients[1].id,
-                        actualReceivedDate = econsentReceivedCoDate,
+                        actualReceivedDate = econsentReceivedCo ? econsentReceivedCoDate : currentDate,
                         disclosedMethod = "Other",
                         disclosedMethodDescription = CommonFields.AppName,
                     });
