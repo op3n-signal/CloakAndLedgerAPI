@@ -1,9 +1,11 @@
-﻿using EncompassAPI.AppLayer;
+﻿using Amazon.Runtime.Internal;
+using EncompassAPI.AppLayer;
 using EncompassAPI.Models;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Utility.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Shared.Models;
 using TokenGenerator;
 
@@ -15,11 +17,11 @@ namespace EncompassAPI.Controllers
     [AuthRequired]
     public class DisclosureAuditController : ControllerBase
     {
-        private readonly IDisclosureAuditAppService _disclosureAuditAppService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public DisclosureAuditController(IDisclosureAuditAppService disclosureAuditAppService)
+        public DisclosureAuditController(IServiceScopeFactory serviceScopeFactory)
         {
-            _disclosureAuditAppService = disclosureAuditAppService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         [HttpPost("Start/PostProcessing")]
@@ -27,16 +29,32 @@ namespace EncompassAPI.Controllers
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
 
-            _disclosureAuditAppService.Init(token);
 
-            ProcessResult processResult = await _disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
-
-            if (!processResult.Success)
+            // Start background process
+            var task = Task.Run(async () =>
             {
-                return Problem(processResult.Message);
-            }
+                try
+                {
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        // Get a scoped service in THIS scope
+                        await using var disclosureAuditAppService = scope.ServiceProvider.GetRequiredService<IDisclosureAuditAppService>();
 
-            return Ok(processResult.Success);
+                        disclosureAuditAppService.Init(token);
+
+                        // Run the background process
+                        ProcessResult processResult = await disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Put a breakpoint here or log to file
+                    Console.WriteLine("Retrieve background exception: " + ex);
+                }
+            });
+
+            // Return 202 Accepted
+            return Accepted();
         }
 
         [HttpPost("Start/PostProcessing/{logId}")]
@@ -44,16 +62,31 @@ namespace EncompassAPI.Controllers
         {
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
 
-            _disclosureAuditAppService.Init(token, logId);
-
-            ProcessResult processResult = await _disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
-
-            if (!processResult.Success)
+            // Start background process
+            var task = Task.Run(async () =>
             {
-                return Problem(processResult.Message);
-            }
+                try
+                {
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        // Get a scoped service in THIS scope
+                        await using var disclosureAuditAppService = scope.ServiceProvider.GetRequiredService<IDisclosureAuditAppService>();
 
-            return Ok(processResult.Success);
+                        disclosureAuditAppService.Init(token, logId);
+
+                        // Run the background process
+                        ProcessResult processResult = await disclosureAuditAppService.UpdatePostSignatureFields(candidAuditRequest);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Put a breakpoint here or log to file
+                    Console.WriteLine("Retrieve background exception: " + ex);
+                }
+            });
+
+            // Return 202 Accepted
+            return Accepted();
         }
     }
 }
