@@ -117,6 +117,11 @@ namespace EncompassAPI.AppLayer
                         await _disclosuresQueueService.UpdateStatus(prDisclosureTrackingLog.Result.id, DisclosureStatus.Retrying);
                         _logger.Base.LogInformation("updating status to retry");
                     }
+                    else if(status == DisclosureStatus.Dead && string.IsNullOrEmpty(_latestLogId))
+                    {
+                        await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, request, DisclosureStatus.Processing, true);
+                        _logger.Base.LogInformation("updating dead status to Processing again");
+                    }
                     else
                     {
                         // exit out dont let dispose happen

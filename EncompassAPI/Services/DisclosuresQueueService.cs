@@ -32,7 +32,7 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status)
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status, bool resetCount = false)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace EncompassAPI.Services
                     status = status.ToString(),
                     created_date = existing?.created_date ?? now,
                     modified_date = now,
-                    retryCount = existing?.retryCount ?? 0
+                    retryCount = resetCount ? 0 : existing?.retryCount ?? 0
                 };
 
                 await _dbContext.SaveAsync(item);
@@ -214,7 +214,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosuresQueueService
     {
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status, bool resetCount = false);
         Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
