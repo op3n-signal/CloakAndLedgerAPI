@@ -34,6 +34,8 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status, bool resetCount = false)
         {
+            _logger.Base.LogInformation($"Upserting disclosure queue item for disclosure log id: {disclosureLogId} with status: {status}");
+
             try
             {
                 var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);

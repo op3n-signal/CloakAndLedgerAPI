@@ -22,7 +22,7 @@ namespace EncompassAPI.Services
             _http = http;
         }
 
-        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token)
+        public async Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token)
         {
             _logger.Base.LogInformation(nameof(UpdateIntentToProceedInDisclosureLog));
 
@@ -34,7 +34,7 @@ namespace EncompassAPI.Services
 
                 object intentToProceed = new
                 {
-                    intent = containsLE,
+                    intent = true,
                     date = currentDate,
                     receivedMethod = "Other",
                     receivedMethodOther = "Candid",
@@ -424,7 +424,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosureAuditServiceV3
     {
-        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, bool containsLE, string token);
+        Task<ProcessResult> UpdateIntentToProceedInDisclosureLog(string orgId, string loanId, string disclosureLogId, string token);
         Task<ProcessResult<IEnumerable<DisclosureTrackingLog>>> GetDisclosureTrackingLogs(string orgId, string loanId, string token);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLog(string orgId, string loanId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);
         ProcessResult<DisclosureTrackingLog> GetLastestDisclosureTrackingLogById(string orgId, string loanId, string logId, IEnumerable<DisclosureTrackingLog> ieDisclosureLogs);

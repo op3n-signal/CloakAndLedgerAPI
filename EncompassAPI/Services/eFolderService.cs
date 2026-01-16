@@ -415,13 +415,11 @@ namespace EncompassAPI.Services
                     // Add newly created containers to list
                     encompassDocuments.AddRange(prCreatedDocuments.Result);
                 }
-                
-                _logger.Base.LogInformation($"{encompassDocuments.Count} total Containers");
-                _logger.Base.LogInformation($"Uploading {pdfObjects.Count} attachments for loan {request.loanId} in org {request.orgId}.");
 
                 // Loop through each pdf object
                 foreach (KeyValuePair<string, byte[]> kvp in pdfObjects)
                 {
+                    _logger.Base.LogInformation($"Uploading attachment {kvp.Key} for loan {request.loanId} in org {request.orgId}.");
                     string fileName = kvp.Key;
                     byte[] fileData = kvp.Value;
 

@@ -86,7 +86,7 @@ namespace EncompassAPI.AppLayer
                     // _latestLogId being not null or empty means this is a retry attempt from the lambda retry mechanism
                     await _disclosuresQueueService.UpdateStatus(prDisclosureTrackingLog.Result.id, DisclosureStatus.PostProcess_Retrying);
                 }
-                else if(status == DisclosureStatus.Retrieved)
+                else if (status == DisclosureStatus.Retrieved)
                 {
                     // Set status to processing
                     ProcessResult prUpsertDisclosureQueue = await _disclosuresQueueService.UpsertDisclosureQueue(prDisclosureTrackingLog.Result.id, _token, candidAuditRequest, DisclosureStatus.PostProcess_Processing);
@@ -110,8 +110,6 @@ namespace EncompassAPI.AppLayer
 
             _disclosureLogId = prDisclosureTrackingLog.Result.id;
 
-            bool blContainsLE = prDisclosureTrackingLog.Result.contents.Any(item => item.ToLower().Contains("le"));
-
             // Get the resource lock id from loan
             ProcessResult<string> prRetrievedLockId = await _docsService.GetResourceLock(candidAuditRequest.orgId, candidAuditRequest.loanId, _token);
 
@@ -130,14 +128,19 @@ namespace EncompassAPI.AppLayer
                 return new ProcessResult(false, prUpdateLogActualReceivedDate.Message); ;
             }
 
-            ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, _disclosureLogId, blContainsLE, _token);
+            bool blContainsIntentToProceed = prDisclosureTrackingLog.Result.documents.forms.Any(f => f.formName.ToLower().Contains("intent to proceed"));
 
-            if (!prUpdate.Success)
+            if (blContainsIntentToProceed)
             {
-                _status = DisclosureStatus.PostProcess_Failed;
-                processResult.Success = false;
-                processResult.Message = prUpdate.Message;
-                return processResult;
+                ProcessResult prUpdate = await _disclosureAuditService.UpdateIntentToProceedInDisclosureLog(candidAuditRequest.orgId, candidAuditRequest.loanId, _disclosureLogId, _token);
+
+                if (!prUpdate.Success)
+                {
+                    _status = DisclosureStatus.PostProcess_Failed;
+                    processResult.Success = false;
+                    processResult.Message = prUpdate.Message;
+                    return processResult;
+                }
             }
 
             if (candidAuditRequest.autoIndexSignedDisclosures == true)
