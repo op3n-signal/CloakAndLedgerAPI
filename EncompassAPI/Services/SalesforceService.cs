@@ -74,7 +74,7 @@ namespace EncompassAPI.Services
                 {
                     documentName = disclosuresName.Replace(".pdf", ""),
                     documentCategory = CommonFields.DocumentCategory,
-                    documentStatus = "Archived",
+                    documentStatus = CommonFields.DocumentStatus,
                     isTask = true,
                     taskType = CommonFields.TaskType,
                     prospectId = incomingRequest.ProspectId,
