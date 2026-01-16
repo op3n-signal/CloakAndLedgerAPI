@@ -78,7 +78,6 @@ namespace EncompassAPI.Services
                     isTask = true,
                     taskType = CommonFields.TaskType,
                     esignStatus = CommonFields.EsignStatus,
-                    prospectId = incomingRequest.ProspectId,
                     documentAssignedTo = incomingRequest.AssignedTo,
                     borrower = incomingRequest.BorrowerValue
                 };
