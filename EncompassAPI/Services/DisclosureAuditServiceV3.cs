@@ -30,7 +30,7 @@ namespace EncompassAPI.Services
             {
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
-                string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
 
                 object intentToProceed = new
                 {
@@ -367,7 +367,7 @@ namespace EncompassAPI.Services
             {
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLog.id}";
-                string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
 
                 List<object> disclosureRecipients = new List<object>();
 
