@@ -161,16 +161,6 @@ namespace EncompassAPI.AppLayer
                 }
             }
 
-            ProcessResult prDeleteAutoIndexedDisclosuresFromS3 = await _documentService.DeleteAutoIndexDisclosuresFromS3(candidAuditRequest);
-
-            if (!prDeleteAutoIndexedDisclosuresFromS3.Success)
-            {
-                _status = DisclosureStatus.PostProcess_Failed;
-                processResult.Success = false;
-                processResult.Message = prDeleteAutoIndexedDisclosuresFromS3.Message;
-                return processResult;
-            }
-
             _status = DisclosureStatus.Completed;
             return processResult;
         }
