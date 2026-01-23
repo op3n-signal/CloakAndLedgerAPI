@@ -167,16 +167,6 @@ namespace EncompassAPI.Services
                     selectedLog.revision = ieDisclosureLogs.Count();
                 }
 
-                // Let's only proceed if the actual received date is not set
-                if (selectedLog.disclosedMethod == "Other" && selectedLog.disclosedMethodDescription == "Error")
-                {
-                    _logger.Base.LogError($"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
-                    return new ProcessResult<DisclosureTrackingLog>(false, $"Disclosed Method is set to {selectedLog.disclosedMethod} and description {selectedLog.disclosedMethodDescription} in the latest disclosure log {selectedLog.id} for loan {loanId} in org {orgId}.");
-                }
-
-                _logger.LogVerbose("disclosureType: " + selectedLog.disclosureType);
-                _logger.LogVerbose("disclosureType: " + JsonSerializer.Serialize(selectedLog.documents.forms));
-
                 return new ProcessResult<DisclosureTrackingLog>(true)
                 {
                     Result = selectedLog
