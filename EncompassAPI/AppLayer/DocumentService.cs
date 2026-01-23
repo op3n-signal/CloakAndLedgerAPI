@@ -1,4 +1,5 @@
-﻿using EncompassAPI.Models;
+﻿using Amazon.Runtime.Internal;
+using EncompassAPI.Models;
 using EncompassAPI.Models.Configs;
 using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
@@ -41,6 +42,13 @@ namespace EncompassAPI.AppLayer
             return new ProcessResult(true);
         }
 
+        public async Task<ProcessResult> DeleteAutoIndexDisclosuresFromS3(CandidAuditRequest request)
+        {
+            string keyPath = $"{_cacheStorageConfig.S3CachePrefix}/{request.orgId}/{request.documentId}/{request.envelopeId}/";
+
+            return await _s3Service.DeleteBucketContentsAsync(_cacheStorageConfig.S3Bucket, keyPath);
+        }
+
         public async ValueTask DisposeAsync()
         {
 
@@ -50,6 +58,7 @@ namespace EncompassAPI.AppLayer
     public interface IDocumentService
     {
         Task<ProcessResult> AutoIndex(CandidAuditRequest request, string token);
+        Task<ProcessResult> DeleteAutoIndexDisclosuresFromS3(CandidAuditRequest request);
         ValueTask DisposeAsync();
     }
 }

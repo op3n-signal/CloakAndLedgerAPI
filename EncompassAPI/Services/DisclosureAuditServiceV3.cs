@@ -11,11 +11,11 @@ namespace EncompassAPI.Services
     {
         private const string ReceivedMethod = "eDisclosure";
 
-        private readonly LoggerService<DisclosureAuditService> _logger;
+        private readonly LoggerService<DisclosureAuditServiceV3> _logger;
         private readonly EncompassConfig _encompassConfig;
         private readonly IEncompassHttpService _http;
 
-        public DisclosureAuditServiceV3(LoggerService<DisclosureAuditService> logger, IOptionsSnapshot<EncompassConfig> encompassOptions, IEncompassHttpService http)
+        public DisclosureAuditServiceV3(LoggerService<DisclosureAuditServiceV3> logger, IOptionsSnapshot<EncompassConfig> encompassOptions, IEncompassHttpService http)
         {
             _logger = logger;
             _encompassConfig = encompassOptions.Value;

@@ -16,17 +16,19 @@ namespace EncompassAPI.AppLayer
         private readonly IEncompassService _docsService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
         private readonly IDocumentService _documentService;
+        private readonly S3Service _s3Service;
 
         private DisclosureStatus _status;
         private string _disclosureLogId;
         private string _token;
 
-        public DisclosureAuditAppService(IDisclosureAuditServiceV3 disclosureAuditService, IEncompassService docsService, IDisclosuresQueueService disclosuresQueueService, IDocumentService documentService)
+        public DisclosureAuditAppService(IDisclosureAuditServiceV3 disclosureAuditService, IEncompassService docsService, IDisclosuresQueueService disclosuresQueueService, IDocumentService documentService, S3Service s3Service)
         {
             _disclosureAuditService = disclosureAuditService;
             _docsService = docsService;
             _disclosuresQueueService = disclosuresQueueService;
             _documentService = documentService;
+            _s3Service = s3Service;
         }
 
         public void Init(string token)
@@ -155,6 +157,16 @@ namespace EncompassAPI.AppLayer
                     processResult.Message = prAutoIndex.Message;
                     return processResult;
                 }
+            }
+
+            ProcessResult prDeleteAutoIndexedDisclosuresFromS3 = await _documentService.DeleteAutoIndexDisclosuresFromS3(candidAuditRequest);
+
+            if (!prDeleteAutoIndexedDisclosuresFromS3.Success)
+            {
+                _status = DisclosureStatus.PostProcess_Failed;
+                processResult.Success = false;
+                processResult.Message = prDeleteAutoIndexedDisclosuresFromS3.Message;
+                return processResult;
             }
 
             _status = DisclosureStatus.Completed;

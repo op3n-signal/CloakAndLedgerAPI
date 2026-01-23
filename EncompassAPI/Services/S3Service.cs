@@ -249,5 +249,40 @@ namespace EncompassAPI.Services
                 return new ProcessResult<Dictionary<string, byte[]>>(false, ResultStatus.InternalError, CommonFields.FailedToGetObjectsFromS3);
             }
         }
+
+        public async Task<ProcessResult> DeleteBucketContentsAsync(string bucket, string keyPath)
+        {
+            _logger.Base.LogInformation(nameof(DeleteBucketContentsAsync));
+
+            // Iterate over the contents of the bucket and delete all objects.
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucket,
+            };
+
+            try
+            {
+                ListObjectsV2Response response;
+
+                do
+                {
+                    response = await _s3Client.ListObjectsV2Async(request);
+                    response.S3Objects
+                        .ForEach(async obj => await _s3Client.DeleteObjectAsync(bucket, obj.Key));
+
+                    // If the response is truncated, set the request ContinuationToken
+                    // from the NextContinuationToken property of the response.
+                    request.ContinuationToken = response.NextContinuationToken;
+                }
+                while (response.IsTruncated);
+
+                return new ProcessResult(true);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.ServerError}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, ResultStatus.InternalError, CommonFields.ServerError);
+            }
+        }
     }
 }
