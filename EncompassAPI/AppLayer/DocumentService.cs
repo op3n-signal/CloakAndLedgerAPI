@@ -21,15 +21,25 @@ namespace EncompassAPI.AppLayer
 
         }
 
-        public async Task<ProcessResult> AutoIndex(CandidAuditRequest request, string token)
+        public async Task<ProcessResult> AutoIndex(CandidAuditRequest request, List<string> documentNamesInDTL, string token)
         {
             string keyPath = $"{_cacheStorageConfig.S3CachePrefix}/{request.orgId}/{request.documentId}/{request.envelopeId}/";
+
             // Get Documents from s3 
             ProcessResult<Dictionary<string, byte[]>> prObjects = await _s3Service.GetPdfObjects(_cacheStorageConfig.S3Bucket, keyPath);
 
-            if(!prObjects.Success)
+            if (!prObjects.Success)
             {
                 return new ProcessResult(false, prObjects.Message);
+            }
+
+            // Get all pdf objects that are not in the document names from DTL
+            List<string> keysToRemove = prObjects.Result.Keys.Where(key => !documentNamesInDTL.Contains(key)).ToList();
+
+            // Remove non-matching pdf objects from the dictionary
+            foreach (string key in keysToRemove)
+            {
+                prObjects.Result.Remove(key);
             }
 
             ProcessResult prUpload = await _eFolderService.Upload(request, prObjects.Result, token);
@@ -57,7 +67,7 @@ namespace EncompassAPI.AppLayer
 
     public interface IDocumentService
     {
-        Task<ProcessResult> AutoIndex(CandidAuditRequest request, string token);
+        Task<ProcessResult> AutoIndex(CandidAuditRequest request, List<string> documentNamesInDTL, string token);
         Task<ProcessResult> DeleteAutoIndexDisclosuresFromS3(CandidAuditRequest request);
         ValueTask DisposeAsync();
     }

@@ -131,7 +131,9 @@ namespace EncompassAPI.AppLayer
                 return new ProcessResult(false, prUpdateLogActualReceivedDate.Message); ;
             }
 
-            bool blContainsIntentToProceed = prDisclosureTrackingLog.Result.documents.forms.Any(f => f.formName.ToLower().Contains("intent to proceed"));
+            // Document names from disclosure tracking log
+            List<string> documentNamesInDTL = prDisclosureTrackingLog.Result.documents.forms.Select(att => att.formName).Distinct().ToList();
+            bool blContainsIntentToProceed = documentNamesInDTL.Any(name => name.ToLower().Contains("intent to proceed"));
 
             if (blContainsIntentToProceed)
             {
@@ -148,7 +150,7 @@ namespace EncompassAPI.AppLayer
 
             if (candidAuditRequest.autoIndexSignedDisclosures == true)
             {
-                ProcessResult prAutoIndex = await _documentService.AutoIndex(candidAuditRequest, _token);
+                ProcessResult prAutoIndex = await _documentService.AutoIndex(candidAuditRequest, documentNamesInDTL, _token);
 
                 if (!prAutoIndex.Success)
                 {
