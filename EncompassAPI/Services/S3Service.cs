@@ -258,6 +258,7 @@ namespace EncompassAPI.Services
             var request = new ListObjectsV2Request
             {
                 BucketName = bucket,
+                Prefix = keyPath
             };
 
             try
