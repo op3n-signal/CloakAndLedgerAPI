@@ -209,7 +209,13 @@ namespace EncompassAPI.Services
             try
             {
                 foreach (var log in ieDisclosureLogs)
-                {
+                {   
+                    if(log.id != latestLogId)
+                    {
+                        _logger.Base.LogInformation($"Skipping non-latest log {log.id} for loan {loanId} in org {orgId}.");
+                        continue;
+                    }
+
                     ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, log.id, log.id == latestLogId, status, includeInTimeline, token);
 
                     if (!result.Success)
