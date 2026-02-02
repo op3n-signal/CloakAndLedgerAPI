@@ -279,12 +279,6 @@ namespace EncompassAPI.Services
 
             try
             {
-                if (!isLatestLog)
-                {
-                    _logger.Base.LogInformation("Updating disclosure status is not supported in the latest log update method.");
-                    return new ProcessResult(false, "Updating disclosure status is not supported in the latest log update method.");
-                }
-
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs/{disclosureLogId}";
 
