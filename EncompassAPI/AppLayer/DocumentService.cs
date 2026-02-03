@@ -34,7 +34,7 @@ namespace EncompassAPI.AppLayer
             }
 
             // Get all pdf objects that are not in the document names from DTL
-            List<string> keysToRemove = prObjects.Result.Keys.Where(key => !documentNamesInDTL.Contains(key)).ToList();
+            List<string> keysToRemove = prObjects.Result.Keys.Where(key => !documentNamesInDTL.Contains(key) || key == "Summary").ToList();
 
             // Remove non-matching pdf objects from the dictionary
             foreach (string key in keysToRemove)
