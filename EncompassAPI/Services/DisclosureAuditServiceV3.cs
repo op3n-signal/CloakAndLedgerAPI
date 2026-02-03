@@ -95,14 +95,14 @@ namespace EncompassAPI.Services
                     return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(false, $"No disclosure tracking logs found for loan {loanId} in org {orgId}.");
                 }
 
-                if (!ieDisclosureLogs.Any(log => log.includedInTimeline == true))
+                if (!ieDisclosureLogs.Any(log => log.includedInTimeline == true && log.intentToProceed.intent == false))
                 {
                     _logger.Base.LogError($"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
                     return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(false, $"No disclosure tracking logs found that are included in timeline for loan {loanId} in org {orgId}.");
                 }
 
                 // Get all logs that are included in timeline
-                ieDisclosureLogs = ieDisclosureLogs.Where(log => log.includedInTimeline == true);
+                ieDisclosureLogs = ieDisclosureLogs.Where(log => log.includedInTimeline == true && log.intentToProceed.intent == false);
 
                 return new ProcessResult<IEnumerable<DisclosureTrackingLog>>(true)
                 {
@@ -262,6 +262,12 @@ namespace EncompassAPI.Services
             {
                 foreach (var id in logIds)
                 {
+                    if (id != latestLogId)
+                    {
+                        _logger.Base.LogInformation($"Skipping non-latest log {id} for loan {loanId} in org {orgId}.");
+                        continue;
+                    }
+
                     ProcessResult result = await UpdateDisclosureTrackingLog(orgId, loanId, id, id == latestLogId, description, includeInTimeline, token);
 
                     if (!result.Success)
