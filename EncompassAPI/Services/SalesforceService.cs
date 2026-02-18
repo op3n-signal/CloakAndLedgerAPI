@@ -70,9 +70,6 @@ namespace EncompassAPI.Services
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
 
-                _logger.LogVerbose("requestInfo.Access_Token");
-                _logger.LogVerbose(requestInfo.Access_Token);
-
                 Document document = new Document
                 {
                     documentName = disclosuresName.Replace(".pdf", ""),
@@ -80,8 +77,8 @@ namespace EncompassAPI.Services
                     documentStatus = CommonFields.DocumentStatus,
                     isTask = true,
                     taskType = CommonFields.TaskType,
-                    esignStatus = CommonFields.EsignStatus,
                     prospectId = incomingRequest.ProspectId,
+                    esignStatus = CommonFields.EsignStatus,
                     documentAssignedTo = incomingRequest.AssignedTo,
                     borrower = incomingRequest.BorrowerValue
                 };
@@ -125,7 +122,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> PushUploadUrlToCandid(string uploadUrl, CandidIncomingRequest incomingRequest, OrgRequestInfo requestInfo, string disclosuresName, string envelopeId, string documentId)
         {
-            _logger.LogVerbose(nameof(PushUploadUrlToCandid));
+            _logger.Base.LogInformation(nameof(PushUploadUrlToCandid));
 
             try
             {
@@ -187,6 +184,8 @@ namespace EncompassAPI.Services
                 _logger.LogVerbose(JsonSerializer.Serialize(responseData));
 
                 Document uploadedDoc = responseData.itemsNeeded.Find(item => item.documentName == disclosuresName.Replace(".pdf", ""));
+
+                _logger.Base.LogInformation($"{nameof(PushUploadUrlToCandid)} Succeeded");
 
                 return new ProcessResult<string>(true)
                 {

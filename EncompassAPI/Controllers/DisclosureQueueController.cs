@@ -1,9 +1,11 @@
 ﻿using EncompassAPI.Models;
+using EncompassAPI.Models.Salesforce;
 using EncompassAPI.Services;
 using EncompassAPI.Utility.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models;
+using System.Text.Json;
 using TokenGenerator;
 
 namespace EncompassAPI.Controllers
@@ -21,7 +23,7 @@ namespace EncompassAPI.Controllers
         }
 
         [HttpPost("update/status/{status}")]
-        public async Task<IActionResult> UpsertDisclosuresQueue(string status, CandidIncomingRequest request)
+        public async Task<IActionResult> UpsertDisclosuresQueue(string status, object request)
         {
             // get ids
             var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
@@ -32,10 +34,7 @@ namespace EncompassAPI.Controllers
             if (!parsed)
                 return BadRequest("Incorrect status type");
 
-            //todo update status to dead
-            //todo notify candid user disclosures did not work
-
-            var processResult = await _queueService.UpsertDisclosureQueue(disclosureLogId, token, request, disclosureStatus);
+            var processResult = await _queueService.UpsertDisclosureQueue(disclosureLogId, token, JsonSerializer.Serialize(request), disclosureStatus);
 
             if (!processResult.Success)
             {

@@ -24,78 +24,6 @@ namespace EncompassAPI.Controllers
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-/*        [HttpPost("v2/Retrieve")]
-        public IActionResult RetrieveDisclosuresV2(CandidIncomingRequest request)
-        {
-            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
-
-            // Start background process
-            var task = Task.Run(async () =>
-            {
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV2>();
-
-                    disclosuresService.Init(token);
-
-                    // Run the background process
-                    await disclosuresService.Retrieve(request);
-                }
-            });
-
-            // Return 202 Accepted
-            return Accepted();
-        }
-
-        [HttpPost("v3/Retrieve")]
-        public IActionResult RetrieveDisclosuresV3(CandidIncomingRequest request)
-        {
-            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
-
-            // Start background process
-            var task = Task.Run(async () =>
-            {
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV3>();
-
-                    disclosuresService.Init(token);
-
-                    // Run the background process
-                    await disclosuresService.Retrieve(request);
-                }
-            });
-
-            // Return 202 Accepted
-            return Accepted();
-        }
-
-        [HttpPost("v4/Retrieve")]
-        public IActionResult RetrieveDisclosuresV4(CandidIncomingRequest request)
-        {
-            var token = HttpContext?.Items[CommonFields.EncompassTokenHeaderName]?.ToString();
-
-            // Start background process
-            var task = Task.Run(async () =>
-            {
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    // Get a scoped service in THIS scope
-                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
-
-                    disclosuresService.Init(token);
-
-                    // Run the background process
-                    await disclosuresService.Retrieve(request);
-                }
-            });
-
-            // Return 202 Accepted
-            return Accepted();
-        }*/
-
         [HttpPost("Retrieve")]
         public IActionResult RetrieveDisclosures(CandidIncomingRequest request)
         {
@@ -108,26 +36,13 @@ namespace EncompassAPI.Controllers
                 {
                     using (var scope = _serviceScopeFactory.CreateScope())
                     {
-                        if (request.AutoIndexSignedDisclosures)
-                        {
-                            // Get a scoped service in THIS scope
-                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
+                        // Get a scoped service in THIS scope
+                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
-                            disclosuresService.Init(token);
+                        disclosuresService.Init(token);
 
-                            // Run the background process
-                            await disclosuresService.Retrieve(request);
-                        }
-                        else
-                        {
-                            // Get a scoped service in THIS scope
-                            await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
-
-                            disclosuresService.Init(token);
-
-                            // Run the background process
-                            await disclosuresService.Retrieve(request);
-                        }
+                        // Run the background process
+                        await disclosuresService.Retrieve(request);
                     }
                 }
                 catch (Exception ex)
@@ -151,27 +66,13 @@ namespace EncompassAPI.Controllers
             {
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
-                    if (request.AutoIndexSignedDisclosures)
-                    {
-                        // Get a scoped service in THIS scope
-                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
+                    // Get a scoped service in THIS scope
+                    await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV5>();
 
-                        disclosuresService.Init(token, logId);
+                    disclosuresService.Init(token, logId);
 
-                        // Run the background process
-                        await disclosuresService.Retrieve(request);
-                    }
-                    else
-                    {
-                        // Get a scoped service in THIS scope
-                        await using var disclosuresService = scope.ServiceProvider.GetRequiredService<IDisclosuresServiceV4>();
-
-                        disclosuresService.Init(token, logId);
-
-                        // Run the background process
-                        await disclosuresService.Retrieve(request);
-
-                    }
+                    // Run the background process
+                    await disclosuresService.Retrieve(request);
                 }
             });
 

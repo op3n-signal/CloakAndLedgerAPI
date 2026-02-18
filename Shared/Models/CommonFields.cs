@@ -39,6 +39,9 @@
         public const string EsignStatus = "Pending Signature";
         public const string DisclosedMethod = "Other";
         public const string AppName = "Candid";
+        
+        public const string FailedToGetObjectsFromS3 = "Failed to get files from S3.";
+        public const string DocumentCreateBy = "This Document is Created by Candid";
     }
 
     public enum DisclosureMethodDescription
@@ -52,14 +55,14 @@
     {
         None,
         Failed,
-        Pending,
         Retrying,
         Locked,
         Processing,
         Retrieved,
-        PostSignature_Processing,
-        PostSignature_Locked,
-        PostSignature_Failed,
+        PostProcess_Processing,
+        PostProcess_Retrying,
+        PostProcess_Locked,
+        PostProcess_Failed,
         Completed,
         Dead
     }

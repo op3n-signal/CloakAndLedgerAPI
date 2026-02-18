@@ -9,6 +9,7 @@ using EncompassAPI.Models.Salesforce;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using Shared.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.IO;
 
 namespace EncompassAPI.Services
@@ -170,7 +171,7 @@ namespace EncompassAPI.Services
 
         public async Task<ProcessResult<string>> PushFileToS3(string bucket, string path, string prospectId, string disclosuresName)
         {
-            _logger.LogVerbose(nameof(PushFileToS3));
+            _logger.Base.LogInformation(nameof(PushFileToS3));
 
             string fileToPushToS3 = _fileConfig.LocalDownloadPath + "/" + prospectId + "/" + disclosuresName;
 
@@ -204,6 +205,84 @@ namespace EncompassAPI.Services
             {
                 _logger.Base.LogError($"{CommonFields.FailedToUploadFile}{Environment.NewLine}Exception: {ex}");
                 return new ProcessResult<string>(false, CommonFields.FailedToUploadFile);
+            }
+        }
+
+        public async Task<ProcessResult<Dictionary<string, byte[]>>> GetPdfObjects(string bucket, string keyPath)
+        {
+            _logger.Base.LogInformation(nameof(GetPdfObjects));
+            try
+            {
+                var request = new ListObjectsV2Request
+                {
+                    BucketName = bucket,
+                    Prefix = keyPath
+                };
+
+                var response = await _s3Client.ListObjectsV2Async(request);
+
+                var pdfObjects = response.S3Objects
+                    .Where(o => o.Key.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(o => o.Key)
+                    .ToList();
+
+                Dictionary<string, byte[]> pdfDataList = new Dictionary<string, byte[]>();
+
+                foreach (var obj in pdfObjects)
+                {
+                    string filename = Path.GetFileName(obj.Key).Replace(".pdf", "").Replace("%2F", "/");
+                    using var getResponse = await _s3Client.GetObjectAsync(bucket, obj.Key);
+                    using var ms = new MemoryStream();
+
+                    await getResponse.ResponseStream.CopyToAsync(ms);
+                    pdfDataList.Add(filename, ms.ToArray());
+                }
+
+                return new ProcessResult<Dictionary<string, byte[]>>(true)
+                {
+                    Result = pdfDataList
+                };
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.FailedToGetObjectsFromS3}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult<Dictionary<string, byte[]>>(false, ResultStatus.InternalError, CommonFields.FailedToGetObjectsFromS3);
+            }
+        }
+
+        public async Task<ProcessResult> DeleteBucketContentsAsync(string bucket, string keyPath)
+        {
+            _logger.Base.LogInformation(nameof(DeleteBucketContentsAsync));
+
+            // Iterate over the contents of the bucket and delete all objects.
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucket,
+                Prefix = keyPath
+            };
+
+            try
+            {
+                ListObjectsV2Response response;
+
+                do
+                {
+                    response = await _s3Client.ListObjectsV2Async(request);
+                    response.S3Objects
+                        .ForEach(async obj => await _s3Client.DeleteObjectAsync(bucket, obj.Key));
+
+                    // If the response is truncated, set the request ContinuationToken
+                    // from the NextContinuationToken property of the response.
+                    request.ContinuationToken = response.NextContinuationToken;
+                }
+                while (response.IsTruncated);
+
+                return new ProcessResult(true);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.Base.LogError($"{CommonFields.ServerError}{Environment.NewLine}Exception: {ex}");
+                return new ProcessResult(false, ResultStatus.InternalError, CommonFields.ServerError);
             }
         }
     }

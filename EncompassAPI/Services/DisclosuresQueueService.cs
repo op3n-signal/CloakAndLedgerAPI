@@ -16,7 +16,14 @@ namespace EncompassAPI.Services
     {
         private readonly IDynamoDBContext _dbContext;
         private readonly IAmazonDynamoDB _dynamoClient;
-        private readonly LoggerService<DisclosuresQueueService> _logger;    
+        private readonly LoggerService<DisclosuresQueueService> _logger;
+        private readonly List<DisclosureStatus> allowedStatusesForRetry = new List<DisclosureStatus>
+        {
+            DisclosureStatus.Failed,
+            DisclosureStatus.Locked,
+            DisclosureStatus.PostProcess_Failed,
+            DisclosureStatus.PostProcess_Locked
+        };
 
         public DisclosuresQueueService(IDynamoDBContext dbContext, IAmazonDynamoDB dynamoClient, LoggerService<DisclosuresQueueService> logger)
         {
@@ -25,8 +32,10 @@ namespace EncompassAPI.Services
             _logger = logger;
         }
 
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status)
+        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, string request, DisclosureStatus status, bool resetCount = false)
         {
+            _logger.Base.LogInformation($"Upserting disclosure queue item for disclosure log id: {disclosureLogId} with status: {status}");
+
             try
             {
                 var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
@@ -36,10 +45,11 @@ namespace EncompassAPI.Services
                 {
                     id = disclosureLogId,
                     token = token,
-                    json_request = JsonSerializer.Serialize(request),
+                    json_request = request,
                     status = status.ToString(),
                     created_date = existing?.created_date ?? now,
-                    modified_date = now
+                    modified_date = now,
+                    retryCount = resetCount ? 0 : existing?.retryCount ?? 0
                 };
 
                 await _dbContext.SaveAsync(item);
@@ -48,35 +58,7 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.LoanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
-                return new ProcessResult(false, "Failed to enqueue disclosure item.");
-            }
-        }
-
-        public async Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status)
-        {
-            try
-            {
-                var existing = await _dbContext.LoadAsync<DisclosureQueueItem>(disclosureLogId);
-                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                DisclosureQueueItem item = new DisclosureQueueItem()
-                {
-                    id = disclosureLogId,
-                    token = token,
-                    json_request = JsonSerializer.Serialize(request),
-                    status = status.ToString(),
-                    created_date = existing?.created_date ?? now,
-                    modified_date = now
-                };
-
-                await _dbContext.SaveAsync(item);
-
-                return new ProcessResult(true);
-            }
-            catch (Exception ex)
-            {
-                _logger.Base.LogError($"Failed to enqueue disclosure item for loan: {request.loanId} on disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
+                _logger.Base.LogError($"Failed to enqueue disclosure item for disclosure log: {disclosureLogId}{Environment.NewLine}{ex}");
                 return new ProcessResult(false, "Failed to enqueue disclosure item.");
             }
         }
@@ -102,7 +84,7 @@ namespace EncompassAPI.Services
                 }
 
                 var orderedItems = items
-                .Where(x => x.status == "Failed" || x.status == "Locked" || x.status == "PostSignature_Failed" || x.status == "PostSignature_Locked")
+                .Where(x => allowedStatusesForRetry.Contains(Enum.Parse<DisclosureStatus>(x.status)))
                 .OrderBy(x => x.modified_date)
                 .ToList();
 
@@ -183,7 +165,7 @@ namespace EncompassAPI.Services
                     UpdateExpression = "SET #s = :s, #m = :m"
                 };
 
-                if (status == DisclosureStatus.Retrying)
+                if (status == DisclosureStatus.Retrying || status == DisclosureStatus.PostProcess_Retrying)
                 {
                     request.ExpressionAttributeNames.Add("#r", "retryCount");
                     request.ExpressionAttributeValues.Add(":inc", new AttributeValue { N = "1" }); // increment by 1
@@ -205,8 +187,7 @@ namespace EncompassAPI.Services
 
     public interface IDisclosuresQueueService
     {
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidIncomingRequest request, DisclosureStatus status);
-        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, CandidAuditRequest request, DisclosureStatus status);
+        Task<ProcessResult> UpsertDisclosureQueue(string disclosureLogId, string token, string request, DisclosureStatus status, bool resetCount = false);
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItems();
         Task<ProcessResult<DisclosureQueueItem>> GetDisclosureQueueItemById(string disclosureLogId);
         Task<ProcessResult> DeleteDisclosureQueueItem(string disclosureLogId);

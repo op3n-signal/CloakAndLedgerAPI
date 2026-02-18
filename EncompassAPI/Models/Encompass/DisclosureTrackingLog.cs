@@ -24,6 +24,12 @@
         public Propertyaddress propertyAddress { get; set; }
         public Tracking tracking { get; set; }
         public Documents documents { get; set; }
+        public IntentToProceed intentToProceed { get; set; }
+    }
+
+    public class IntentToProceed
+    {
+        public bool intent {  get; set; }
     }
 
     public class Discloseddate

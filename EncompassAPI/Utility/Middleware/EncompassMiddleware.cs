@@ -23,8 +23,9 @@ namespace EncompassAPI.Utility.Middleware
             string xEToken;
 
             if (context.Request.Path.Value.ToLower().Contains("api/disclosures/retrieve") || 
-                context.Request.Path.Value.ToLower().Contains("api/disclosureaudit") ||
-                context.Request.Path.Value.ToLower().Contains("api/documentmapping/upsert"))
+                context.Request.Path.Value.ToLower().Contains("api/disclosureaudit/start/postprocessing") ||
+                context.Request.Path.Value.ToLower().Contains("api/documentmapping/upsert") ||
+                context.Request.Path.Value.ToLower().Contains("api/documents/autoindex"))
             {
                 xEToken = context.Request.Headers[CommonFields.EncompassTokenHeaderName].FirstOrDefault();
 

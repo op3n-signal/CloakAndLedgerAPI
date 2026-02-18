@@ -13,6 +13,7 @@ using Shared;
 using Shared.Models;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace EncompassAPI.AppLayer
 {
@@ -114,7 +115,7 @@ namespace EncompassAPI.AppLayer
                 else
                 {
                     // Set status to processing
-                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, request, DisclosureStatus.Processing);
+                    await _disclosuresQueueService.UpsertDisclosureQueue(_latestLogId, _token, JsonSerializer.Serialize(request), DisclosureStatus.Processing);
                 }
 
                 // Get the resource lock id from loan
