@@ -19,6 +19,7 @@ namespace EncompassAPI.AppLayer
 {
     public class DisclosuresServiceV5 : IDisclosuresServiceV5, IAsyncDisposable
     {
+        private string[] _allowedOrgs = new string[2] { "00D4x000007swJU", "00D4x0000066nc2" };
         private readonly IFileService _fileService;
         private readonly S3Service _s3Service;
         private readonly ICandidDataService _candidDataService;
@@ -67,7 +68,7 @@ namespace EncompassAPI.AppLayer
                 _orgId = request.OrgId;
                 _loanId = request.LoanId;
 
-                if(request.OrgId != "00D4x000007swJU")
+                if(!_allowedOrgs.Contains(request.OrgId))
                 {
                     return;
                 }
