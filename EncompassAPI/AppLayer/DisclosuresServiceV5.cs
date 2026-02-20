@@ -19,7 +19,7 @@ namespace EncompassAPI.AppLayer
 {
     public class DisclosuresServiceV5 : IDisclosuresServiceV5, IAsyncDisposable
     {
-        private string[] _allowedOrgs = new string[2] { "00D4x000007swJU", "00D4x0000066nc2" };
+        private string[] _allowedOrgs = new string[3] { "00D4x000007swJU", "00D4x0000066nc2", "00D7e00000EeoUy" };
         private readonly IFileService _fileService;
         private readonly S3Service _s3Service;
         private readonly ICandidDataService _candidDataService;
@@ -28,7 +28,7 @@ namespace EncompassAPI.AppLayer
         private readonly IDocusignService _docusignService;
         private readonly IDisclosureAuditServiceV3 _disclosureAuditService;
         private readonly IDisclosuresQueueService _disclosuresQueueService;
-        private readonly LoggerService<DisclosuresServiceV4> _logger;
+        private readonly LoggerService<DisclosuresServiceV5> _logger;
 
         private string _orgId;
         private string _loanId;
@@ -37,7 +37,7 @@ namespace EncompassAPI.AppLayer
         private DisclosureStatus _status;
         private List<string> _logIds = new List<string>();
 
-        public DisclosuresServiceV5(IFileService fileService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, LoggerService<DisclosuresServiceV4> logger)
+        public DisclosuresServiceV5(IFileService fileService, S3Service s3Service, ICandidDataService candidDataService, ISalesforceService sfService, IEncompassService docsService, IDocusignService docusignService, IDisclosureAuditServiceV3 disclosureAuditService, IDisclosuresQueueService disclosuresQueueService, LoggerService<DisclosuresServiceV5> logger)
         {
             _fileService = fileService;
             _s3Service = s3Service;
