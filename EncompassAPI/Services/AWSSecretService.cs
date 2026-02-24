@@ -30,7 +30,7 @@ namespace EncompassAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to retrieve secret {secretPath}. Exception: {ex}");
+                _logger.LogError($"Failed to retrieve secret. Exception: {ex}");
                 return new ProcessResult<T>(false, $"Failed to retrieve secret {secretPath}.");
             }
         }

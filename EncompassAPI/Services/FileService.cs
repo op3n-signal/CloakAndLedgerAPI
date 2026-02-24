@@ -51,7 +51,8 @@ namespace EncompassAPI.Services
 
                     if(!prRespone.Success)
                     {
-                        _logger.Base.LogError($"{CommonFields.FailedToUploadFile} for file {filePath} to S3 at {key}");
+                        _logger.LogVerbose($"{CommonFields.FailedToUploadFile} for file {filePath} to S3 at {key}");
+                        _logger.Base.LogError($"{CommonFields.FailedToUploadFile} for file for orgId: {orgId}, prospectId: {prospectId}");
                         return new ProcessResult<(string, string)>(false, prRespone.Message);
                     }
                 }
@@ -306,7 +307,6 @@ namespace EncompassAPI.Services
                 .ToArray();
 
                 _logger.LogVerbose("Sorted files: ");
-
                 _logger.LogVerbose(JsonSerializer.Serialize(sortedFiles));
 
                 using (PdfDocument outputDocument = new PdfDocument())

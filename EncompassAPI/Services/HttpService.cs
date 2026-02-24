@@ -269,8 +269,6 @@ namespace EncompassAPI.Services
 
                     HttpResponseMessage response = await _httpClient.SendAsync(request);
 
-                    _logger.LogInformation(JsonSerializer.Serialize(response.Content.ReadAsStringAsync()));
-
                     if (response.IsSuccessStatusCode)
                     {
                         return response;

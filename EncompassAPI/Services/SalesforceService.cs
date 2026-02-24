@@ -42,7 +42,6 @@ namespace EncompassAPI.Services
                     throw new Exception("Could not retrieve request info");
 
                 _logger.LogVerbose("Request info found");
-                _logger.LogVerbose(JsonSerializer.Serialize(requestInfo));
 
                 return new ProcessResult<OrgRequestInfo>(true)
                 {
@@ -132,9 +131,6 @@ namespace EncompassAPI.Services
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Authorization", "Bearer " + requestInfo.Access_Token);
-
-                _logger.LogVerbose("requestInfo.Access_Token");
-                _logger.LogVerbose(requestInfo.Access_Token);
 
                 Document document = new Document
                 {
@@ -252,7 +248,6 @@ namespace EncompassAPI.Services
                 }
 
                 _logger.LogVerbose("aws settings found");
-                _logger.LogVerbose(JsonSerializer.Serialize(awsSettings));
 
                 return new ProcessResult<GoogleDriveClone>(true)
                 {

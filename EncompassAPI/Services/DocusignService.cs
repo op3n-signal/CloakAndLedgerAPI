@@ -168,7 +168,7 @@ namespace EncompassAPI.Services
 
                 if (docuSignEditLinkResponse.success == false)
                 {
-                    _logger.Base.LogError($"Docusign response indicates failure: {JsonSerializer.Serialize(docuSignEditLinkResponse)}");
+                    _logger.Base.LogError($"Docusign response indicates failure for envelopeId: {envelopeId}, orgId: {orgId}");
                     return new ProcessResult<string>(false, docuSignEditLinkResponse.errors[0]);
                 }
 

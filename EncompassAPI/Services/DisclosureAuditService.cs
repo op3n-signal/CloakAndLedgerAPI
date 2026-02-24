@@ -81,8 +81,6 @@ namespace EncompassAPI.Services
                 // Get Disclosure tracking logs from Encompass
                 string url = $"{_encompassConfig.BaseUrl}{_encompassConfig.LoanEndpointV3}/{loanId}/disclosureTracking2015Logs";
 
-                _logger.LogVerbose("token: " + token);
-
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
                     { "Authorization", "Bearer " + token }
