@@ -66,8 +66,6 @@ namespace EncompassAPI.Services
 
                 IEnumerable<FieldReaderResponse> fieldReaderResponse = response.OrderByDescending(x => x.fieldId);
 
-                _logger.LogVerbose("Field reader response: " + JsonSerializer.Serialize(fieldReaderResponse));
-
                 foreach (FieldReaderResponse fieldReader in fieldReaderResponse)
                 {
                     if(string.IsNullOrEmpty(fieldReader.value)) 
