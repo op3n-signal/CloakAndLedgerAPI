@@ -13,8 +13,8 @@ namespace TokenGenerator
 
         public const string Role = "Basic";
         public const string Policy = "BasicPolicy";
-        public const string Issuer = "EncompassMiddleware";
-        public const string Audience = "CandidUsers";
+        public const string Issuer = "TemplateMiddleware";
+        public const string Audience = "TemplateUsers";
 
         private static TokenContainer GetTokenForClaims(IEnumerable<Claim> claims, DateTime now, DateTime expires, IAuthCreds authCreds)
         {

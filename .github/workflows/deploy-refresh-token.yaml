@@ -1,4 +1,4 @@
-name: PROD Build and Push Encompass Middleware KeyGen Docker Image
+name: PROD Build and Push Template Middleware KeyGen Docker Image
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:  # Enable manual triggering via GitHub UI
 
 env:
-  REGISTRY_IMAGE: ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator
-  ROTATOR_IMAGE: ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokenrotator
+  REGISTRY_IMAGE: ghcr.io/Template-middleware-organization/los-Template-middleware-api/Template.tokengenerator
+  ROTATOR_IMAGE: ghcr.io/Template-middleware-organization/los-Template-middleware-api/Template.tokenrotator
   TAG_NAME: latest
 
 permissions:
@@ -18,8 +18,8 @@ permissions:
 
 jobs:
   build-docker-image-keygen:
-    name: Build & Push Docker image for Encompass Middleware KeyGen
-    runs-on: middleware-candid-runner
+    name: Build & Push Docker image for Template Middleware KeyGen
+    runs-on: middleware-Template-runner
 
     steps:
       - name: Checkout code
@@ -57,13 +57,13 @@ jobs:
           context: .  # Change if your Dockerfile is in a subfolder
           file: TokenGenerator/Dockerfile
           push: true
-          tags: ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator:latest
+          tags: ghcr.io/Template-middleware-organization/los-Template-middleware-api/Template.tokengenerator:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-docker-image-rotator:
-    name: Build & Push Docker image for Encompass Middleware Key Rotation
-    runs-on: middleware-candid-runner
+    name: Build & Push Docker image for Template Middleware Key Rotation
+    runs-on: middleware-Template-runner
 
     steps:
       - name: Checkout code
@@ -110,15 +110,15 @@ jobs:
     needs: 
       - build-docker-image-keygen
       - build-docker-image-rotator
-    runs-on: [self-hosted, middleware-candid-runner]
+    runs-on: [self-hosted, middleware-Template-runner]
     timeout-minutes: 15
     #if: github.ref == 'refs/heads/master'   # 👈 Only run on main branch
     env:
       REGISTRY_IMAGE: ghcr.io/${{ github.repository }}   #Gets loaded with the lowercase repo name later in the steps
       SERVER: 172.31.47.203
       SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-      CONTAINER_NAME: encompass-middleware-token-generator
-      CONTAINER_NAME_ROTATOR: encompass-middleware-token-rotator
+      CONTAINER_NAME: Template-middleware-token-generator
+      CONTAINER_NAME_ROTATOR: Template-middleware-token-rotator
       
     steps:
       # SSH into your private server & restart the container
@@ -137,10 +137,10 @@ jobs:
             set -e
 
             echo "👉 Logging in to GHCR"
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u candid-middleware-organization --password-stdin
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u Template-middleware-organization --password-stdin
 
             echo "👉 Pulling image - Generator"
-            docker pull ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator:latest
+            docker pull ghcr.io/Template-middleware-organization/los-Template-middleware-api/Template.tokengenerator:latest
 
             echo "👉 Pulling image - Rotator"
             docker pull ${{ env.ROTATOR_IMAGE }}:${{ env.TAG_NAME }}

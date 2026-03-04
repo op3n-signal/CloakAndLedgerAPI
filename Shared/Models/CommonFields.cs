@@ -6,8 +6,6 @@
         public const string IncomingAuthKeyName = "Token";
         public const string AuthKeyRequired = "Auth Token is required.";
         public const string AuthKeyInvalid = "Auth Token is invalid.";
-        public const string EncompassTokenRequired = "Encompass access token required.";
-        public const string EncompassTokenHeaderName = "x-e-Token";
         public const string DisclosureLogIdHeaderName = "x-d-log-id";
 
         // File
@@ -23,47 +21,8 @@
         public const string ErrorCreatingSecret = "Error creating secret";
         public const string ErrorRetrievingSecret = "Error retrieving secret";
 
-        // Encompass
-        public const string CannotRetrieveAccessToken = "Cannot retrieve access token from Encompass API.";
-        public const string CannotRetrieveIntrospection = "Cannot retrieve introspection from Encompass API.";
-        public static readonly Dictionary<string, string> EncompassHeaders = new Dictionary<string, string>
-        {
-            { "Content-Type", "application/json" }
-        };
-        public const string LoanEntityType = "urn:elli:encompass:loan";
-        public const string BorrowerEntityType = "urn:elli:encompass:loan:borrower";
-        public const string PrintMode = "LoanData";
-        public const string DocumentCategory = "Disclosures";
-        public const string DocumentStatus = "Sent";
-        public const string TaskType = "E-Sign";
-        public const string EsignStatus = "Pending Signature";
-        public const string DisclosedMethod = "Other";
-        public const string AppName = "Candid";
+        public const string AppName = "Template";
         
         public const string FailedToGetObjectsFromS3 = "Failed to get files from S3.";
-        public const string DocumentCreateBy = "This Document is Created by Candid";
-    }
-
-    public enum DisclosureMethodDescription
-    {
-        Candid,
-        Error,
-        Running
-    }
-
-    public enum DisclosureStatus
-    {
-        None,
-        Failed,
-        Retrying,
-        Locked,
-        Processing,
-        Retrieved,
-        PostProcess_Processing,
-        PostProcess_Retrying,
-        PostProcess_Locked,
-        PostProcess_Failed,
-        Completed,
-        Dead
     }
 }

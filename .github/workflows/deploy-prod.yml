@@ -1,4 +1,4 @@
-name: PROD Build and Push Encompass Middleware Docker Image
+name: PROD Build and Push Template Middleware Docker Image
 
 on:
   push:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   build-docker-image:
     name: Build & Push Docker image
-    runs-on: middleware-candid-runner
+    runs-on: middleware-Template-runner
 
     steps:
       - name: Checkout code
@@ -63,15 +63,15 @@ jobs:
     name: Deploy to PROD Docker Images
     needs:
         - build-docker-image
-    runs-on: [self-hosted, middleware-candid-runner]
+    runs-on: [self-hosted, middleware-Template-runner]
     timeout-minutes: 15
     env:
       REGISTRY_IMAGE: ghcr.io/${{ github.repository }}   #Gets loaded with the lowercase repo name later in the steps
-      SERVER: 172.31.47.203
+      SERVER: 
       SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-      PORT: 8185
-      INSIDE_PORT: 8080
-      CONTAINER_NAME: encompass-middleware-dev
+      PORT: 
+      INSIDE_PORT: 
+      CONTAINER_NAME: Template-middleware-prod
       ASPNETCORE_ENVIRONMENT: Production
       
     steps:
@@ -91,7 +91,7 @@ jobs:
             set -e
 
             echo "👉 Logging in to GHCR"
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u candid-middleware-organization --password-stdin
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u Template-middleware-organization --password-stdin
 
             echo "👉 Pulling image from GHCR"
             docker pull ${{ env.REGISTRY_IMAGE }}:${{env.TAG_NAME}}

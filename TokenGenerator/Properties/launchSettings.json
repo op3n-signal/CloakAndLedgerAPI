@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "EncompassTokenGenerator": {
+    "{{Template}}TokenGenerator": {
       "commandName": "Project"
     },
     "Container (Dockerfile)": {

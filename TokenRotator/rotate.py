@@ -74,7 +74,7 @@ def log_with_time(message: str):
 
 
 if __name__ == "__main__":
-    secret_name = "encompass/securitykeys"
+    secret_name = "Template/securitykeys"
     secret = get_secret(secret_name)
 
     #print(secret)
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # Build the docker command
     cmd = [
         "docker", "run", 
-        "ghcr.io/candid-middleware-organization/los-encompass-middleware-api/encompass.tokengenerator:latest",
+        "ghcr.io/Template-middleware-organization/Template-middleware-api/Template.tokengenerator:latest",
         salt, signing, encryption, user, valid_days
     ]
 
@@ -116,17 +116,14 @@ if __name__ == "__main__":
     token = "".join(token_lines)
     
     # Get existing secret value
-    encompass_secret = get_secret("encompassMiddleware")
-    retrieveDisclosuresEndpoint = encompass_secret.get("retrieveDisclosuresEndpoint")
-    startPostProcessingEndpoint = encompass_secret.get("startPostProcessingEndpoint")
-    autoIndexEndpoint = encompass_secret.get("autoIndexEndpoint")
+    Template_secret = get_secret("TemplateMiddleware")
 
     log_with_time("New Token Generated")
     log_with_time("Token valid for days:" +valid_days )
     # Wrap token in a dict so Secrets Manager stores it as JSON
-    secret_payload = {"jwt_token": token, "retrieveDisclosuresEndpoint": retrieveDisclosuresEndpoint, "startPostProcessingEndpoint": startPostProcessingEndpoint, "autoIndexEndpoint": autoIndexEndpoint}
+    secret_payload = {"jwt_token": token}
 
-    put_secret("encompassMiddleware", secret_payload)
+    put_secret("TemplateMiddleware", secret_payload)
     log_with_time("AWS Secret Updated")
 
 

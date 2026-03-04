@@ -1,0 +1,113 @@
+using Amazon;
+using AutoMapper;
+using Template;
+using Template.Models.Configs;
+using Template.Services;
+using Template.Utility.Filters;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using TokenGenerator;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.OperationFilter<AuthHeaderFilter>();
+});
+
+builder.Services.AddAutoMapper(typeof(MapperProfile));
+
+builder.Services.Configure<AWSConfig>(options => builder.Configuration.GetSection(nameof(AWSConfig)).Bind(options));
+builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSection(nameof(LoggingConfig)).Bind(options));
+builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));
+
+builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
+builder.Services.AddScoped(typeof(AWSSecretService));
+
+builder.Services.AddLogging(logging =>
+{
+    var config = builder.Configuration.GetAWSLoggingConfigSection();
+    logging.AddAWSProvider(config);
+    logging.SetMinimumLevel(LogLevel.Trace);
+});
+
+// Get Security keys from secrets manager
+var awsConfig = builder.Configuration.GetSection("AWSConfig").Get<AWSConfig>();
+var tokenProvider = new TokenProvider();
+await tokenProvider.InitializeAsync(awsConfig);
+
+IAuthCreds authCreds = SecurityKeysBuilder.Build(tokenProvider.SecurityKeys.salt, tokenProvider.SecurityKeys.signing, tokenProvider.SecurityKeys.encryption);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = Security.Issuer,
+
+            ValidateAudience = true,
+            ValidAudience = Security.Audience,
+            ValidateLifetime = true,
+
+            IssuerSigningKey = authCreds.SigningKey,
+            ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.FromSeconds(2),
+            TokenDecryptionKey = authCreds.EncryptionKey,
+        };
+    });
+
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Security.Policy, policy => policy.RequireRole(Security.Role));
+});
+
+
+// Client without the handler
+builder.Services.AddHttpClient<IHttpService, HttpService>("DefaultClient");
+
+// If you need another service without handler, register with a different interface or named service
+builder.Services.AddScoped<IDefaultHttpService>(sp =>
+{
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("DefaultClient");
+    return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
+});
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseSwagger(u =>
+{
+    u.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Template API V1");
+    c.RoutePrefix = "";
+});
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
