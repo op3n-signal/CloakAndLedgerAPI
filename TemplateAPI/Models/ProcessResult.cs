@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Template.Models
+namespace CloakAndLedger.Api.Models
 {
     public class ProcessResult<T>
     {

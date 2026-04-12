@@ -1,4 +1,4 @@
-﻿namespace Template.Models.Configs
+﻿namespace CloakAndLedger.Api.Models.Configs
 {
     public class LoggingConfig
     {

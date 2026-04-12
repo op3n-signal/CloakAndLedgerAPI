@@ -1,4 +1,4 @@
-﻿namespace Template.Utility
+﻿namespace CloakAndLedger.Api.Utility
 {
     public static class ModelExtensions
     {

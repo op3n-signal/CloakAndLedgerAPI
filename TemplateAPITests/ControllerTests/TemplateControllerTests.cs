@@ -1,9 +1,9 @@
 ﻿
-using Template.Models;
+using CloakAndLedger.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace TemplateTests.ControllerTests
+namespace CloakAndLedger.Tests.ControllerTests
 {
     public class TestControllerTests : TestHelperBase
     {

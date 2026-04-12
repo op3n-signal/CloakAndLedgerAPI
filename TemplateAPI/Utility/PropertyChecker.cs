@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Template.Utility
+namespace CloakAndLedger.Api.Utility
 {
     public class PropertyChecker
     {

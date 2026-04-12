@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TemplateTests
+namespace CloakAndLedger.Tests
 {
     public class ConfigTests
     {

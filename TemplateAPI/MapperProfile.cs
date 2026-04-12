@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 
-namespace Template
+namespace CloakAndLedger.Api
 {
     public class MapperProfile: Profile
     {

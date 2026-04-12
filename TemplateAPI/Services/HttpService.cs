@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using System.Text.Json;
 
-namespace Template.Services
+namespace CloakAndLedger.Api.Services
 {
     public class HttpService : IHttpService, IDefaultHttpService
     {

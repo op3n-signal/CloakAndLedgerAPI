@@ -1,4 +1,4 @@
-﻿namespace Template.Models
+﻿namespace CloakAndLedger.Api.Models
 {
     public class SecurityKeys
     {

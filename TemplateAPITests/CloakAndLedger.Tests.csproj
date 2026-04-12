@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-	<RootNamespace>TemplateAPITests</RootNamespace>
-    <AssemblyName>TemplateAPITests</AssemblyName>
+	<RootNamespace>CloakAndLedger.Tests</RootNamespace>
+    <AssemblyName>CloakAndLedger.Tests</AssemblyName>
   </PropertyGroup>
 
 <ItemGroup>
@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TemplateAPI\TemplateAPI.csproj" />
+    <ProjectReference Include="..\TemplateAPI\CloakAndLedger.Api.csproj" />
     <ProjectReference Include="..\TokenGenerator\TokenGenerator.csproj" />
   </ItemGroup>
 

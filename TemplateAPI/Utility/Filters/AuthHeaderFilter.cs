@@ -1,9 +1,9 @@
-﻿using Template.Models;
+﻿using CloakAndLedger.Api.Models;
 using Microsoft.OpenApi.Models;
 using Shared.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Template.Utility.Filters
+namespace CloakAndLedger.Api.Utility.Filters
 {
     public class AuthHeaderFilter : IOperationFilter
     {

@@ -1,9 +1,9 @@
-﻿using Template.Models;
-using Template.Models.Configs;
+﻿using CloakAndLedger.Api.Models;
+using CloakAndLedger.Api.Models.Configs;
 using Microsoft.Extensions.Options;
 using Shared;
 
-namespace Template.Services
+namespace CloakAndLedger.Api.Services
 {
     public class AWSSecretService
     {

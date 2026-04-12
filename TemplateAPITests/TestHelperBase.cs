@@ -1,13 +1,13 @@
 
 using AWS.Logger;
-using Template.Models.Configs;
-using Template.Services;
+using CloakAndLedger.Api.Models.Configs;
+using CloakAndLedger.Api.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace TemplateTests
+namespace CloakAndLedger.Tests
 {
     public class TestHelperBase
     {

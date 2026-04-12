@@ -2,10 +2,10 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Shared;
-using Template.Models;
-using Template.Models.Configs;
+using CloakAndLedger.Api.Models;
+using CloakAndLedger.Api.Models.Configs;
 
-namespace Template.Services
+namespace CloakAndLedger.Api.Services
 {
     public class TokenInitService : IHostedService
     {

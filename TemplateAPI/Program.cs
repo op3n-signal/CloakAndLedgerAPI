@@ -1,9 +1,9 @@
 using Amazon;
 using AutoMapper;
-using Template;
-using Template.Models.Configs;
-using Template.Services;
-using Template.Utility.Filters;
+using CloakAndLedger.Api;
+using CloakAndLedger.Api.Models.Configs;
+using CloakAndLedger.Api.Services;
+using CloakAndLedger.Api.Utility.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
-using Template.Models.Configs;
+using CloakAndLedger.Api.Models.Configs;
 
-namespace Template.Services
+namespace CloakAndLedger.Api.Services
 {
     public class LoggerService<T>
     {
