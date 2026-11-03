@@ -7,11 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Db\" />
     <Folder Include="Models\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CloakAndLedger.Domain\CloakAndLedger.Domain.csproj" />
   </ItemGroup>
 
 </Project>
