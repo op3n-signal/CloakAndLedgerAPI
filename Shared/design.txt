@@ -1,0 +1,32 @@
+src/
+├── domain/               # Core business models, rules, and interfaces
+│   ├── entities/
+│   ├── value-objects/
+│   ├── domain-events/
+│   ├── exceptions/
+│   └── repositories/     # Interfaces (ports) only
+├── application/          # Use cases, orchestration, and CQRS handlers
+│   ├── commands/
+│   ├── queries/
+│   ├── dtos/
+│   └── services/
+├── infrastructure/       # External implementations (DB, mail, APIs)
+│   ├── persistence/      # EF Core, Prisma, Mongo, migrations
+│   ├── messaging/        # Kafka, RabbitMQ, SQS
+│   ├── email/            # SendGrid, SMTP implementations
+│   └── identity/         # Auth0, JWT providers
+└── presentation/         # Entry points (Web API, CLI, GraphQL)
+    ├── controllers/
+    ├── middlewares/
+    └── view-models/
+
+From a code dependency perspective:
+• API ➔ Application ➔ Domain
+• Infrastructure ➔ Application & Domain
+
+Even though Infrastructure depends on the inner layers, runtime execution actually flows smoothly across them. Here is exactly how a request travels through your setup:
+1. API (Presentation): Receives the HTTP POST request. It maps the request body to a command and sends it to the Application layer.
+2. Application: Catches the command. It asks for a Domain entity by calling an interface (e.g., IUserRepository.GetById).
+3. Infrastructure: (Behind the scenes) The DI container has injected the actual SQL database code into that interface. Infrastructure fetches the raw data, turns it into a Domain entity, and hands it back.
+4. Domain: Executes the actual business logic or validation rules inside the entity.
+5. Application: Saves the updated entity back via the interface, then tells the API it's done.
