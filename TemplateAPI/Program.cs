@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TokenGenerator;
+using CloakAndLedger.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,7 @@ builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection
 
 builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
 builder.Services.AddScoped(typeof(AWSSecretService));
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddLogging(logging =>
 {

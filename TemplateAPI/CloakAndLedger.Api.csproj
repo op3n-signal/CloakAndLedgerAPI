@@ -26,10 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers\" />
     <Folder Include="Properties\ServiceDependencies\local\" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CloakAndLedger.Application\CloakAndLedger.Application.csproj" />
+    <ProjectReference Include="..\CloakAndLedger.Infrastructure\CloakAndLedger.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
     <ProjectReference Include="..\TokenGenerator\TokenGenerator.csproj" />
   </ItemGroup>
