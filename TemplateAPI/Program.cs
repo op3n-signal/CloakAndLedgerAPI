@@ -23,31 +23,31 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<AuthHeaderFilter>();
 });
 
-builder.Services.AddAutoMapper(typeof(MapperProfile));
+/*builder.Services.AddAutoMapper(typeof(MapperProfile));*/
 
-builder.Services.Configure<AWSConfig>(options => builder.Configuration.GetSection(nameof(AWSConfig)).Bind(options));
-builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSection(nameof(LoggingConfig)).Bind(options));
-builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));
+/*builder.Services.Configure<AWSConfig>(options => builder.Configuration.GetSection(nameof(AWSConfig)).Bind(options));*/
+/*builder.Services.Configure<LoggingConfig>(options => builder.Configuration.GetSection(nameof(LoggingConfig)).Bind(options));*/
+/*builder.Services.Configure<S3Config>(options => builder.Configuration.GetSection(nameof(S3Config)).Bind(options));*/
 
-builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));
-builder.Services.AddScoped(typeof(AWSSecretService));
+/*builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));*/
+/*builder.Services.AddScoped(typeof(AWSSecretService));*/
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-builder.Services.AddLogging(logging =>
+/*builder.Services.AddLogging(logging =>
 {
     var config = builder.Configuration.GetAWSLoggingConfigSection();
     logging.AddAWSProvider(config);
     logging.SetMinimumLevel(LogLevel.Trace);
-});
+});*/
 
 // Get Security keys from secrets manager
-var awsConfig = builder.Configuration.GetSection("AWSConfig").Get<AWSConfig>();
+/*var awsConfig = builder.Configuration.GetSection("AWSConfig").Get<AWSConfig>();
 var tokenProvider = new TokenProvider();
-await tokenProvider.InitializeAsync(awsConfig);
+await tokenProvider.InitializeAsync(awsConfig);*/
 
-IAuthCreds authCreds = SecurityKeysBuilder.Build(tokenProvider.SecurityKeys.salt, tokenProvider.SecurityKeys.signing, tokenProvider.SecurityKeys.encryption);
+/*IAuthCreds authCreds = SecurityKeysBuilder.Build(tokenProvider.SecurityKeys.salt, tokenProvider.SecurityKeys.signing, tokenProvider.SecurityKeys.encryption);*/
 
-builder.Services.AddAuthentication(options =>
+/*builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -69,24 +69,24 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.FromSeconds(2),
             TokenDecryptionKey = authCreds.EncryptionKey,
         };
-    });
+    });*/
 
 
-builder.Services.AddAuthorization(options =>
+/*builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(Security.Policy, policy => policy.RequireRole(Security.Role));
-});
+});*/
 
 
 // Client without the handler
-builder.Services.AddHttpClient<IHttpService, HttpService>("DefaultClient");
+/*builder.Services.AddHttpClient<IHttpService, HttpService>("DefaultClient");*/
 
 // If you need another service without handler, register with a different interface or named service
-builder.Services.AddScoped<IDefaultHttpService>(sp =>
+/*builder.Services.AddScoped<IDefaultHttpService>(sp =>
 {
     var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("DefaultClient");
     return new HttpService(client, sp.GetRequiredService<ILogger<HttpService>>());
-});
+});*/
 
 var app = builder.Build();
 
