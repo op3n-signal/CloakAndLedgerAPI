@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CloakAndLedger.Application\CloakAndLedger.Application.csproj" />
+    <ProjectReference Include="..\CloakAndLedger.Domain\CloakAndLedger.Domain.csproj" />
   </ItemGroup>
 
 </Project>

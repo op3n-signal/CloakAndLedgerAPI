@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace CloakAndLedger.Application.Interfaces
+namespace CloakAndLedger.Domain.Interfaces
 {
     public interface IDataRepo
     {

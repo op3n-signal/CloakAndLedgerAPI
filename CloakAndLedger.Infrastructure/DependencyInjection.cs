@@ -1,4 +1,4 @@
-﻿using CloakAndLedger.Application.Interfaces;
+﻿using CloakAndLedger.Domain.Interfaces;
 using CloakAndLedger.Infrastructure.Db;
 using CloakAndLedger.Infrastructure.Repos;
 using Microsoft.Extensions.Configuration;
