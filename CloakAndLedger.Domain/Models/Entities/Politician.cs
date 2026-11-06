@@ -16,5 +16,10 @@ namespace CloakAndLedger.Domain.Models.Entities
 
         [JsonPropertyName("last_name")]
         public required string LastName { get; set; }
+
+        public char? Party { get; set; }
+
+        [JsonPropertyName("image_url")]
+        public string? ImageUrl { get; set; }
     }
 }

@@ -17,7 +17,11 @@ namespace CloakAndLedger.Infrastructure.Repos
 
         public async Task<int> CreatePoliticianAsync(Politician politician)
         {
-            return await _dataRepo.Execute("INSERT INTO politics.Politicians (first_name, last_name) VALUES (@FirstName, @LastName) Returning Id;", politician);
+            return await _dataRepo.Execute(@"
+            INSERT INTO politics.Politicians 
+            (first_name, last_name, party, image_url) 
+            VALUES (@FirstName, @LastName) 
+            Returning Id;", politician);
         }
         public async Task<int> DeletePoliticianAsync(int id)
         {
@@ -25,11 +29,17 @@ namespace CloakAndLedger.Infrastructure.Repos
         }
         public async Task<Politician> GetPoliticianByIdAsync(int id)
         {
-            return await _dataRepo.SelectSingle<Politician>("SELECT id, first_name, last_name FROM politics.Politicians WHERE Id = @Id", new { Id = id });
+            return await _dataRepo.SelectSingle<Politician>(@"
+            SELECT id, first_name, last_name, party, image_url 
+            FROM politics.Politicians 
+            WHERE Id = @Id", new { Id = id });
         }
         public async Task<int> UpdatePoliticianAsync(Politician politician)
         {
-            return await _dataRepo.Execute("UPDATE politics.Politicians SET first_name = @FirstName, last_name = @LastName WHERE Id = @Id", politician);
+            return await _dataRepo.Execute(@"
+            UPDATE politics.Politicians 
+            SET first_name = @FirstName, last_name = @LastName, party = @Party, image_url = @ImageUrl
+            WHERE Id = @Id", politician);
         }
     }
 }
