@@ -10,7 +10,7 @@ namespace CloakAndLedger.Infrastructure.Db
 
         public DapperDbContext(IConfiguration configuration)
         {
-            string? connectionString = configuration.GetConnectionString("PostgressConnection");
+            string? connectionString = configuration.GetConnectionString("PostgresConnection");
             _dbConnection = new NpgsqlConnection(connectionString);
         }
 

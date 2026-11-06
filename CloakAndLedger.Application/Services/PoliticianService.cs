@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CloakAndLedger.Application.Services
 {
-    internal class PoliticianService : IPoliticianService
+    public class PoliticianService : IPoliticianService
     {
         private readonly IPoliticianRepo _politicianRepo;
 

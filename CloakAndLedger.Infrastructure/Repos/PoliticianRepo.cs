@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CloakAndLedger.Infrastructure.Repos
 {
-    internal class PoliticianRepo : IPoliticianRepo
+    public class PoliticianRepo : IPoliticianRepo
     {
         private readonly IDataRepo _dataRepo;
 
@@ -17,7 +17,7 @@ namespace CloakAndLedger.Infrastructure.Repos
 
         public async Task<int> CreatePoliticianAsync(Politician politician)
         {
-            return await _dataRepo.Execute("INSERT INTO Politicians (first_name, last_name) VALUES (@FirstName, @LastName); SELECT CAST(SCOPE_IDENTITY() as int);", politician);
+            return await _dataRepo.Execute("INSERT INTO politics.Politicians (first_name, last_name) VALUES (@FirstName, @LastName); SELECT CAST(SCOPE_IDENTITY() as int);", politician);
         }
         public async Task<int> DeletePoliticianAsync(int id)
         {

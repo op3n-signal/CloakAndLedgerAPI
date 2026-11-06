@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TokenGenerator;
 using CloakAndLedger.Infrastructure;
+using CloakAndLedger.Domain.Interfaces;
+using CloakAndLedger.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,7 @@ builder.Services.AddSwaggerGen(c =>
 
 /*builder.Services.AddScoped(typeof(LoggerService<>), typeof(LoggerService<>));*/
 /*builder.Services.AddScoped(typeof(AWSSecretService));*/
+builder.Services.AddScoped<IPoliticianService, PoliticianService>();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 /*builder.Services.AddLogging(logging =>

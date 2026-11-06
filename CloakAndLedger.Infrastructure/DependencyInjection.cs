@@ -16,6 +16,7 @@ namespace CloakAndLedger.Infrastructure
             var connectionString = configuration.GetConnectionString("PostgressConnection");
             services.AddSingleton<DapperDbContext>();
             services.AddScoped<IDataRepo, DataRepo>();
+            services.AddScoped<IPoliticianRepo, PoliticianRepo>();
 
             return services; // Returns it so you can chain methods if you want
         }
