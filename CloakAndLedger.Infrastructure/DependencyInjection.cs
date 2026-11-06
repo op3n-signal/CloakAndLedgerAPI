@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Dapper;
 
 namespace CloakAndLedger.Infrastructure
 {
@@ -18,6 +19,7 @@ namespace CloakAndLedger.Infrastructure
             services.AddScoped<IDataRepo, DataRepo>();
             services.AddScoped<IPoliticianRepo, PoliticianRepo>();
 
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
             return services; // Returns it so you can chain methods if you want
         }
     }
