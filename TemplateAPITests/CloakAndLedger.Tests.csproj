@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TemplateAPI\CloakAndLedger.Api.csproj" />
+    <ProjectReference Include="..\CloakAndLedger.Api\CloakAndLedger.Api.csproj" />
     <ProjectReference Include="..\TokenGenerator\TokenGenerator.csproj" />
   </ItemGroup>
 
