@@ -11,11 +11,12 @@ using TokenGenerator;
 using CloakAndLedger.Infrastructure;
 using CloakAndLedger.Domain.Interfaces;
 using CloakAndLedger.Application.Services;
+using Dapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+DefaultTypeMap.MatchNamesWithUnderscores = true;
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
